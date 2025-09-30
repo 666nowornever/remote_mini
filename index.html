@@ -3,21 +3,291 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PC Control</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Remote mini</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: white;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header .subtitle {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .main-card {
+            min-height: 120px;
+        }
+
+        .status-line {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .status-line:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 15px;
+            color: white;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn i {
+            font-size: 20px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .btn-text {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .servers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .server-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
+        }
+
+        .server-item:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .server-name {
+            font-weight: 500;
+        }
+
+        .server-status {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+
+        .server-status.offline {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i {
+            opacity: 0.8;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>🖥️ Управление ПК</h1>
-        <div class="button-group">
-            <button onclick="sendCommand('shutdown')">Выключить</button>
-            <button onclick="sendCommand('restart')">Перезагрузить</button>
-            <button onclick="sendCommand('lock')">Заблокировать</button>
+        <!-- Заголовок -->
+        <div class="header">
+            <h1>🖥️ Remote mini</h1>
+            <div class="subtitle">Управление системами</div>
         </div>
-        <div id="status" class="status">Готов к работе</div>
+
+        <!-- Главная карточка -->
+        <div class="card main-card">
+            <div class="status-line">
+                <span>1st line</span>
+                <span>🟢 Online</span>
+            </div>
+            <div class="status-line">
+                <span>2nd line</span>
+                <span>🟢 Online</span>
+            </div>
+            <div class="status-line">
+                <span>Общий статус</span>
+                <span>✅ Активен</span>
+            </div>
+        </div>
+
+        <!-- Кнопки быстрого доступа -->
+        <div class="button-grid">
+            <div class="btn" onclick="navigateTo('restaurants')">
+                <i class="fas fa-utensils"></i>
+                <div class="btn-text">Рестораны</div>
+            </div>
+            <div class="btn" onclick="navigateTo('cash-servers')">
+                <i class="fas fa-server"></i>
+                <div class="btn-text">Кассовые серверы</div>
+            </div>
+        </div>
+
+        <!-- Секция Рестораны -->
+        <div class="card">
+            <div class="section-title">
+                <i class="fas fa-store"></i>
+                Рестораны
+            </div>
+            <div class="servers-list">
+                <div class="server-item">
+                    <span class="server-name">Кассы</span>
+                    <span class="server-status">🟢 Online</span>
+                </div>
+                <div class="server-item">
+                    <span class="server-name">ПК Менеджера</span>
+                    <span class="server-status">🟢 Online</span>
+                </div>
+                <div class="server-item">
+                    <span class="server-name">Музыкальный моноблок</span>
+                    <span class="server-status">🟡 Warning</span>
+                </div>
+                <div class="server-item">
+                    <span class="server-name">Сервис принтер</span>
+                    <span class="server-status">🔴 Offline</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Секция Кассовые серверы -->
+        <div class="card">
+            <div class="section-title">
+                <i class="fas fa-cash-register"></i>
+                Кассовые серверы
+            </div>
+            <div class="servers-list">
+                <div class="server-item">
+                    <span class="server-name">rk01</span>
+                    <span class="server-status">active</span>
+                </div>
+                <div class="server-item">
+                    <span class="server-name">rk02</span>
+                    <span class="server-status">active</span>
+                </div>
+                <div class="server-item">
+                    <span class="server-name">rk48</span>
+                    <span class="server-status active">active</span>
+                </div>
+            </div>
+        </div>
     </div>
-    
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="app.js"></script>
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Функции навигации
+        function navigateTo(section) {
+            const statusEl = document.querySelector('.header .subtitle');
+            statusEl.textContent = `Открыто: ${getSectionName(section)}`;
+            
+            // Здесь будет логика перехода между разделами
+            console.log(`Переход в раздел: ${section}`);
+        }
+
+        function getSectionName(section) {
+            const sections = {
+                'restaurants': 'Рестораны',
+                'cash-servers': 'Кассовые серверы'
+            };
+            return sections[section] || section;
+        }
+
+        // Анимация появления элементов
+        document.addEventListener('DOMContentLoaded', function() {
+            const elements = document.querySelectorAll('.card, .btn');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    el.style.transition = 'all 0.5s ease';
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
 </body>
 </html>
