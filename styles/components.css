@@ -21,7 +21,11 @@
     font-size: 18px;
     font-weight: 600;
     text-decoration: none;
-    display: block;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
 }
 
 .btn:hover {
@@ -297,6 +301,14 @@
     align-items: center;
 }
 
+.first-line-page .btn {
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
 .cash-servers-page .servers-list {
     max-height: 60vh;
     overflow-y: auto;
@@ -335,6 +347,48 @@
 .cash-registers-page .servers-list::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.3);
     border-radius: 3px;
+}
+
+/* Centered restaurant items */
+.restaurants-page .server-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    min-height: 80px;
+}
+
+.restaurants-page .server-name {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+}
+
+.restaurants-page .server-name i {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+.restaurants-page .server-arrow {
+    display: none; /* Убираем стрелки в ресторанах */
+}
+
+/* Centered cash registers */
+.cash-registers-page .server-item {
+    justify-content: center;
+    text-align: center;
+}
+
+.cash-registers-page .server-name {
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+}
+
+.cash-registers-page .server-arrow {
+    display: none; /* Убираем стрелки в кассах */
 }
 
 /* Loading Spinner */
@@ -401,259 +455,4 @@
     .cash-ip {
         font-size: 20px;
     }
-}
-
-/* Utility Classes */
-.text-center {
-    text-align: center;
-}
-
-.text-left {
-    text-align: left;
-}
-
-.text-right {
-    text-align: right;
-}
-
-.mb-10 {
-    margin-bottom: 10px;
-}
-
-.mb-20 {
-    margin-bottom: 20px;
-}
-
-.mt-10 {
-    margin-top: 10px;
-}
-
-.mt-20 {
-    margin-top: 20px;
-}
-
-.p-10 {
-    padding: 10px;
-}
-
-.p-20 {
-    padding: 20px;
-}
-
-/* Icon Sizes */
-.icon-sm {
-    font-size: 14px;
-}
-
-.icon-md {
-    font-size: 18px;
-}
-
-.icon-lg {
-    font-size: 24px;
-}
-
-.icon-xl {
-    font-size: 32px;
-}
-/* Utility Classes for Centering */
-.flex-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.text-center {
-    text-align: center;
-}
-
-.items-center {
-    align-items: center;
-}
-
-.justify-center {
-    justify-content: center;
-}
-
-/* Specific centering for restaurant items */
-.restaurant-item-center {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    min-height: 70px;
-    padding: 20px;
-}
-
-/* Ensure multi-line text is centered properly */
-.multi-line-center {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    line-height: 1.4;
-}
-/* Simple List Style (как на скриншоте) */
-.simple-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-}
-
-.simple-item {
-    background: rgba(255, 255, 255, 0.08);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.simple-item:last-child {
-    border-bottom: none;
-    border-radius: 0 0 15px 15px;
-}
-
-.simple-item:first-child {
-    border-radius: 15px 15px 0 0;
-}
-
-.simple-item:only-child {
-    border-radius: 15px;
-}
-
-.simple-item:hover {
-    background: rgba(255, 255, 255, 0.12);
-}
-
-.simple-item-content {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    padding: 20px;
-    color: white;
-    text-decoration: none;
-}
-
-.simple-item-content i {
-    font-size: 20px;
-    opacity: 0.8;
-    width: 24px;
-    text-align: center;
-}
-
-.simple-item-content span {
-    font-size: 16px;
-    font-weight: 500;
-    flex: 1;
-}
-
-/* Bot Footer */
-.bot-footer {
-    text-align: center;
-    margin-top: 30px;
-    padding: 15px;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.bot-footer i {
-    font-size: 16px;
-}
-
-/* Centered Cash Registers */
-.cash-registers-page .simple-item-content {
-    justify-content: center;
-    text-align: center;
-}
-
-.cash-registers-page .simple-item-content span {
-    text-align: center;
-    font-family: 'Courier New', monospace;
-    font-size: 16px;
-}
-
-.cash-registers-page .simple-item-content i {
-    display: none; /* Скрываем иконки для касс */
-}
-
-/* Separators for Cash Registers */
-.cash-separator {
-    background: rgba(255, 255, 255, 0.05);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.cash-separator .separator-line {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 0;
-}
-
-/* Remove arrows from all simple items */
-.simple-item .server-arrow {
-    display: none;
-}
-
-/* Header adjustments for consistency */
-.header {
-    text-align: center;
-    margin-bottom: 20px;
-    padding: 10px 0;
-}
-
-.header h1 {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 5px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.header .subtitle {
-    opacity: 0.8;
-    font-size: 16px;
-    font-weight: 400;
-}
-
-/* Card adjustments */
-.card {
-    background: rgba(255, 255, 255, 0.08);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    padding: 0;
-    margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-}
-
-/* Back button styling */
-.back-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: white;
-    padding: 12px 20px;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-bottom: 20px;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
-    transition: all 0.3s ease;
-    font-size: 15px;
-    width: 100%;
-    justify-content: center;
-}
-
-.back-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-}
-
-/* Remove old server list styles */
-.servers-list,
-.server-item,
-.server-name,
-.server-arrow {
-    display: none;
 }
