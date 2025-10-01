@@ -9,9 +9,6 @@ const Auth = {
     // Инициализация приложения
     initialize: async function() {
         try {
-            // Скрываем индикатор загрузки
-            this.hideLoading();
-
             const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
@@ -19,31 +16,31 @@ const Auth = {
             const user = tg.initDataUnsafe.user;
             
             if (!user) {
-                this.showAccessDenied('Не удалось получить данные пользователя');
+                this.showAccessDenied('Не удалось получить данные пользователя из Telegram');
                 return false;
             }
 
-            // Отладочная информация
-            console.log('=== ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ ===');
+            console.log('=== ДАННЫЕ ПОЛЬЗОВАТЕЛЯ TELECRAM ===');
             console.log('User ID:', user.id);
+            console.log('User ID тип:', typeof user.id);
             console.log('Username:', user.username);
             console.log('First name:', user.first_name);
             console.log('========================');
 
             // Проверяем доступ через API
-            const hasAccess = await this.checkAccess(user.id);
+            const accessResult = await this.checkAccess(user.id);
             
-            if (hasAccess) {
+            if (accessResult.success && accessResult.canUse) {
                 this.showApp();
                 return true;
             } else {
-                this.showAccessDenied('Доступ запрещен системой', user);
+                this.showAccessDenied(accessResult.message || 'Доступ запрещен', user);
                 return false;
             }
 
         } catch (error) {
-            console.error('Ошибка инициализации:', error);
-            this.showAccessDenied('Ошибка проверки доступа');
+            console.error('❌ Критическая ошибка инициализации:', error);
+            this.showAccessDenied('Системная ошибка при проверке доступа');
             return false;
         }
     },
@@ -51,31 +48,56 @@ const Auth = {
     // Проверка доступа через API
     checkAccess: async function(userId) {
         try {
-            console.log('🔐 Проверка доступа для пользователя:', userId);
+            console.log('🔐 Отправка запроса проверки доступа...');
+            console.log('URL:', this.API_CONFIG.URL);
+            console.log('User ID для проверки:', userId);
             
+            const requestBody = {
+                id: parseInt(userId)
+            };
+
+            console.log('📦 Тело запроса:', JSON.stringify(requestBody));
+
             const response = await fetch(this.API_CONFIG.URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'token': this.API_CONFIG.TOKEN
                 },
-                body: JSON.stringify({
-                    id: parseInt(userId) // Убеждаемся что передаем число
-                })
+                body: JSON.stringify(requestBody)
             });
 
+            console.log('📡 Статус ответа:', response.status);
+            console.log('📡 Заголовки ответа:', Object.fromEntries(response.headers.entries()));
+
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                const errorText = await response.text();
+                console.error('❌ Ошибка HTTP:', response.status, errorText);
+                return {
+                    success: false,
+                    canUse: false,
+                    message: `Ошибка сервера: ${response.status}`
+                };
             }
 
             const result = await response.json();
-            console.log('📡 Ответ от сервера:', result);
+            console.log('✅ Ответ от сервера:', result);
+            console.log('✅ canUse значение:', result.canUse);
+            console.log('✅ canUse тип:', typeof result.canUse);
 
-            return result.canUse === true;
+            return {
+                success: true,
+                canUse: result.canUse === true,
+                message: result.canUse ? 'Доступ разрешен' : 'Доступ запрещен системой'
+            };
 
         } catch (error) {
-            console.error('❌ Ошибка при проверке доступа:', error);
-            return false;
+            console.error('❌ Ошибка сети при проверке доступа:', error);
+            return {
+                success: false,
+                canUse: false,
+                message: 'Ошибка подключения к серверу'
+            };
         }
     },
 
@@ -84,7 +106,7 @@ const Auth = {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('accessDenied').classList.add('hidden');
-        console.log('✅ Доступ разрешен');
+        console.log('🎉 Доступ разрешен, приложение запускается...');
     },
 
     // Показать экран "Доступ запрещен"
@@ -95,16 +117,15 @@ const Auth = {
         
         const deniedUserInfo = document.getElementById('deniedUserInfo');
         
+        let infoHTML = `<strong>Причина:</strong> ${reason}`;
+        
         if (user) {
-            deniedUserInfo.innerHTML = `
-                <strong>Ваш ID:</strong> ${user.id}<br>
-                <strong>Имя:</strong> ${user.first_name || 'Не указано'}<br>
-                <strong>Username:</strong> @${user.username || 'Не указан'}<br>
-                <strong>Статус:</strong> ❌ ${reason}
-            `;
-        } else {
-            deniedUserInfo.innerHTML = `<strong>Причина:</strong> ${reason}`;
+            infoHTML += `<br><strong>Ваш ID:</strong> ${user.id}`;
+            infoHTML += `<br><strong>Имя:</strong> ${user.first_name || 'Не указано'}`;
+            infoHTML += `<br><strong>Username:</strong> @${user.username || 'Не указан'}`;
         }
+        
+        deniedUserInfo.innerHTML = infoHTML;
         
         console.warn('🚫 Доступ запрещен:', reason, user);
     },
