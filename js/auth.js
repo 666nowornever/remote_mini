@@ -1,127 +1,63 @@
+// Варианты CORS Proxy
+const CORS_PROXIES = [
+    'https://api.allorigins.win/raw?url=',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://thingproxy.freeboard.io/fetch/',
+    'https://corsproxy.io/?'
+];
+
 // Конфигурация аутентификации
 const Auth = {
     // Конфигурация API
     API_CONFIG: {
-        // Используем CORS proxy для обхода ограничений
-        URL: 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://wh.tomato-pizza.ru:443/webhook/hs/tomatohook/CheckingAccessRights'),
-        TOKEN: '6b852788-cc29-430f-94c8-bf45852b08c4'
+        // Меняйте индекс [0] на [1], [2], [3] если первый не работает
+        URL: CORS_PROXIES[0] + encodeURIComponent('https://wh.tomato-pizza.ru:443/webhook/hs/tomatohook/CheckingAccessRights'),
+        TOKEN: '6b852788-cc29-430f-94c8-bf45852b08c4',
+        proxyIndex: 0 // Меняйте этот индекс если proxy не работает
     },
 
-    // Инициализация приложения
-    initialize: async function() {
-        try {
-            const tg = window.Telegram.WebApp;
-            
-            // Инициализируем Telegram Web App
-            tg.ready();
-            tg.expand();
+    // ... остальной код без изменений ...
 
-            console.log('=== ДАННЫЕ TELECRAM WEB APP ===');
-            console.log('Версия Telegram Web App:', tg.version);
-            console.log('Платформа:', tg.platform);
-            console.log('Init Data:', tg.initData);
-            console.log('Init Data Unsafe:', tg.initDataUnsafe);
-            console.log('========================');
-
-            // 🔧 ТЕСТОВЫЙ РЕЖИМ - используем фиксированный ID для тестирования
-            const TEST_USER_ID = 349807461; // Замените на ваш ID
-            console.log('🔧 Используем User ID для теста:', TEST_USER_ID);
-
-            // Проверяем доступ через API
-            const accessResult = await this.checkAccess(TEST_USER_ID);
-            
-            if (accessResult.success && accessResult.canUse) {
-                this.showApp();
-                return true;
-            } else {
-                this.showAccessDenied(accessResult.message || 'Доступ запрещен системой', TEST_USER_ID);
-                return false;
-            }
-
-        } catch (error) {
-            console.error('❌ Критическая ошибка инициализации:', error);
-            this.showAccessDenied('Системная ошибка при проверке доступа');
-            return false;
-        }
-    },
-
-    // Проверка доступа через API
+    // Проверка доступа через API с ротацией proxy
     checkAccess: async function(userId) {
-        try {
-            console.log('🔐 Отправка запроса проверки доступа...');
-            console.log('User ID для проверки:', userId);
-            
-            const requestBody = {
-                id: parseInt(userId)
-            };
+        let lastError = null;
+        
+        // Пробуем все proxy по очереди
+        for (let i = 0; i < CORS_PROXIES.length; i++) {
+            try {
+                const proxyUrl = CORS_PROXIES[i] + encodeURIComponent('https://wh.tomato-pizza.ru:443/webhook/hs/tomatohook/CheckingAccessRights');
+                console.log(`🔐 Попытка ${i + 1}/${CORS_PROXIES.length} через proxy:`, CORS_PROXIES[i]);
+                
+                const response = await fetch(proxyUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'token': this.API_CONFIG.TOKEN
+                    },
+                    body: JSON.stringify({ id: parseInt(userId) })
+                });
 
-            console.log('📦 Тело запроса:', JSON.stringify(requestBody));
-            console.log('🌐 URL запроса:', this.API_CONFIG.URL);
-
-            const response = await fetch(this.API_CONFIG.URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'token': this.API_CONFIG.TOKEN
-                },
-                body: JSON.stringify(requestBody)
-            });
-
-            console.log('📡 Статус ответа:', response.status);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('❌ Ошибка HTTP:', response.status, errorText);
-                return {
-                    success: false,
-                    canUse: false,
-                    message: `Ошибка сервера: ${response.status}`
-                };
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('✅ Успешный ответ через proxy', i);
+                    return {
+                        success: true,
+                        canUse: result.canUse === true,
+                        message: result.canUse ? 'Доступ разрешен' : 'Доступ запрещен системой'
+                    };
+                }
+            } catch (error) {
+                lastError = error;
+                console.warn(`❌ Proxy ${i} не сработал:`, error);
+                // Пробуем следующий proxy
             }
-
-            const result = await response.json();
-            console.log('✅ Ответ от сервера:', result);
-
-            return {
-                success: true,
-                canUse: result.canUse === true,
-                message: result.canUse ? 'Доступ разрешен' : 'Доступ запрещен системой'
-            };
-
-        } catch (error) {
-            console.error('❌ Ошибка сети при проверке доступа:', error);
-            return {
-                success: false,
-                canUse: false,
-                message: 'Ошибка подключения к серверу'
-            };
-        }
-    },
-
-    // Показать приложение
-    showApp: function() {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('app').classList.remove('hidden');
-        document.getElementById('accessDenied').classList.add('hidden');
-        console.log('🎉 Доступ разрешен, приложение запускается...');
-    },
-
-    // Показать экран "Доступ запрещен"
-    showAccessDenied: function(reason, userId = null) {
-        document.getElementById('loading').classList.add('hidden');
-        document.getElementById('app').classList.add('hidden');
-        document.getElementById('accessDenied').classList.remove('hidden');
-        
-        const deniedUserInfo = document.getElementById('deniedUserInfo');
-        
-        let infoHTML = `<strong>Причина:</strong> ${reason}`;
-        
-        if (userId) {
-            infoHTML += `<br><strong>Ваш ID:</strong> ${userId}`;
         }
         
-        deniedUserInfo.innerHTML = infoHTML;
-        
-        console.warn('🚫 Доступ запрещен:', reason, 'User ID:', userId);
+        console.error('❌ Все proxy не сработали');
+        return {
+            success: false,
+            canUse: false,
+            message: 'Ошибка подключения через все proxy'
+        };
     }
 };
