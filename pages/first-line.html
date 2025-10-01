@@ -1,20 +1,28 @@
 <div class="page first-line-page">
-    <button class="back-btn" onclick="Navigation.showPage('main')">
-        <i class="fas fa-arrow-left"></i>
-        Назад
-    </button>
-    
+    <div class="header">
+        <h1>Remote mini</h1>
+        <div class="subtitle">1st Line</div>
+    </div>
+
     <div class="card">
-        <div class="section-title">1st Line</div>
-        <div class="button-grid">
-            <div class="btn" onclick="Navigation.showPage('restaurants')">
-                <i class="fas fa-utensils"></i>
-                Рестораны
+        <div class="simple-list">
+            <div class="simple-item" onclick="Navigation.showPage('restaurants')">
+                <div class="simple-item-content">
+                    <i class="fas fa-utensils"></i>
+                    <span>Рестораны</span>
+                </div>
             </div>
-            <div class="btn" onclick="Navigation.showPage('cash-servers')">
-                <i class="fas fa-server"></i>
-                Кассовые серверы
+            <div class="simple-item" onclick="Navigation.showPage('cash-servers')">
+                <div class="simple-item-content">
+                    <i class="fas fa-server"></i>
+                    <span>Кассовые серверы</span>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="bot-footer">
+        <i class="fas fa-robot"></i>
+        @remote_mini_bot
     </div>
 </div>
