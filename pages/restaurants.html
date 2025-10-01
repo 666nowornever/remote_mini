@@ -1,40 +1,40 @@
 <div class="page restaurants-page">
-    <button class="back-btn" onclick="Navigation.showPage('first-line')">
-        <i class="fas fa-arrow-left"></i>
-        Назад
-    </button>
-    
+    <div class="header">
+        <h1>Remote mini</h1>
+        <div class="subtitle">Управление ресторанами</div>
+    </div>
+
     <div class="card">
-        <div class="section-title">
-            <i class="fas fa-utensils"></i>
-            Управление ресторанами
-        </div>
-        <div class="servers-list">
-            <div class="server-item" onclick="Navigation.showPage('cash-registers')">
-                <span class="server-name">
+        <div class="simple-list">
+            <div class="simple-item" onclick="Navigation.showPage('cash-registers')">
+                <div class="simple-item-content">
                     <i class="fas fa-cash-register"></i>
-                    Кассы
-                </span>
-                <span class="server-arrow">→</span>
+                    <span>Кассы</span>
+                </div>
             </div>
-            <div class="server-item">
-                <span class="server-name">
+            <div class="simple-item">
+                <div class="simple-item-content">
                     <i class="fas fa-desktop"></i>
-                    ПК Менеджера
-                </span>
+                    <span>ПК Менеджера</span>
+                </div>
             </div>
-            <div class="server-item">
-                <span class="server-name">
+            <div class="simple-item">
+                <div class="simple-item-content">
                     <i class="fas fa-music"></i>
-                    Музыкальный моноблок
-                </span>
+                    <span>Музыкальный моноблок</span>
+                </div>
             </div>
-            <div class="server-item">
-                <span class="server-name">
+            <div class="simple-item">
+                <div class="simple-item-content">
                     <i class="fas fa-print"></i>
-                    Сервис принтер
-                </span>
+                    <span>Сервис принтер</span>
+                </div>
             </div>
         </div>
+    </div>
+
+    <div class="bot-footer">
+        <i class="fas fa-robot"></i>
+        @remote_mini_bot
     </div>
 </div>
