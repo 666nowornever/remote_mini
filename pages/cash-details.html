@@ -1,0 +1,33 @@
+<div class="page cash-details-page">
+    <button class="back-btn" onclick="Navigation.showPage('cash-registers')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к кассам
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-desktop"></i>
+            Касса: <span id="selectedCashName">...</span>
+        </div>
+        
+        <div class="cash-info">
+            <div class="cash-ip" id="selectedCashIp"></div>
+            <div class="cash-status" id="cashStatus">Статус: проверка...</div>
+        </div>
+        
+        <div class="button-grid">
+            <div class="btn btn-ping" onclick="CashManager.pingCash()">
+                <i class="fas fa-network-wired"></i>
+                PING
+            </div>
+            <div class="btn btn-restart" onclick="CashManager.restartCash()">
+                <i class="fas fa-power-off"></i>
+                RESTART
+            </div>
+        </div>
+        
+        <div class="action-log" id="actionLog">
+            <!-- Лог действий будет появляться здесь -->
+        </div>
+    </div>
+</div>
