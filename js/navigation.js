@@ -1,5 +1,5 @@
 const Navigation = {
-    // Маппинг страниц (обновленный)
+    // Маппинг страниц
     pages: {
         'main': 'pages/main.html',
         'first-line': 'pages/first-line.html',
@@ -10,7 +10,7 @@ const Navigation = {
         'cash-servers': 'pages/cash-servers.html'
     },
 
-    // Заголовки страниц (обновленные)
+    // Заголовки страниц
     pageTitles: {
         'main': 'Главная страница',
         'first-line': '1st Line - Выбор раздела',
@@ -21,25 +21,25 @@ const Navigation = {
         'cash-servers': 'Кассовые серверы'
     },
 
-    // Показать страницу (
+    // Показать страницу
     showPage: function(pageId) {
-    const pageUrl = this.pages[pageId];
-    if (!pageUrl) {
-        console.error('Страница не найдена:', pageId);
-        return;
-    }
+        const pageUrl = this.pages[pageId];
+        if (!pageUrl) {
+            console.error('Страница не найдена:', pageId);
+            return;
+        }
 
-    this.loadPage(pageUrl, pageId);
-    
-    // Специальная инициализация для некоторых страниц
-    if (pageId === 'cash-registers') {
-        setTimeout(() => CashManager.initializeCashList(), 100);
-    } else if (pageId === 'cash-details') {
-        setTimeout(() => CashManager.loadCashDetails(), 100);
-    }
-},
+        this.loadPage(pageUrl, pageId);
+        
+        // Специальная инициализация для некоторых страниц
+        if (pageId === 'cash-registers') {
+            setTimeout(() => CashManager.initializeCashList(), 100);
+        } else if (pageId === 'cash-details') {
+            setTimeout(() => CashManager.loadCashDetails(), 100);
+        }
+    },
 
-    
+    // Загрузить страницу
     loadPage: function(url, pageId) {
         fetch(url)
             .then(response => {
@@ -48,7 +48,6 @@ const Navigation = {
             })
             .then(html => {
                 document.getElementById('page-content').innerHTML = html;
-                this.updateHeader(pageId);
                 this.animatePage();
             })
             .catch(error => {
@@ -56,14 +55,7 @@ const Navigation = {
             });
     },
 
-    updateHeader: function(pageId) {
-        const subtitle = this.pageTitles[pageId] || 'Remote mini';
-        const subtitleElement = document.querySelector('.header .subtitle');
-        if (subtitleElement) {
-            subtitleElement.textContent = subtitle;
-        }
-    },
-
+    // Анимация появления страницы
     animatePage: function() {
         const elements = document.querySelectorAll('.btn, .card, .server-item');
         elements.forEach((el, index) => {
