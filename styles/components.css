@@ -1,4 +1,149 @@
-/* Стили для касс */
+/* Button Grid */
+.button-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Buttons */
+.btn {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-size: 18px;
+    font-weight: 600;
+    text-decoration: none;
+    display: block;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Special Button Styles */
+.btn-ping {
+    background: rgba(33, 150, 243, 0.3) !important;
+    border: 1px solid rgba(33, 150, 243, 0.5) !important;
+}
+
+.btn-restart {
+    background: rgba(244, 67, 54, 0.3) !important;
+    border: 1px solid rgba(244, 67, 54, 0.5) !important;
+}
+
+.btn-ping:hover {
+    background: rgba(33, 150, 243, 0.4) !important;
+}
+
+.btn-restart:hover {
+    background: rgba(244, 67, 54, 0.4) !important;
+}
+
+/* Back Button */
+.back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* Server Lists */
+.servers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.server-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: white;
+}
+
+.server-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+}
+
+.server-name {
+    font-weight: 500;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.server-name i {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.server-status {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(76, 175, 80, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    font-weight: 600;
+}
+
+.server-status.offline {
+    background: rgba(244, 67, 54, 0.3);
+    border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.server-status.warning {
+    background: rgba(255, 193, 7, 0.3);
+    border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+/* Navigation Arrow */
+.server-arrow {
+    opacity: 0.6;
+    font-size: 14px;
+}
+
+/* Cash Registers Specific Styles */
 .cash-item .server-name {
     display: flex;
     align-items: center;
@@ -21,7 +166,7 @@
     margin: 0 20px;
 }
 
-/* Стили для деталей кассы */
+/* Cash Details Styles */
 .cash-info {
     text-align: center;
     margin-bottom: 20px;
@@ -40,6 +185,10 @@
 .cash-status {
     font-size: 14px;
     opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
 }
 
 .cash-status.online {
@@ -50,26 +199,7 @@
     color: #f44336;
 }
 
-/* Стили для кнопок действий */
-.btn-ping {
-    background: rgba(33, 150, 243, 0.3) !important;
-    border: 1px solid rgba(33, 150, 243, 0.5) !important;
-}
-
-.btn-restart {
-    background: rgba(244, 67, 54, 0.3) !important;
-    border: 1px solid rgba(244, 67, 54, 0.5) !important;
-}
-
-.btn-ping:hover {
-    background: rgba(33, 150, 243, 0.4) !important;
-}
-
-.btn-restart:hover {
-    background: rgba(244, 67, 54, 0.4) !important;
-}
-
-/* Стили для лога действий */
+/* Action Log */
 .action-log {
     margin-top: 20px;
     max-height: 200px;
@@ -79,6 +209,20 @@
     padding: 10px;
     font-size: 12px;
     font-family: 'Courier New', monospace;
+}
+
+.action-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.action-log::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.action-log::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
 }
 
 .log-entry {
@@ -107,8 +251,208 @@
     font-size: 10px;
 }
 
-/* Стрелка для навигации */
-.server-arrow {
-    opacity: 0.6;
+/* Access Denied Styles */
+.access-denied {
+    text-align: center;
+    padding: 50px 20px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    margin: 50px auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 400px;
+}
+
+.access-denied i {
+    font-size: 64px;
+    color: #ff6b6b;
+    margin-bottom: 20px;
+}
+
+.access-denied h2 {
+    margin-bottom: 15px;
+    font-size: 24px;
+}
+
+.access-denied p {
+    margin-bottom: 10px;
+    opacity: 0.9;
+}
+
+.user-info {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 20px;
     font-size: 14px;
+    text-align: left;
+}
+
+/* Page Specific Styles */
+.main-page .btn {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.cash-servers-page .servers-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.cash-registers-page .servers-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.cash-registers-page .servers-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cash-registers-page .servers-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.cash-registers-page .servers-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid white;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Status Icons */
+.status-icon {
+    margin-right: 8px;
+}
+
+.status-online {
+    color: #4CAF50;
+}
+
+.status-offline {
+    color: #f44336;
+}
+
+.status-warning {
+    color: #ff9800;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    body {
+        padding: 15px;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+    
+    .btn {
+        padding: 15px;
+        font-size: 16px;
+    }
+    
+    .btn i {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+    
+    .server-item {
+        padding: 12px;
+    }
+    
+    .server-name {
+        font-size: 14px;
+    }
+    
+    .cash-ip {
+        font-size: 20px;
+    }
+}
+
+/* Utility Classes */
+.text-center {
+    text-align: center;
+}
+
+.text-left {
+    text-align: left;
+}
+
+.text-right {
+    text-align: right;
+}
+
+.mb-10 {
+    margin-bottom: 10px;
+}
+
+.mb-20 {
+    margin-bottom: 20px;
+}
+
+.mt-10 {
+    margin-top: 10px;
+}
+
+.mt-20 {
+    margin-top: 20px;
+}
+
+.p-10 {
+    padding: 10px;
+}
+
+.p-20 {
+    padding: 20px;
+}
+
+/* Icon Sizes */
+.icon-sm {
+    font-size: 14px;
+}
+
+.icon-md {
+    font-size: 18px;
+}
+
+.icon-lg {
+    font-size: 24px;
+}
+
+.icon-xl {
+    font-size: 32px;
 }
