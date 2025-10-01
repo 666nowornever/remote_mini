@@ -1,40 +1,36 @@
 <div class="page restaurants-page">
-    <div class="header">
-        <h1>Remote mini</h1>
-        <div class="subtitle">Управление ресторанами</div>
-    </div>
-
+    <button class="back-btn" onclick="Navigation.showPage('first-line')">
+        <i class="fas fa-arrow-left"></i>
+        Назад
+    </button>
+    
     <div class="card">
-        <div class="simple-list">
-            <div class="simple-item" onclick="Navigation.showPage('cash-registers')">
-                <div class="simple-item-content">
+        <div class="section-title">Управление ресторанами</div>
+        <div class="servers-list">
+            <div class="server-item" onclick="Navigation.showPage('cash-registers')">
+                <div class="server-name">
                     <i class="fas fa-cash-register"></i>
                     <span>Кассы</span>
                 </div>
             </div>
-            <div class="simple-item">
-                <div class="simple-item-content">
+            <div class="server-item">
+                <div class="server-name">
                     <i class="fas fa-desktop"></i>
                     <span>ПК Менеджера</span>
                 </div>
             </div>
-            <div class="simple-item">
-                <div class="simple-item-content">
+            <div class="server-item">
+                <div class="server-name">
                     <i class="fas fa-music"></i>
                     <span>Музыкальный моноблок</span>
                 </div>
             </div>
-            <div class="simple-item">
-                <div class="simple-item-content">
+            <div class="server-item">
+                <div class="server-name">
                     <i class="fas fa-print"></i>
                     <span>Сервис принтер</span>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="bot-footer">
-        <i class="fas fa-robot"></i>
-        @remote_mini_bot
     </div>
 </div>
