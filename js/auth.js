@@ -20,21 +20,25 @@ const Auth = {
             return false;
         }
 
-        // Отладочная информация
+         // Отладочная информация
         console.log('=== ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ ===');
         console.log('User ID:', user.id);
         console.log('Username:', user.username);
         console.log('First name:', user.first_name);
         console.log('========================');
 
-        // Проверка доступа
-        if (this.ALLOWED_USER_IDS.includes(user.id)) {
-            this.showApp();
-            return true;
-        } else {
-            this.showAccessDenied(null, user);
-            return false;
-        }
+        // ВРЕМЕННО ОТКЛЮЧАЕМ ПРОВЕРКУ - РАСКОММЕНТИРУЙТЕ ПОТОМ
+        // if (this.ALLOWED_USER_IDS.includes(user.id)) {
+        //     this.showApp();
+        //     return true;
+        // } else {
+        //     this.showAccessDenied(null, user);
+        //     return false;
+        // }
+
+        // ВРЕМЕННО РАЗРЕШАЕМ ВСЕМ
+        this.showApp();
+        return true;
     },
 
     // Показать приложение
