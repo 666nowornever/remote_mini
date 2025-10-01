@@ -1,0 +1,37 @@
+/* Section Titles */
+.section-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+/* Main Page specific styles */
+.main-page .btn {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Cash Servers Page */
+.cash-servers-page .servers-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
