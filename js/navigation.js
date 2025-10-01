@@ -1,24 +1,27 @@
-// Управление навигацией
 const Navigation = {
-    // Маппинг страниц
+    // Маппинг страниц (обновленный)
     pages: {
         'main': 'pages/main.html',
         'first-line': 'pages/first-line.html',
         'second-line': 'pages/second-line.html',
         'restaurants': 'pages/restaurants.html',
+        'cash-registers': 'pages/cash-registers.html',
+        'cash-details': 'pages/cash-details.html',
         'cash-servers': 'pages/cash-servers.html'
     },
 
-    // Заголовки страниц
+    // Заголовки страниц (обновленные)
     pageTitles: {
         'main': 'Главная страница',
         'first-line': '1st Line - Выбор раздела',
         'second-line': '2nd Line - Системы',
         'restaurants': 'Управление ресторанами',
+        'cash-registers': 'Управление кассами',
+        'cash-details': 'Детали кассы',
         'cash-servers': 'Кассовые серверы'
     },
 
-    // Показать страницу
+    // Показать страницу (обновленный)
     showPage: function(pageId) {
         const pageUrl = this.pages[pageId];
         if (!pageUrl) {
@@ -26,11 +29,17 @@ const Navigation = {
             return;
         }
 
-        // Загружаем страницу
         this.loadPage(pageUrl, pageId);
+        
+        // Специальная инициализация для некоторых страниц
+        if (pageId === 'cash-registers') {
+            setTimeout(() => CashManager.initializeCashList(), 100);
+        } else if (pageId === 'cash-details') {
+            setTimeout(() => CashManager.loadCashDetails(), 100);
+        }
     },
 
-    // Загрузить страницу
+    // Остальной код navigation.js остается без изменений...
     loadPage: function(url, pageId) {
         fetch(url)
             .then(response => {
@@ -47,7 +56,6 @@ const Navigation = {
             });
     },
 
-    // Обновить заголовок
     updateHeader: function(pageId) {
         const subtitle = this.pageTitles[pageId] || 'Remote mini';
         const subtitleElement = document.querySelector('.header .subtitle');
@@ -56,7 +64,6 @@ const Navigation = {
         }
     },
 
-    // Анимация появления страницы
     animatePage: function() {
         const elements = document.querySelectorAll('.btn, .card, .server-item');
         elements.forEach((el, index) => {
