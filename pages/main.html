@@ -1,17 +1,28 @@
 <div class="page main-page active">
     <div class="header">
-        <h1>🖥️ Remote mini</h1>
-        <div class="subtitle">Главная страница</div>
+        <h1>Remote mini</h1>
+        <div class="subtitle"></div>
     </div>
 
-    <div class="button-grid">
-        <div class="btn" onclick="Navigation.showPage('first-line')">
-            <i class="fas fa-play-circle"></i>
-            1st line
+    <div class="card">
+        <div class="simple-list">
+            <div class="simple-item" onclick="Navigation.showPage('first-line')">
+                <div class="simple-item-content">
+                    <i class="fas fa-play-circle"></i>
+                    <span>1st line</span>
+                </div>
+            </div>
+            <div class="simple-item" onclick="Navigation.showPage('second-line')">
+                <div class="simple-item-content">
+                    <i class="fas fa-play-circle"></i>
+                    <span>2nd line</span>
+                </div>
+            </div>
         </div>
-        <div class="btn" onclick="Navigation.showPage('second-line')">
-            <i class="fas fa-play-circle"></i>
-            2nd line
-        </div>
+    </div>
+
+    <div class="bot-footer">
+        <i class="fas fa-robot"></i>
+        @remote_mini_bot
     </div>
 </div>
