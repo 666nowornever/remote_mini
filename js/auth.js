@@ -1,50 +1,89 @@
-// Конфигурация авторизации
+// Конфигурация аутентификации
 const Auth = {
-    // Разрешенные пользователи - настройте этот список
-    ALLOWED_USER_IDS: [
-        349807461,     // Замените на ваш Telegram ID
-        838646989,     // Замените на ID другого пользователя
-        // Добавьте сюда ID всех, кому разрешаете доступ
-    ],
+    // Конфигурация API
+    API_CONFIG: {
+        URL: 'https://wh.tomato-pizza.ru:443/webhook/hs/tomatohook/CheckingAccessRights',
+        TOKEN: '6b852788-cc29-430f-94c8-bf45852b08c4'
+    },
 
     // Инициализация приложения
-    initialize: function() {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+    initialize: async function() {
+        try {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
 
-        const user = tg.initDataUnsafe.user;
-        
-        if (!user) {
-            this.showAccessDenied('Не удалось получить данные пользователя');
+            const user = tg.initDataUnsafe.user;
+            
+            if (!user) {
+                this.showAccessDenied('Не удалось получить данные пользователя');
+                return false;
+            }
+
+            // Отладочная информация
+            console.log('=== ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ ===');
+            console.log('User ID:', user.id);
+            console.log('Username:', user.username);
+            console.log('First name:', user.first_name);
+            console.log('========================');
+
+            // Проверяем доступ через API
+            const hasAccess = await this.checkAccess(user.id);
+            
+            if (hasAccess) {
+                this.showApp();
+                return true;
+            } else {
+                this.showAccessDenied('Доступ запрещен системой', user);
+                return false;
+            }
+
+        } catch (error) {
+            console.error('Ошибка инициализации:', error);
+            this.showAccessDenied('Ошибка проверки доступа');
             return false;
         }
+    },
 
-         // Отладочная информация
-        console.log('=== ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ ===');
-        console.log('User ID:', user.id);
-        console.log('Username:', user.username);
-        console.log('First name:', user.first_name);
-        console.log('========================');
+    // Проверка доступа через API
+    checkAccess: async function(userId) {
+        try {
+            console.log('🔐 Проверка доступа для пользователя:', userId);
+            
+            const response = await fetch(this.API_CONFIG.URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': this.API_CONFIG.TOKEN
+                },
+                body: JSON.stringify({
+                    id: userId
+                })
+            });
 
-        // ВРЕМЕННО ОТКЛЮЧАЕМ ПРОВЕРКУ - РАСКОММЕНТИРУЙТЕ ПОТОМ
-        // if (this.ALLOWED_USER_IDS.includes(user.id)) {
-        //     this.showApp();
-        //     return true;
-        // } else {
-        //     this.showAccessDenied(null, user);
-        //     return false;
-        // }
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
 
-        // ВРЕМЕННО РАЗРЕШАЕМ ВСЕМ
-        this.showApp();
-        return true;
+            const result = await response.json();
+            console.log('📡 Ответ от сервера:', result);
+
+            return result.canUse === true;
+
+        } catch (error) {
+            console.error('❌ Ошибка при проверке доступа:', error);
+            
+            // В случае ошибки подключения можно показать приложение
+            // или оставить блокировку - зависит от требований безопасности
+            return false;
+        }
     },
 
     // Показать приложение
     showApp: function() {
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('accessDenied').classList.add('hidden');
+        console.log('✅ Доступ разрешен');
     },
 
     // Показать экран "Доступ запрещен"
@@ -59,12 +98,12 @@ const Auth = {
                 <strong>Ваш ID:</strong> ${user.id}<br>
                 <strong>Имя:</strong> ${user.first_name || 'Не указано'}<br>
                 <strong>Username:</strong> @${user.username || 'Не указан'}<br>
-                <strong>Статус:</strong> ❌ Не в списке разрешенных пользователей
+                <strong>Статус:</strong> ❌ ${reason}
             `;
         } else {
             deniedUserInfo.innerHTML = `<strong>Причина:</strong> ${reason}`;
         }
         
-        console.warn('🚫 ПОПЫТКА НЕСАНКЦИОНИРОВАННОГО ДОСТУПА:', user);
+        console.warn('🚫 Доступ запрещен:', reason, user);
     }
 };
