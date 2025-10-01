@@ -57,34 +57,36 @@ const CashManager = {
 
     // Инициализация списка касс
     initializeCashList: function() {
-        const listContainer = document.getElementById('cashRegistersList');
-        if (!listContainer) return;
+    const listContainer = document.getElementById('cashRegistersList');
+    if (!listContainer) return;
 
-        listContainer.innerHTML = '';
+    listContainer.innerHTML = '';
 
-        this.cashRegisters.forEach((cash, index) => {
-            if (cash === '') {
-                // Добавляем разделитель
-                const separator = document.createElement('div');
-                separator.className = 'cash-separator';
-                separator.innerHTML = '<div class="separator-line"></div>';
-                listContainer.appendChild(separator);
-            } else {
-                // Добавляем кассу
-                const cashItem = document.createElement('div');
-                cashItem.className = 'server-item cash-item';
-                cashItem.innerHTML = `
-                    <span class="server-name">
-                        <i class="fas fa-desktop"></i>
-                        ${cash}
-                    </span>
-                    <span class="server-arrow">→</span>
-                `;
-                cashItem.addEventListener('click', () => this.selectCash(cash));
-                listContainer.appendChild(cashItem);
-            }
-        });
-    },
+    this.cashRegisters.forEach((cash, index) => {
+        if (cash === '') {
+            // Добавляем разделитель
+            const separator = document.createElement('div');
+            separator.className = 'simple-item cash-separator';
+            separator.innerHTML = `
+                <div class="simple-item-content">
+                    <div class="separator-line"></div>
+                </div>
+            `;
+            listContainer.appendChild(separator);
+        } else {
+            // Добавляем кассу
+            const cashItem = document.createElement('div');
+            cashItem.className = 'simple-item';
+            cashItem.innerHTML = `
+                <div class="simple-item-content">
+                    <span>${cash}</span>
+                </div>
+            `;
+            cashItem.addEventListener('click', () => this.selectCash(cash));
+            listContainer.appendChild(cashItem);
+        }
+    });
+},
 
     // Выбор кассы
     selectCash: function(cashIp) {
@@ -193,3 +195,4 @@ const CashManager = {
         logElement.scrollTop = logElement.scrollHeight;
     }
 };
+
