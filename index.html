@@ -10,29 +10,11 @@
     <link rel="stylesheet" href="styles/pages.css">
 </head>
 <body>
-    <!-- Индикатор загрузки -->
-    <div id="loading" class="loading-indicator">
-        <div class="loading-spinner"></div>
-        <div class="loading-text">Проверка доступа...</div>
-    </div>
-
     <!-- Блок приложения -->
     <div id="app" class="hidden">
         <div class="container">
-            <!-- Временная тестовая страница -->
-            <div class="page active">
-                <div class="header">
-                    <h1>🖥️ Remote mini</h1>
-                    <div class="subtitle">Доступ разрешен</div>
-                </div>
-                <div class="card">
-                    <p>✅ Вы успешно прошли аутентификацию!</p>
-                    <button class="btn" onclick="location.reload()">
-                        <i class="fas fa-sync"></i>
-                        Перезагрузить для теста
-                    </button>
-                </div>
-            </div>
+            <!-- Страницы будут загружаться сюда -->
+            <div id="page-content"></div>
         </div>
     </div>
 
@@ -43,20 +25,11 @@
         <p>У вас нет прав для использования этого приложения.</p>
         <p>Обратитесь к администратору для получения доступа.</p>
         <div class="user-info" id="deniedUserInfo"></div>
-        <button class="btn" onclick="location.reload()" style="margin-top: 20px;">
-            <i class="fas fa-sync"></i>
-            Попробовать снова
-        </button>
     </div>
 
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script src="js/auth.js"></script>
-    <script>
-        // Простая инициализация для тестирования
-        document.addEventListener('DOMContentLoaded', async function() {
-            console.log('🚀 Запуск приложения...');
-            await Auth.initialize();
-        });
-    </script>
+    <script src="js/navigation.js"></script>
+    <script src="js/app.js"></script>
 </body>
 </html>
