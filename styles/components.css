@@ -456,3 +456,41 @@
 .icon-xl {
     font-size: 32px;
 }
+/* Utility Classes for Centering */
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.text-center {
+    text-align: center;
+}
+
+.items-center {
+    align-items: center;
+}
+
+.justify-center {
+    justify-content: center;
+}
+
+/* Specific centering for restaurant items */
+.restaurant-item-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    min-height: 70px;
+    padding: 20px;
+}
+
+/* Ensure multi-line text is centered properly */
+.multi-line-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    line-height: 1.4;
+}
