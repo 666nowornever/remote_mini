@@ -4,7 +4,7 @@ const tg = window.Telegram.WebApp;
 // Инициализация
 tg.ready();
 tg.expand();
- 
+
 function sendCommand(action) {
     const statusEl = document.getElementById('status');
     statusEl.textContent = `Отправка команды: ${action}...`;
