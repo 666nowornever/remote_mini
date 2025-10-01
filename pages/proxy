@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CORS Proxy</title>
+</head>
+<body>
+    <script>
+        // Получаем параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('user_id');
+        
+        if (userId) {
+            // Отправляем запрос к вашему API
+            fetch('https://wh.tomato-pizza.ru:443/webhook/hs/tomatohook/CheckingAccessRights', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token': '6b852788-cc29-430f-94c8-bf45852b08c4'
+                },
+                body: JSON.stringify({ id: parseInt(userId) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Возвращаем результат в родительское окно
+                window.opener.postMessage({
+                    type: 'AUTH_RESULT',
+                    data: data
+                }, '*');
+                window.close();
+            })
+            .catch(error => {
+                window.opener.postMessage({
+                    type: 'AUTH_ERROR',
+                    error: error.message
+                }, '*');
+                window.close();
+            });
+        }
+    </script>
+</body>
+</html>
