@@ -1,3 +1,8 @@
+// 🔧 РЕЖИМ ТЕСТИРОВАНИЯ - установите true для теста
+const TEST_MODE = true;
+const TEST_USER_ID = 349807461; // Замените на ваш реальный ID
+
+
 // Конфигурация аутентификации
 const Auth = {
     // Конфигурация API
@@ -8,6 +13,21 @@ const Auth = {
 
     // Инициализация приложения
     initialize: async function() {
+
+        if (TEST_MODE) {
+            console.log('🔧 АКТИВИРОВАН ТЕСТОВЫЙ РЕЖИМ');
+            console.log('🔧 Используем тестовый User ID:', TEST_USER_ID);
+            
+            const accessResult = await this.checkAccess(TEST_USER_ID);
+            
+            if (accessResult.success && accessResult.canUse) {
+                this.showApp();
+                return true;
+            } else {
+                this.showAccessDenied(accessResult.message || 'Доступ запрещен системой', TEST_USER_ID);
+                return false;
+            }
+        }
         try {
             const tg = window.Telegram.WebApp;
             tg.ready();
