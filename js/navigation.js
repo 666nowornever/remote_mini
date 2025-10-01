@@ -21,25 +21,25 @@ const Navigation = {
         'cash-servers': 'Кассовые серверы'
     },
 
-    // Показать страницу (обновленный)
+    // Показать страницу (
     showPage: function(pageId) {
-        const pageUrl = this.pages[pageId];
-        if (!pageUrl) {
-            console.error('Страница не найдена:', pageId);
-            return;
-        }
+    const pageUrl = this.pages[pageId];
+    if (!pageUrl) {
+        console.error('Страница не найдена:', pageId);
+        return;
+    }
 
-        this.loadPage(pageUrl, pageId);
-        
-        // Специальная инициализация для некоторых страниц
-        if (pageId === 'cash-registers') {
-            setTimeout(() => CashManager.initializeCashList(), 100);
-        } else if (pageId === 'cash-details') {
-            setTimeout(() => CashManager.loadCashDetails(), 100);
-        }
-    },
+    this.loadPage(pageUrl, pageId);
+    
+    // Специальная инициализация для некоторых страниц
+    if (pageId === 'cash-registers') {
+        setTimeout(() => CashManager.initializeCashList(), 100);
+    } else if (pageId === 'cash-details') {
+        setTimeout(() => CashManager.loadCashDetails(), 100);
+    }
+},
 
-    // Остальной код navigation.js остается без изменений...
+    
     loadPage: function(url, pageId) {
         fetch(url)
             .then(response => {
