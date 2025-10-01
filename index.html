@@ -171,6 +171,45 @@
             text-align: center;
         }
 
+        /* Стили для блокировки доступа */
+        .access-denied {
+            text-align: center;
+            padding: 50px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            margin: 50px auto;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .access-denied i {
+            font-size: 64px;
+            color: #ff6b6b;
+            margin-bottom: 20px;
+        }
+
+        .access-denied h2 {
+            margin-bottom: 15px;
+            font-size: 24px;
+        }
+
+        .access-denied p {
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
         /* Анимации */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -183,214 +222,294 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Главная страница -->
-        <div id="main-page" class="page active">
-            <div class="header">
-                <h1>🖥️ Remote mini</h1>
-                <div class="subtitle">Главная страница</div>
-            </div>
-
-            <div class="button-grid">
-                <div class="btn" onclick="showPage('first-line-page')">
-                    <i class="fas fa-play-circle"></i>
-                    1st line
+    <!-- Блок приложения -->
+    <div id="app" class="hidden">
+        <div class="container">
+            <!-- Главная страница -->
+            <div id="main-page" class="page active">
+                <div class="header">
+                    <h1>🖥️ Remote mini</h1>
+                    <div class="subtitle">Главная страница</div>
                 </div>
-                <div class="btn" onclick="showPage('second-line-page')">
-                    <i class="fas fa-play-circle"></i>
-                    2nd line
-                </div>
-            </div>
-        </div>
 
-        <!-- Страница 1st line -->
-        <div id="first-line-page" class="page">
-            <button class="back-btn" onclick="showPage('main-page')">
-                <i class="fas fa-arrow-left"></i>
-                Назад
-            </button>
-            
-            <div class="card">
-                <div class="section-title">1st Line</div>
                 <div class="button-grid">
-                    <div class="btn" onclick="showPage('restaurants-page')">
-                        <i class="fas fa-utensils"></i>
-                        Рестораны
+                    <div class="btn" onclick="showPage('first-line-page')">
+                        <i class="fas fa-play-circle"></i>
+                        1st line
                     </div>
-                    <div class="btn" onclick="showPage('cash-servers-page')">
-                        <i class="fas fa-server"></i>
-                        Кассовые серверы
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Страница 2nd line -->
-        <div id="second-line-page" class="page">
-            <button class="back-btn" onclick="showPage('main-page')">
-                <i class="fas fa-arrow-left"></i>
-                Назад
-            </button>
-            
-            <div class="card">
-                <div class="section-title">2nd Line</div>
-                <div class="servers-list">
-                    <div class="server-item">
-                        <span class="server-name">Включение\отключение регламентов ERP</span>
-                        <span class="server-status">Active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">ЫТЬ =)</span>
-                        <span class="server-status warning">Warning</span>
+                    <div class="btn" onclick="showPage('second-line-page')">
+                        <i class="fas fa-play-circle"></i>
+                        2nd line
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Страница Рестораны -->
-        <div id="restaurants-page" class="page">
-            <button class="back-btn" onclick="showPage('first-line-page')">
-                <i class="fas fa-arrow-left"></i>
-                Назад
-            </button>
-            
-            <div class="card">
-                <div class="section-title">Управление ресторанами</div>
-                <div class="servers-list">
-                    <div class="server-item">
-                        <span class="server-name">Кассы</span>
-                        <span class="server-status">Online</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">ПК Менеджера</span>
-                        <span class="server-status">Online</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">Музыкальный моноблок</span>
-                        <span class="server-status warning">Warning</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">Сервис принтер</span>
-                        <span class="server-status offline">Offline</span>
+            <!-- Страница 1st line -->
+            <div id="first-line-page" class="page">
+                <button class="back-btn" onclick="showPage('main-page')">
+                    <i class="fas fa-arrow-left"></i>
+                    Назад
+                </button>
+                
+                <div class="card">
+                    <div class="section-title">1st Line</div>
+                    <div class="button-grid">
+                        <div class="btn" onclick="showPage('restaurants-page')">
+                            <i class="fas fa-utensils"></i>
+                            Рестораны
+                        </div>
+                        <div class="btn" onclick="showPage('cash-servers-page')">
+                            <i class="fas fa-server"></i>
+                            Кассовые серверы
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Страница Кассовые серверы -->
-        <div id="cash-servers-page" class="page">
-            <button class="back-btn" onclick="showPage('first-line-page')">
-                <i class="fas fa-arrow-left"></i>
-                Назад
-            </button>
-            
-            <div class="card">
-                <div class="section-title">Кассовые серверы</div>
-                <div class="servers-list">
-                    <div class="server-item">
-                        <span class="server-name">rk01</span>
-                        <span class="server-status">active</span>
+            <!-- Страница 2nd line -->
+            <div id="second-line-page" class="page">
+                <button class="back-btn" onclick="showPage('main-page')">
+                    <i class="fas fa-arrow-left"></i>
+                    Назад
+                </button>
+                
+                <div class="card">
+                    <div class="section-title">2nd Line</div>
+                    <div class="servers-list">
+                        <div class="server-item">
+                            <span class="server-name">Включение\отключение регламентов ERP</span>
+                            <span class="server-status">Active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">ЫТЬ =)</span>
+                            <span class="server-status warning">Warning</span>
+                        </div>
                     </div>
-                    <div class="server-item">
-                        <span class="server-name">rk02</span>
-                        <span class="server-status">active</span>
+                </div>
+            </div>
+
+            <!-- Страница Рестораны -->
+            <div id="restaurants-page" class="page">
+                <button class="back-btn" onclick="showPage('first-line-page')">
+                    <i class="fas fa-arrow-left"></i>
+                    Назад
+                </button>
+                
+                <div class="card">
+                    <div class="section-title">Управление ресторанами</div>
+                    <div class="servers-list">
+                        <div class="server-item">
+                            <span class="server-name">Кассы</span>
+                            <span class="server-status">Online</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">ПК Менеджера</span>
+                            <span class="server-status">Online</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">Музыкальный моноблок</span>
+                            <span class="server-status warning">Warning</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">Сервис принтер</span>
+                            <span class="server-status offline">Offline</span>
+                        </div>
                     </div>
-                    <div class="server-item">
-                        <span class="server-name">rk03</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk04</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk05</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk06</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk07</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk08</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk09</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk10</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk11</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk12</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk13</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk14</span>
-                        <span class="server-status">active</span>
-                    </div>
-                    <div class="server-item">
-                        <span class="server-name">rk15</span>
-                        <span class="server-status">active</span>
+                </div>
+            </div>
+
+            <!-- Страница Кассовые серверы -->
+            <div id="cash-servers-page" class="page">
+                <button class="back-btn" onclick="showPage('first-line-page')">
+                    <i class="fas fa-arrow-left"></i>
+                    Назад
+                </button>
+                
+                <div class="card">
+                    <div class="section-title">Кассовые серверы</div>
+                    <div class="servers-list">
+                        <div class="server-item">
+                            <span class="server-name">rk01</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk02</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk03</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk04</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk05</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk06</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk07</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk08</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk09</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk10</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk11</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk12</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk13</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk14</span>
+                            <span class="server-status">active</span>
+                        </div>
+                        <div class="server-item">
+                            <span class="server-name">rk15</span>
+                            <span class="server-status">active</span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Блок "Доступ запрещен" -->
+    <div id="accessDenied" class="access-denied hidden">
+        <i class="fas fa-ban"></i>
+        <h2>Доступ запрещен</h2>
+        <p>У вас нет прав для использования этого приложения.</p>
+        <p>Обратитесь к администратору для получения доступа.</p>
+        <div class="user-info" id="deniedUserInfo">
+            <!-- Информация о заблокированном пользователе -->
+        </div>
+    </div>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <script>
-        // Инициализация Telegram Web App
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+        // КОНФИГУРАЦИЯ - НАСТРОЙТЕ ЭТОТ СПИСОК ПОД СВОИХ ПОЛЬЗОВАТЕЛЕЙ
+        const ALLOWED_USER_IDS = [
+            123456789,     // Замените на ваш Telegram ID
+            987654321,     // Замените на ID другого пользователя
+            // Добавьте сюда ID всех, кому разрешаете доступ
+        ];
 
-        // Навигация между страницами
-        function showPage(pageId) {
-            // Скрыть все страницы
-            document.querySelectorAll('.page').forEach(page => {
-                page.classList.remove('active');
-            });
+        // Инициализация приложения
+        function initializeApp() {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+
+            // Получаем данные пользователя
+            const user = tg.initDataUnsafe.user;
             
-            // Показать выбранную страницу
-            const targetPage = document.getElementById(pageId);
-            targetPage.classList.add('active');
-            targetPage.classList.add('fade-in');
-            
-            // Обновить заголовок
-            updateHeader(pageId);
+            if (!user) {
+                showAccessDenied('Не удалось получить данные пользователя');
+                return;
+            }
+
+            // Показываем информацию о пользователе в консоли (для отладки)
+            console.log('=== ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ ===');
+            console.log('User ID:', user.id);
+            console.log('Username:', user.username);
+            console.log('First name:', user.first_name);
+            console.log('Last name:', user.last_name);
+            console.log('Language:', user.language_code);
+            console.log('========================');
+
+            // ПРОВЕРКА ДОСТУПА
+            if (ALLOWED_USER_IDS.includes(user.id)) {
+                // Доступ разрешен
+                showApp(user);
+            } else {
+                // Доступ запрещен
+                showAccessDenied(null, user);
+            }
         }
 
-        function updateHeader(pageId) {
-            const headerSubtitles = {
-                'main-page': 'Главная страница',
-                'first-line-page': '1st Line - Выбор раздела',
-                'second-line-page': '2nd Line - Системы',
-                'restaurants-page': 'Управление ресторанами', 
-                'cash-servers-page': 'Кассовые серверы'
-            };
+        // Показать приложение
+        function showApp(user) {
+            document.getElementById('app').classList.remove('hidden');
+            document.getElementById('accessDenied').classList.add('hidden');
             
-            const subtitle = headerSubtitles[pageId] || 'Remote mini';
-            document.querySelector('.header .subtitle').textContent = subtitle;
+            // Инициализируем логику приложения
+            initializeAppLogic();
         }
 
-        // Инициализация при загрузке
-        document.addEventListener('DOMContentLoaded', function() {
-            // Анимация появления главной страницы
+        // Показать экран "Доступ запрещен"
+        function showAccessDenied(reason, user = null) {
+            document.getElementById('app').classList.add('hidden');
+            document.getElementById('accessDenied').classList.remove('hidden');
+            
+            const deniedUserInfo = document.getElementById('deniedUserInfo');
+            
+            if (user) {
+                deniedUserInfo.innerHTML = `
+                    <strong>Ваш ID:</strong> ${user.id}<br>
+                    <strong>Имя:</strong> ${user.first_name || 'Не указано'}<br>
+                    <strong>Username:</strong> @${user.username || 'Не указан'}<br>
+                    <strong>Статус:</strong> ❌ Не в списке разрешенных пользователей
+                `;
+            } else {
+                deniedUserInfo.innerHTML = `<strong>Причина:</strong> ${reason}`;
+            }
+            
+            // Логируем попытку доступа в консоль
+            console.warn('🚫 ПОПЫТКА НЕСАНКЦИОНИРОВАННОГО ДОСТУПА:', user);
+        }
+
+        // Логика приложения (ваш существующий код)
+        function initializeAppLogic() {
+            // Навигация между страницами
+            window.showPage = function(pageId) {
+                // Скрыть все страницы
+                document.querySelectorAll('.page').forEach(page => {
+                    page.classList.remove('active');
+                });
+                
+                // Показать выбранную страницу
+                const targetPage = document.getElementById(pageId);
+                targetPage.classList.add('active');
+                targetPage.classList.add('fade-in');
+                
+                // Обновить заголовок
+                updateHeader(pageId);
+            }
+
+            function updateHeader(pageId) {
+                const headerSubtitles = {
+                    'main-page': 'Главная страница',
+                    'first-line-page': '1st Line - Выбор раздела',
+                    'second-line-page': '2nd Line - Системы',
+                    'restaurants-page': 'Управление ресторанами', 
+                    'cash-servers-page': 'Кассовые серверы'
+                };
+                
+                const subtitle = headerSubtitles[pageId] || 'Remote mini';
+                document.querySelector('.header .subtitle').textContent = subtitle;
+            }
+
+            // Инициализация при загрузке
             const elements = document.querySelectorAll('#main-page .btn, #main-page .card');
             elements.forEach((el, index) => {
                 el.style.opacity = '0';
@@ -402,16 +521,19 @@
                     el.style.transform = 'translateY(0)';
                 }, index * 100);
             });
-        });
 
-        // Обработчики для элементов списка (можно добавить функционал)
-        document.querySelectorAll('.server-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const serverName = this.querySelector('.server-name').textContent;
-                console.log(`Выбран сервер: ${serverName}`);
-                // Здесь можно добавить логику управления конкретным сервером
+            // Обработчики для элементов списка
+            document.querySelectorAll('.server-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const serverName = this.querySelector('.server-name').textContent;
+                    console.log(`Выбран сервер: ${serverName}`);
+                    // Здесь можно добавить логику управления конкретным сервером
+                });
             });
-        });
+        }
+
+        // Запускаем приложение при загрузке
+        document.addEventListener('DOMContentLoaded', initializeApp);
     </script>
 </body>
 </html>
