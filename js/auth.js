@@ -9,6 +9,9 @@ const Auth = {
     // Инициализация приложения
     initialize: async function() {
         try {
+            // Скрываем индикатор загрузки
+            this.hideLoading();
+
             const tg = window.Telegram.WebApp;
             tg.ready();
             tg.expand();
@@ -57,7 +60,7 @@ const Auth = {
                     'token': this.API_CONFIG.TOKEN
                 },
                 body: JSON.stringify({
-                    id: userId
+                    id: parseInt(userId) // Убеждаемся что передаем число
                 })
             });
 
@@ -72,15 +75,13 @@ const Auth = {
 
         } catch (error) {
             console.error('❌ Ошибка при проверке доступа:', error);
-            
-            // В случае ошибки подключения можно показать приложение
-            // или оставить блокировку - зависит от требований безопасности
             return false;
         }
     },
 
     // Показать приложение
     showApp: function() {
+        document.getElementById('loading').classList.add('hidden');
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('accessDenied').classList.add('hidden');
         console.log('✅ Доступ разрешен');
@@ -88,6 +89,7 @@ const Auth = {
 
     // Показать экран "Доступ запрещен"
     showAccessDenied: function(reason, user = null) {
+        document.getElementById('loading').classList.add('hidden');
         document.getElementById('app').classList.add('hidden');
         document.getElementById('accessDenied').classList.remove('hidden');
         
@@ -105,5 +107,10 @@ const Auth = {
         }
         
         console.warn('🚫 Доступ запрещен:', reason, user);
+    },
+
+    // Скрыть индикатор загрузки
+    hideLoading: function() {
+        document.getElementById('loading').classList.add('hidden');
     }
 };
