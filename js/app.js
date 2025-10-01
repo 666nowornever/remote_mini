@@ -1,16 +1,37 @@
 // Основная инициализация приложения
-document.addEventListener('DOMContentLoaded', function() {
-    // Инициализируем авторизацию
-    const accessGranted = Auth.initialize();
+document.addEventListener('DOMContentLoaded', async function() {
+    // Показываем индикатор загрузки
+    showLoadingIndicator();
     
-    if (accessGranted) {
-        // Загружаем главную страницу
-        Navigation.showPage('main');
+    try {
+        // Инициализируем авторизацию (асинхронно)
+        const accessGranted = await Auth.initialize();
         
-        // Инициализируем обработчики событий
-        initializeEventHandlers();
+        if (accessGranted) {
+            // Загружаем главную страницу
+            Navigation.showPage('main');
+            
+            // Инициализируем обработчики событий
+            initializeEventHandlers();
+        }
+    } catch (error) {
+        console.error('Ошибка инициализации приложения:', error);
+        Auth.showAccessDenied('Ошибка загрузки приложения');
+    } finally {
+        hideLoadingIndicator();
     }
 });
+
+// Показать индикатор загрузки
+function showLoadingIndicator() {
+    // Можно добавить индикатор загрузки если нужно
+    console.log('🔄 Загрузка приложения...');
+}
+
+// Скрыть индикатор загрузки
+function hideLoadingIndicator() {
+    console.log('✅ Приложение загружено');
+}
 
 // Инициализация обработчиков событий
 function initializeEventHandlers() {
