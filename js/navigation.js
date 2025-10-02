@@ -41,25 +41,10 @@ const Navigation = {
                 document.getElementById('page-content').innerHTML = html;
                 this.updateHeader(pageId);
                 this.animatePage();
-                
-                // ТРИГГЕРИМ СОБЫТИЕ ЗАГРУЗКИ СТРАНИЦЫ
-                this.triggerPageLoaded();
             })
             .catch(error => {
                 console.error('Ошибка загрузки страницы:', error);
             });
-    },
-
-    // Триггерим событие загрузки страницы
-    triggerPageLoaded: function() {
-        const event = new CustomEvent('pageLoaded', {
-            detail: {
-                timestamp: Date.now(),
-                page: document.getElementById('page-content').innerHTML
-            }
-        });
-        document.dispatchEvent(event);
-        console.log('📄 Событие pageLoaded отправлено');
     },
 
     // Обновить заголовок
