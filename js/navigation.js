@@ -7,7 +7,7 @@ const Navigation = {
         'second-line': 'pages/second-line.html',
         'restaurants': 'pages/restaurants.html',
         'cash-servers': 'pages/cash-servers.html',
-        'cash-registers': 'pages/cash-registers.html' // ДОБАВЛЯЕМ ЭТУ СТРОКУ
+        'cash-registers': 'pages/cash-registers.html'
     },
 
     // Заголовки страниц
@@ -17,7 +17,7 @@ const Navigation = {
         'second-line': '2nd Line - Системы',
         'restaurants': 'Управление ресторанами',
         'cash-servers': 'Кассовые серверы',
-        'cash-registers': 'Управление кассами' // ДОБАВЛЯЕМ ЭТУ СТРОКУ
+        'cash-registers': 'Управление кассами'
     },
 
     // Показать страницу
@@ -56,14 +56,17 @@ const Navigation = {
     initializePage: function(pageId) {
         switch(pageId) {
             case 'cash-registers':
-                // Здесь можно добавить логику для страницы касс
                 console.log('🔄 Инициализация страницы касс...');
+                // Инициализируем менеджер касс
+                if (typeof CashManager !== 'undefined') {
+                    CashManager.initialize();
+                } else {
+                    console.error('❌ CashManager не найден');
+                }
                 break;
             case 'restaurants':
-                // Логика для страницы ресторанов
                 console.log('🔄 Инициализация страницы ресторанов...');
                 break;
-            // Добавьте другие страницы по необходимости
         }
     },
 
