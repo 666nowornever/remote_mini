@@ -87,54 +87,38 @@ const ERPHandler = {
         button.style.pointerEvents = 'auto';
     },
 
-     showERPResult(result) {
+    // Показать результат операции ERP
+    showERPResult(result) {
         console.log('✅ ERP Response:', result);
         
-        let title, message, type;
-
-        if (result && typeof result === 'object') {
-            // Используем улучшенный анализ статуса
-            if (result.status === 'enabled' || result.state === 'on') {
-                title = '✅ Включено';
-                message = this.formatSuccessMessage(result);
-                type = 'success';
-            } else if (result.status === 'disabled' || result.state === 'off') {
-                title = '⏸️ Выключено';
-                message = this.formatSuccessMessage(result);
-                type = 'info';
-            } else {
-                title = '📊 Статус ERP';
-                message = this.formatUnknownMessage(result);
-                type = 'info';
-            }
+        // Определяем статус на основе текста ответа
+        const status = this.determineStatus(result);
+        
+        if (status === 'enabled') {
+            DialogService.showMessage('✅ Включено', 'Регламенты ERP включены', 'success');
+        } else if (status === 'disabled') {
+            DialogService.showMessage('⏸️ Выключено', 'Регламенты ERP выключены', 'info');
         } else {
-            title = '📊 Ответ от сервера';
-            message = String(result);
-            type = 'info';
-        }
-
-        DialogService.showMessage(title, message, type);
-    },
-
-    // Форматирование сообщения об успешном включении/выключении
-    formatSuccessMessage(result) {
-        // Просто показываем основной статус
-        if (result.status === 'enabled') {
-            return 'Регламенты ERP включены';
-        } else {
-            return 'Регламенты ERP выключены';
+            DialogService.showMessage('📊 Статус ERP', 'Операция выполнена', 'info');
         }
     },
 
-    // Форматирование неизвестного ответа
-    formatUnknownMessage(result) {
-        // Показываем только первую строку или основной текст
-        if (result.rawResponse) {
-            const lines = result.rawResponse.split('\n');
-            return lines[0] || result.rawResponse;
+    // Определить статус из ответа
+    determineStatus(result) {
+        if (!result || !result.rawResponse) {
+            return 'unknown';
+        }
+
+        const text = result.rawResponse.toLowerCase();
+        
+        // Ищем ключевые слова в ответе
+        if (text.includes('включено') || text.includes('on') || text.includes('enabled')) {
+            return 'enabled';
+        } else if (text.includes('выключено') || text.includes('off') || text.includes('disabled') || text.includes('отключено')) {
+            return 'disabled';
         }
         
-        return 'Операция выполнена';
+        return 'unknown';
     },
 
     // Показать детальную ошибку
