@@ -8,6 +8,7 @@ const Navigation = {
         'restaurants': 'pages/restaurants.html',
         'cash-servers': 'pages/cash-servers.html',
         'cash-registers': 'pages/cash-registers.html'
+        'cash-details': 'pages/cash-details.html'
     },
 
     // Заголовки страниц
@@ -18,6 +19,7 @@ const Navigation = {
         'restaurants': 'Управление ресторанами',
         'cash-servers': 'Кассовые серверы',
         'cash-registers': 'Управление кассами'
+        'cash-details': 'Детали кассы'
     },
 
     // Показать страницу
@@ -53,22 +55,25 @@ const Navigation = {
     },
 
     // Инициализация логики страницы после загрузки
-   initializePage: function(pageId) {
-    switch(pageId) {
-        case 'cash-registers':
-            console.log('🔄 Инициализация страницы касс...');
-            // Инициализируем менеджер касс с правильным методом
-            if (typeof CashManager !== 'undefined') {
-                CashManager.initializeCashList(); // ИЗМЕНЯЕМ НА initializeCashList
-            } else {
-                console.error('❌ CashManager не найден');
-            }
-            break;
-        case 'restaurants':
-            console.log('🔄 Инициализация страницы ресторанов...');
-            break;
-    }
-},
+    initializePage: function(pageId) {
+        switch(pageId) {
+            case 'cash-registers':
+                console.log('🔄 Инициализация страницы касс...');
+                if (typeof CashManager !== 'undefined') {
+                    CashManager.initializeCashList();
+                }
+                break;
+            case 'cash-details':
+                console.log('🔄 Инициализация страницы деталей кассы...');
+                if (typeof CashManager !== 'undefined') {
+                    CashManager.loadCashDetails();
+                }
+                break;
+            case 'restaurants':
+                console.log('🔄 Инициализация страницы ресторанов...');
+                break;
+        }
+    },
 
     // Обновить заголовок
     updateHeader: function(pageId) {
