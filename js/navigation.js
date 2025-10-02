@@ -1,3 +1,4 @@
+// Управление навигацией
 const Navigation = {
     // Маппинг страниц
     pages: {
@@ -5,8 +6,6 @@ const Navigation = {
         'first-line': 'pages/first-line.html',
         'second-line': 'pages/second-line.html',
         'restaurants': 'pages/restaurants.html',
-        'cash-registers': 'pages/cash-registers.html',
-        'cash-details': 'pages/cash-details.html',
         'cash-servers': 'pages/cash-servers.html'
     },
 
@@ -16,8 +15,6 @@ const Navigation = {
         'first-line': '1st Line - Выбор раздела',
         'second-line': '2nd Line - Системы',
         'restaurants': 'Управление ресторанами',
-        'cash-registers': 'Управление кассами',
-        'cash-details': 'Детали кассы',
         'cash-servers': 'Кассовые серверы'
     },
 
@@ -29,14 +26,8 @@ const Navigation = {
             return;
         }
 
+        // Загружаем страницу
         this.loadPage(pageUrl, pageId);
-        
-        // Специальная инициализация для некоторых страниц
-        if (pageId === 'cash-registers') {
-            setTimeout(() => CashManager.initializeCashList(), 100);
-        } else if (pageId === 'cash-details') {
-            setTimeout(() => CashManager.loadCashDetails(), 100);
-        }
     },
 
     // Загрузить страницу
@@ -48,11 +39,36 @@ const Navigation = {
             })
             .then(html => {
                 document.getElementById('page-content').innerHTML = html;
+                this.updateHeader(pageId);
                 this.animatePage();
+                
+                // ТРИГГЕРИМ СОБЫТИЕ ЗАГРУЗКИ СТРАНИЦЫ
+                this.triggerPageLoaded();
             })
             .catch(error => {
                 console.error('Ошибка загрузки страницы:', error);
             });
+    },
+
+    // Триггерим событие загрузки страницы
+    triggerPageLoaded: function() {
+        const event = new CustomEvent('pageLoaded', {
+            detail: {
+                timestamp: Date.now(),
+                page: document.getElementById('page-content').innerHTML
+            }
+        });
+        document.dispatchEvent(event);
+        console.log('📄 Событие pageLoaded отправлено');
+    },
+
+    // Обновить заголовок
+    updateHeader: function(pageId) {
+        const subtitle = this.pageTitles[pageId] || 'Remote mini';
+        const subtitleElement = document.querySelector('.header .subtitle');
+        if (subtitleElement) {
+            subtitleElement.textContent = subtitle;
+        }
     },
 
     // Анимация появления страницы
