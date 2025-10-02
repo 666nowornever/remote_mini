@@ -566,3 +566,50 @@
 .main-page .btn {
     min-height: 100px;
 }
+
+/* Стили для активной/неактивной кнопки ERP */
+#erp-toggle-btn {
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+#erp-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(5px);
+}
+
+#erp-toggle-btn:active {
+    transform: translateX(2px);
+}
+
+#erp-toggle-btn.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+#erp-toggle-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    transform: translateY(-50%);
+}
+
+/* Анимация пульсации для привлечения внимания */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+}
+
+#erp-toggle-btn.pulse {
+    animation: pulse 2s infinite;
+}
