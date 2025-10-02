@@ -87,8 +87,7 @@ const ERPHandler = {
         button.style.pointerEvents = 'auto';
     },
 
-    // Показать результат операции ERP
-    showERPResult(result) {
+     showERPResult(result) {
         console.log('✅ ERP Response:', result);
         
         let title, message, type;
@@ -100,7 +99,7 @@ const ERPHandler = {
                 message = this.formatSuccessMessage(result);
                 type = 'success';
             } else if (result.status === 'disabled' || result.state === 'off') {
-                title = 'ℹ️ Выключено';
+                title = '⏸️ Выключено';
                 message = this.formatSuccessMessage(result);
                 type = 'info';
             } else {
@@ -119,40 +118,23 @@ const ERPHandler = {
 
     // Форматирование сообщения об успешном включении/выключении
     formatSuccessMessage(result) {
-        let message = '';
-        
-        if (result.service) {
-            message += `**Сервис:** ${result.service}\n\n`;
-        }
-        
+        // Просто показываем основной статус
         if (result.status === 'enabled') {
-            message += '✅ **Статус:** Включено\n\n';
+            return 'Регламенты ERP включены';
         } else {
-            message += '⏸️ **Статус:** Выключено\n\n';
+            return 'Регламенты ERP выключены';
         }
-        
-        if (result.rawResponse) {
-            message += `**Полный ответ:**\n${result.rawResponse}`;
-        }
-        
-        return message;
     },
 
     // Форматирование неизвестного ответа
     formatUnknownMessage(result) {
-        let message = 'Сервер вернул ответ:\n\n';
-        
+        // Показываем только первую строку или основной текст
         if (result.rawResponse) {
-            message += `**Текст ответа:**\n${result.rawResponse}\n\n`;
+            const lines = result.rawResponse.split('\n');
+            return lines[0] || result.rawResponse;
         }
         
-        if (result.service) {
-            message += `**Обнаружен сервис:** ${result.service}\n\n`;
-        }
-        
-        message += '⚠️ *Не удалось определить статус включения/выключения*';
-        
-        return message;
+        return 'Операция выполнена';
     },
 
     // Показать детальную ошибку
