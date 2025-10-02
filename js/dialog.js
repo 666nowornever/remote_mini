@@ -152,5 +152,80 @@ const DialogService = {
         };
     },
 
-    // ... остальные методы остаются без изменений
+        // Удаляем обработчик при закрытии
+        overlay._closeDialog = closeDialog;
+        
+        return {
+            close: closeDialog
+        };
+    },
+
+    // Показать диалог загрузки
+    showLoading(message = 'Выполнение запроса...') {
+        const overlay = document.createElement('div');
+        overlay.className = 'loading-overlay';
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        `;
+
+        const spinner = document.createElement('div');
+        spinner.style.cssText = `
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            color: #333;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border: 2px solid #667eea;
+            animation: dialogAppear 0.3s ease-out;
+        `;
+
+        spinner.innerHTML = `
+            <div class="spinner" style="
+                border: 4px solid rgba(102, 126, 234, 0.3);
+                border-radius: 50%;
+                border-top: 4px solid #667eea;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+                margin: 0 auto 20px;
+            "></div>
+            <div style="font-size: 16px; font-weight: 500;">${message}</div>
+        `;
+
+        // Добавляем стили для спиннера если их нет
+        if (!document.querySelector('#spinner-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'spinner-styles';
+            styles.textContent = `
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+
+        overlay.appendChild(spinner);
+        document.body.appendChild(overlay);
+
+        return {
+            close: () => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }
+        };
+    }
 };
