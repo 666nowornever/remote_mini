@@ -9,6 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Инициализируем обработчики событий
         initializeEventHandlers();
+        
+        // Инициализируем ERP обработчик
+        ERPHandler.initialize();
     }
 });
 
@@ -16,11 +19,11 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeEventHandlers() {
     // Обработчики для элементов списка (делегирование событий)
     document.addEventListener('click', function(e) {
-        if (e.target.closest('.server-item')) {
-            const serverItem = e.target.closest('.server-item');
+        const serverItem = e.target.closest('.server-item');
+        if (serverItem && serverItem.id !== 'erp-toggle-btn') {
             const serverName = serverItem.querySelector('.server-name').textContent;
             console.log(`Выбран сервер: ${serverName}`);
-            // Здесь можно добавить логику управления конкретным сервером
+            // Здесь можно добавить логику управления другими серверами
         }
     });
 }
