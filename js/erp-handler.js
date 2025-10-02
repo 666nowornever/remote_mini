@@ -7,7 +7,6 @@ const ERPHandler = {
 
     // Привязка обработчиков событий
     bindEvents: function() {
-        // Используем делегирование событий для динамически загружаемых элементов
         document.addEventListener('click', (e) => {
             if (e.target.closest('#erp-toggle-btn')) {
                 this.handleERPToggle();
@@ -21,8 +20,12 @@ const ERPHandler = {
         const loadingDialog = DialogService.showLoading('Переключение регламентов ERP...');
 
         try {
+            console.group('🚀 ERP Запрос запущен');
+            
             // Выполняем запрос к API
             const result = await ApiService.toggleERPServices();
+            
+            console.groupEnd();
             
             // Закрываем индикатор загрузки
             loadingDialog.close();
@@ -31,82 +34,152 @@ const ERPHandler = {
             this.showERPResult(result);
 
         } catch (error) {
+            console.groupEnd();
+            
             // Закрываем индикатор загрузки
             loadingDialog.close();
 
-            // Показываем ошибку
-            this.showError(error);
+            // Показываем детальную ошибку
+            this.showDetailedError(error);
         }
     },
 
     // Показать результат операции ERP
     showERPResult(result) {
-        console.log('ERP Response:', result);
+        console.log('✅ ERP Response:', result);
         
         let title, message, type;
 
-        // Анализируем ответ JSON
-        if (typeof result === 'object') {
-            // Если ответ - объект, пытаемся извлечь полезную информацию
-            const status = result.status || result.State || result.state;
-            const messageText = result.message || result.Message || result.description;
-            
-            if (status === 'on' || status === 'enabled' || status === true) {
-                title = 'Регламенты ERP';
-                message = messageText || 'Регламенты ERP включены';
+        if (result && typeof result === 'object') {
+            if (result.status === 'enabled' || result.state === 'on' || result.rawResponse?.includes('включено')) {
+                title = '✅ Включено';
+                message = result.message || 'Регламенты ERP успешно включены';
                 type = 'success';
-            } else if (status === 'off' || status === 'disabled' || status === false) {
-                title = 'Регламенты ERP';
-                message = messageText || 'Регламенты ERP выключены';
+            } else if (result.status === 'disabled' || result.state === 'off' || result.rawResponse?.includes('выключено')) {
+                title = 'ℹ️ Выключено';
+                message = result.message || 'Регламенты ERP успешно выключены';
+                type = 'info';
+            } else if (result.rawResponse) {
+                title = '📊 Ответ от сервера';
+                message = result.rawResponse;
                 type = 'info';
             } else {
-                title = 'Регламенты ERP';
-                message = messageText || JSON.stringify(result, null, 2);
+                title = '📊 Статус ERP';
+                message = JSON.stringify(result, null, 2);
                 type = 'info';
             }
         } else if (typeof result === 'string') {
-            // Если ответ - строка
-            const lowerResult = result.toLowerCase();
-            if (lowerResult.includes('включено') || lowerResult.includes('on') || lowerResult.includes('enabled')) {
-                title = 'Регламенты ERP';
-                message = 'Регламенты ERP включены';
-                type = 'success';
-            } else if (lowerResult.includes('выключено') || lowerResult.includes('off') || lowerResult.includes('disabled')) {
-                title = 'Регламенты ERP';
-                message = 'Регламенты ERP выключены';
-                type = 'info';
-            } else {
-                title = 'Регламенты ERP';
-                message = result;
-                type = 'info';
-            }
+            title = '📊 Ответ от сервера';
+            message = result;
+            type = 'info';
         } else {
-            // Если непонятный формат ответа
-            title = 'Регламенты ERP';
-            message = `Статус: ${JSON.stringify(result)}`;
+            title = '📊 Статус ERP';
+            message = 'Операция выполнена';
             type = 'info';
         }
 
-        // Показываем диалог с результатом
         DialogService.showMessage(title, message, type);
     },
 
-    // Показать ошибку
-    showError(error) {
-        console.error('ERP Operation Error:', error);
+    // Показать детальную ошибку
+    showDetailedError(error) {
+        console.error('💥 ERP Operation Error:', error);
         
-        let errorMessage = 'Произошла неизвестная ошибка';
-        
-        if (error.message) {
-            errorMessage = error.message;
-        } else if (typeof error === 'string') {
-            errorMessage = error;
+        let title = '❌ Ошибка';
+        let message = '';
+        let details = '';
+
+        // Основное сообщение
+        if (error.originalError) {
+            message = error.message;
+            details = this.formatErrorDetails(error.originalError, error.response);
+        } else {
+            message = error.message;
+            details = this.formatErrorDetails(error);
         }
 
-        DialogService.showMessage(
-            'Ошибка',
-            `Не удалось выполнить операцию: ${errorMessage}`,
-            'error'
-        );
+        // Добавляем предложения по решению
+        const suggestions = this.getErrorSuggestions(error);
+
+        const fullMessage = `${message}\n\n${details}\n\n💡 ${suggestions}`;
+
+        DialogService.showMessage(title, fullMessage, 'error');
+    },
+
+    // Форматирование деталей ошибки
+    formatErrorDetails(error, response) {
+        let details = '🔍 Детали ошибки:\n';
+        
+        if (error.name) {
+            details += `Тип: ${error.name}\n`;
+        }
+        
+        if (error.stack) {
+            // Берем только первую строку stack trace
+            const stackFirstLine = error.stack.split('\n')[0];
+            details += `Stack: ${stackFirstLine}\n`;
+        }
+        
+        if (response) {
+            details += `\n📡 Ответ сервера:\n`;
+            details += `Status: ${response.status} ${response.statusText}\n`;
+            details += `URL: ${response.url}\n`;
+            
+            if (response.headers) {
+                details += `Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\n`;
+            }
+        }
+        
+        // Добавляем информацию о CORS
+        if (error.message.includes('CORS') || error.message.includes('opaque')) {
+            details += `\n🌐 CORS информация:\n`;
+            details += `Origin: ${window.location.origin}\n`;
+            details += `Target: https://d.tomato-pizza.ru:44300\n`;
+        }
+        
+        return details;
+    },
+
+    // Получить предложения по решению ошибки
+    getErrorSuggestions(error) {
+        const errorMessage = error.message.toLowerCase();
+        
+        if (errorMessage.includes('cors') || errorMessage.includes('opaque')) {
+            return 'Решение: Необходимо настроить CORS на сервере ERP или использовать прокси-сервер.';
+        }
+        
+        if (errorMessage.includes('403')) {
+            return 'Решение: Проверьте токен авторизации и права доступа. Токен может быть неверным или устаревшим.';
+        }
+        
+        if (errorMessage.includes('failed to fetch')) {
+            return 'Решение: Проверьте подключение к интернету, доступность сервера ERP и настройки firewall.';
+        }
+        
+        if (errorMessage.includes('ssl') || errorMessage.includes('certificate')) {
+            return 'Решение: Проблема с SSL сертификатом. Проверьте валидность сертификата на сервере ERP.';
+        }
+        
+        return 'Проверьте консоль браузера для более детальной информации (F12 → Console).';
+    },
+
+    // Метод для тестирования подключения
+    async testConnection() {
+        try {
+            console.log('🧪 Тестирование подключения...');
+            
+            // Простой HEAD запрос для проверки доступности
+            const response = await fetch('https://d.tomato-pizza.ru:44300/', {
+                method: 'HEAD',
+                mode: 'no-cors'
+            });
+            
+            console.log('Тест подключения:', response);
+            return true;
+            
+        } catch (error) {
+            console.error('Тест подключения не пройден:', error);
+            return false;
+        }
     }
 };
