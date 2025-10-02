@@ -1,34 +1,4 @@
-/* Header */
-.header {
-    text-align: center;
-    margin-bottom: 30px;
-    padding: 20px 0;
-}
-
-.header h1 {
-    font-size: 28px;
-    font-weight: 600;
-    margin-bottom: 5px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-}
-
-.header .subtitle {
-    opacity: 0.9;
-    font-size: 14px;
-}
-
-/* Cards */
-.card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 20px;
-    margin-bottom: 20px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-
-/* Buttons */
+/* Button Grid */
 .button-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -36,6 +6,7 @@
     margin-bottom: 20px;
 }
 
+/* Buttons */
 .btn {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(10px);
@@ -49,6 +20,12 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     font-size: 18px;
     font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
 }
 
 .btn:hover {
@@ -67,6 +44,26 @@
     display: block;
 }
 
+/* Special Button Styles */
+.btn-ping {
+    background: rgba(33, 150, 243, 0.3) !important;
+    border: 1px solid rgba(33, 150, 243, 0.5) !important;
+}
+
+.btn-restart {
+    background: rgba(244, 67, 54, 0.3) !important;
+    border: 1px solid rgba(244, 67, 54, 0.5) !important;
+}
+
+.btn-ping:hover {
+    background: rgba(33, 150, 243, 0.4) !important;
+}
+
+.btn-restart:hover {
+    background: rgba(244, 67, 54, 0.4) !important;
+}
+
+/* Back Button */
 .back-btn {
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -79,6 +76,7 @@
     align-items: center;
     gap: 8px;
     transition: all 0.3s ease;
+    font-size: 14px;
 }
 
 .back-btn:hover {
@@ -102,6 +100,8 @@
     border: 1px solid rgba(255,255,255,0.1);
     transition: all 0.3s ease;
     cursor: pointer;
+    text-decoration: none;
+    color: white;
 }
 
 .server-item:hover {
@@ -112,9 +112,150 @@
 .server-name {
     font-weight: 500;
     font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-/* Access Denied */
+.server-name i {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.server-status {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(76, 175, 80, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    font-weight: 600;
+}
+
+.server-status.offline {
+    background: rgba(244, 67, 54, 0.3);
+    border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.server-status.warning {
+    background: rgba(255, 193, 7, 0.3);
+    border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+/* Navigation Arrow */
+.server-arrow {
+    opacity: 0.6;
+    font-size: 14px;
+}
+
+/* Cash Registers Specific Styles */
+.cash-item .server-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cash-item .server-name i {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.cash-separator {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.separator-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    margin: 0 20px;
+}
+
+/* Cash Details Styles */
+.cash-info {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.cash-ip {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-family: 'Courier New', monospace;
+}
+
+.cash-status {
+    font-size: 14px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.cash-status.online {
+    color: #4CAF50;
+}
+
+.cash-status.offline {
+    color: #f44336;
+}
+
+/* Action Log */
+.action-log {
+    margin-top: 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+}
+
+.action-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.action-log::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.action-log::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.log-success {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.log-error {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+.log-info {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196F3;
+}
+
+.log-time {
+    opacity: 0.7;
+    font-size: 10px;
+}
+
+/* Access Denied Styles */
 .access-denied {
     text-align: center;
     padding: 50px 20px;
@@ -123,6 +264,7 @@
     border-radius: 20px;
     margin: 50px auto;
     border: 1px solid rgba(255, 255, 255, 0.2);
+    max-width: 400px;
 }
 
 .access-denied i {
@@ -147,6 +289,282 @@
     border-radius: 10px;
     margin-top: 20px;
     font-size: 14px;
+    text-align: left;
+}
+
+/* Page Specific Styles */
+.main-page .btn {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.first-line-page .btn {
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.cash-servers-page .servers-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.cash-servers-page .servers-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.cash-registers-page .servers-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.cash-registers-page .servers-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.cash-registers-page .servers-list::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.cash-registers-page .servers-list::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+/* Centered restaurant items */
+.restaurants-page .server-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    min-height: 80px;
+}
+
+.restaurants-page .server-name {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+}
+
+.restaurants-page .server-name i {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+.restaurants-page .server-arrow {
+    display: none; /* Убираем стрелки в ресторанах */
+}
+
+/* Centered cash registers */
+.cash-registers-page .server-item {
+    justify-content: center;
+    text-align: center;
+}
+
+.cash-registers-page .server-name {
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+}
+
+.cash-registers-page .server-arrow {
+    display: none; /* Убираем стрелки в кассах */
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top: 4px solid white;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Status Icons */
+.status-icon {
+    margin-right: 8px;
+}
+
+.status-online {
+    color: #4CAF50;
+}
+
+.status-offline {
+    color: #f44336;
+}
+
+.status-warning {
+    color: #ff9800;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    body {
+        padding: 15px;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+    
+    .btn {
+        padding: 15px;
+        font-size: 16px;
+    }
+    
+    .btn i {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+    
+    .server-item {
+        padding: 12px;
+    }
+    
+    .server-name {
+        font-size: 14px;
+    }
+    
+    .cash-ip {
+        font-size: 20px;
+    }
+}
+/* Bot Footer */
+.bot-footer {
+    text-align: center;
+    margin-top: 30px;
+    padding: 15px;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.bot-footer i {
+    font-size: 16px;
+}
+
+/* Header adjustments */
+.header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px 0;
+}
+
+.header h1 {
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.header .subtitle {
+    opacity: 0.9;
+    font-size: 14px;
+}
+
+/* Button Grid adjustments */
+.button-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+/* Buttons */
+.btn {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 20px;
+    color: white;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn:active {
+    transform: translateY(0);
+}
+
+.btn i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+/* Back Button */
+.back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 10px;
+    cursor: pointer;
+    margin-bottom: 15px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* First Line page specific */
+.first-line-page .btn {
+    min-height: 90px;
+}
+
+/* Main page specific */
+.main-page .btn {
+    min-height: 100px;
 }
 
 /* Стили для активной/неактивной кнопки ERP */
@@ -163,4 +581,35 @@
 
 #erp-toggle-btn:active {
     transform: translateX(2px);
+}
+
+#erp-toggle-btn.loading {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+#erp-toggle-btn.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: 15px;
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    transform: translateY(-50%);
+}
+
+/* Анимация пульсации для привлечения внимания */
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+}
+
+#erp-toggle-btn.pulse {
+    animation: pulse 2s infinite;
 }
