@@ -5,17 +5,54 @@ const ERPHandler = {
         this.bindEvents();
     },
 
-    // Привязка обработчиков событий
+    // Привязка обработчиков событий - теперь работает для динамического контента
     bindEvents: function() {
+        // Используем делегирование событий на всем документе
         document.addEventListener('click', (e) => {
-            if (e.target.closest('#erp-toggle-btn')) {
+            const erpButton = e.target.closest('#erp-toggle-btn');
+            if (erpButton) {
+                console.log('🎯 Кнопка ERP найдена, обработка клика...');
                 this.handleERPToggle();
             }
         });
+
+        // Также привязываемся к событию загрузки страницы
+        document.addEventListener('pageLoaded', () => {
+            this.rebindEvents();
+        });
+
+        console.log('✅ ERP обработчики событий инициализированы');
+    },
+
+    // Перепривязка событий при загрузке новой страницы
+    rebindEvents: function() {
+        const erpButton = document.getElementById('erp-toggle-btn');
+        if (erpButton) {
+            console.log('🔄 Перепривязка событий для кнопки ERP');
+            // Убираем старые обработчики и добавляем новые
+            erpButton.replaceWith(erpButton.cloneNode(true));
+        }
     },
 
     // Обработка переключения ERP сервисов
     async handleERPToggle() {
+        console.log('🚀 Начало обработки ERP переключения...');
+        
+        // Проверяем, что кнопка существует
+        const erpButton = document.getElementById('erp-toggle-btn');
+        if (!erpButton) {
+            console.error('❌ Кнопка ERP не найдена в DOM');
+            DialogService.showMessage(
+                '❌ Ошибка',
+                'Кнопка управления ERP не найдена. Попробуйте обновить страницу.',
+                'error'
+            );
+            return;
+        }
+
+        // Временно блокируем кнопку от повторных нажатий
+        this.disableButton(erpButton);
+
         // Показываем индикатор загрузки
         const loadingDialog = DialogService.showLoading('Переключение регламентов ERP...');
 
@@ -30,6 +67,9 @@ const ERPHandler = {
             // Закрываем индикатор загрузки
             loadingDialog.close();
 
+            // Разблокируем кнопку
+            this.enableButton(erpButton);
+
             // Парсим ответ и показываем результат
             this.showERPResult(result);
 
@@ -39,10 +79,31 @@ const ERPHandler = {
             // Закрываем индикатор загрузки
             loadingDialog.close();
 
+            // Разблокируем кнопку
+            this.enableButton(erpButton);
+
             // Показываем детальную ошибку
             this.showDetailedError(error);
         }
     },
+
+    // Блокировка кнопки
+    disableButton(button) {
+        button.style.opacity = '0.6';
+        button.style.cursor = 'not-allowed';
+        button.style.pointerEvents = 'none';
+    },
+
+    // Разблокировка кнопки
+    enableButton(button) {
+        button.style.opacity = '1';
+        button.style.cursor = 'pointer';
+        button.style.pointerEvents = 'auto';
+    },
+
+    // ... остальные методы остаются без изменений
+    // (showERPResult, showDetailedError, formatErrorDetails, getErrorSuggestions)
+};
 
     // Показать результат операции ERP
     showERPResult(result) {
