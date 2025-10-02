@@ -53,22 +53,22 @@ const Navigation = {
     },
 
     // Инициализация логики страницы после загрузки
-    initializePage: function(pageId) {
-        switch(pageId) {
-            case 'cash-registers':
-                console.log('🔄 Инициализация страницы касс...');
-                // Инициализируем менеджер касс
-                if (typeof CashManager !== 'undefined') {
-                    CashManager.initialize();
-                } else {
-                    console.error('❌ CashManager не найден');
-                }
-                break;
-            case 'restaurants':
-                console.log('🔄 Инициализация страницы ресторанов...');
-                break;
-        }
-    },
+   initializePage: function(pageId) {
+    switch(pageId) {
+        case 'cash-registers':
+            console.log('🔄 Инициализация страницы касс...');
+            // Инициализируем менеджер касс с правильным методом
+            if (typeof CashManager !== 'undefined') {
+                CashManager.initializeCashList(); // ИЗМЕНЯЕМ НА initializeCashList
+            } else {
+                console.error('❌ CashManager не найден');
+            }
+            break;
+        case 'restaurants':
+            console.log('🔄 Инициализация страницы ресторанов...');
+            break;
+    }
+},
 
     // Обновить заголовок
     updateHeader: function(pageId) {
