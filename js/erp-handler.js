@@ -94,34 +94,65 @@ const ERPHandler = {
         let title, message, type;
 
         if (result && typeof result === 'object') {
-            if (result.status === 'enabled' || result.state === 'on' || result.rawResponse?.includes('включено')) {
+            // Используем улучшенный анализ статуса
+            if (result.status === 'enabled' || result.state === 'on') {
                 title = '✅ Включено';
-                message = result.message || 'Регламенты ERP успешно включены';
+                message = this.formatSuccessMessage(result);
                 type = 'success';
-            } else if (result.status === 'disabled' || result.state === 'off' || result.rawResponse?.includes('выключено')) {
+            } else if (result.status === 'disabled' || result.state === 'off') {
                 title = 'ℹ️ Выключено';
-                message = result.message || 'Регламенты ERP успешно выключены';
-                type = 'info';
-            } else if (result.rawResponse) {
-                title = '📊 Ответ от сервера';
-                message = result.rawResponse;
+                message = this.formatSuccessMessage(result);
                 type = 'info';
             } else {
                 title = '📊 Статус ERP';
-                message = JSON.stringify(result, null, 2);
+                message = this.formatUnknownMessage(result);
                 type = 'info';
             }
-        } else if (typeof result === 'string') {
-            title = '📊 Ответ от сервера';
-            message = result;
-            type = 'info';
         } else {
-            title = '📊 Статус ERP';
-            message = 'Операция выполнена';
+            title = '📊 Ответ от сервера';
+            message = String(result);
             type = 'info';
         }
 
         DialogService.showMessage(title, message, type);
+    },
+
+    // Форматирование сообщения об успешном включении/выключении
+    formatSuccessMessage(result) {
+        let message = '';
+        
+        if (result.service) {
+            message += `**Сервис:** ${result.service}\n\n`;
+        }
+        
+        if (result.status === 'enabled') {
+            message += '✅ **Статус:** Включено\n\n';
+        } else {
+            message += '⏸️ **Статус:** Выключено\n\n';
+        }
+        
+        if (result.rawResponse) {
+            message += `**Полный ответ:**\n${result.rawResponse}`;
+        }
+        
+        return message;
+    },
+
+    // Форматирование неизвестного ответа
+    formatUnknownMessage(result) {
+        let message = 'Сервер вернул ответ:\n\n';
+        
+        if (result.rawResponse) {
+            message += `**Текст ответа:**\n${result.rawResponse}\n\n`;
+        }
+        
+        if (result.service) {
+            message += `**Обнаружен сервис:** ${result.service}\n\n`;
+        }
+        
+        message += '⚠️ *Не удалось определить статус включения/выключения*';
+        
+        return message;
     },
 
     // Показать детальную ошибку
@@ -161,13 +192,6 @@ const ERPHandler = {
             details += `\n📡 Ответ сервера:\n`;
             details += `Status: ${response.status} ${response.statusText}\n`;
             details += `URL: ${response.url}\n`;
-        }
-        
-        // Добавляем информацию о CORS
-        if (error.message.includes('CORS')) {
-            details += `\n🌐 CORS информация:\n`;
-            details += `Origin: ${window.location.origin}\n`;
-            details += `Target: https://d.tomato-pizza.ru:44300\n`;
         }
         
         return details;
