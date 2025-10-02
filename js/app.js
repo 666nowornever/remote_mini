@@ -3,8 +3,14 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Приложение запускается...');
     
     try {
+        // Показываем индикатор загрузки
+        showLoadingIndicator();
+        
         // Инициализируем авторизацию (теперь асинхронно)
         const accessGranted = await Auth.initialize();
+        
+        // Скрываем индикатор загрузки
+        hideLoadingIndicator();
         
         if (accessGranted) {
             // Загружаем главную страницу
@@ -21,6 +27,9 @@ document.addEventListener('DOMContentLoaded', async function() {
             console.log('❌ Доступ запрещен');
         }
     } catch (error) {
+        // Скрываем индикатор загрузки в случае ошибки
+        hideLoadingIndicator();
+        
         console.error('💥 Критическая ошибка при инициализации:', error);
         
         // Показываем сообщение об ошибке
@@ -33,26 +42,23 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
+// Показать индикатор загрузки
+function showLoadingIndicator() {
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'flex';
+    }
+}
+
+// Скрыть индикатор загрузки
+function hideLoadingIndicator() {
+    const loadingElement = document.getElementById('loading');
+    if (loadingElement) {
+        loadingElement.style.display = 'none';
+    }
+}
+
 // Инициализация обработчиков событий (остается без изменений)
 function initializeEventHandlers() {
-    // Обработчики для элементов списка (делегирование событий)
-    document.addEventListener('click', function(e) {
-        const serverItem = e.target.closest('.server-item');
-        if (serverItem) {
-            const serverName = serverItem.querySelector('.server-name').textContent.trim();
-            console.log(`Выбран сервер: ${serverName}`);
-            
-            // Обработка конкретных серверов
-            if (serverName.includes('Кассы')) {
-                // Навигация обрабатывается через onclick в HTML
-                return;
-            }
-            
-            // Здесь можно добавить логику для других серверов
-            if (serverName.includes('ПК Менеджера')) {
-                console.log('Обработка ПК Менеджера...');
-                // Добавьте свою логику здесь
-            }
-        }
-    });
+    // ... существующий код
 }
