@@ -10,6 +10,14 @@
     <link rel="stylesheet" href="styles/pages.css">
 </head>
 <body>
+    <!-- Индикатор загрузки -->
+    <div id="loading" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <div>Проверка доступа...</div>
+        </div>
+    </div>
+
     <!-- Блок приложения -->
     <div id="app" class="hidden">
         <div class="container">
@@ -33,7 +41,7 @@
     <script src="js/api.js"></script>
     <script src="js/dialog.js"></script>
     <script src="js/erp-handler.js"></script>
-    <script src="js/cash-manager.js"></script> <!-- ДОБАВЛЯЕМ ЭТУ СТРОКУ -->
+    <script src="js/cash-manager.js"></script>
     <script src="js/app.js"></script>
 </body>
 </html>
