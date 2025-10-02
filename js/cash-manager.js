@@ -55,10 +55,20 @@ const CashManager = {
     // Текущая выбранная касса
     selectedCash: null,
 
+    // Метод для совместимости с navigation.js
+    initialize: function() {
+        console.log('🔄 CashManager: инициализация через метод initialize()');
+        this.initializeCashList();
+    },
+
     // Инициализация списка касс
     initializeCashList: function() {
+        console.log('🔄 CashManager: инициализация списка касс...');
         const listContainer = document.getElementById('cashRegistersList');
-        if (!listContainer) return;
+        if (!listContainer) {
+            console.error('❌ CashManager: контейнер cashRegistersList не найден');
+            return;
+        }
 
         listContainer.innerHTML = '';
 
@@ -82,6 +92,8 @@ const CashManager = {
                 listContainer.appendChild(cashItem);
             }
         });
+
+        console.log(`✅ CashManager: загружено ${this.cashRegisters.filter(item => item !== '').length} касс`);
     },
 
     // Выбор кассы
