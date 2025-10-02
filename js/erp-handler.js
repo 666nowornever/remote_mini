@@ -2,10 +2,11 @@
 const ERPHandler = {
     // Инициализация обработчиков событий для ERP
     initialize: function() {
+        console.log('🔄 Инициализация ERP обработчика...');
         this.bindEvents();
     },
 
-    // Привязка обработчиков событий - теперь работает для динамического контента
+    // Привязка событий
     bindEvents: function() {
         // Используем делегирование событий на всем документе
         document.addEventListener('click', (e) => {
@@ -16,22 +17,7 @@ const ERPHandler = {
             }
         });
 
-        // Также привязываемся к событию загрузки страницы
-        document.addEventListener('pageLoaded', () => {
-            this.rebindEvents();
-        });
-
         console.log('✅ ERP обработчики событий инициализированы');
-    },
-
-    // Перепривязка событий при загрузке новой страницы
-    rebindEvents: function() {
-        const erpButton = document.getElementById('erp-toggle-btn');
-        if (erpButton) {
-            console.log('🔄 Перепривязка событий для кнопки ERP');
-            // Убираем старые обработчики и добавляем новые
-            erpButton.replaceWith(erpButton.cloneNode(true));
-        }
     },
 
     // Обработка переключения ERP сервисов
@@ -100,10 +86,6 @@ const ERPHandler = {
         button.style.cursor = 'pointer';
         button.style.pointerEvents = 'auto';
     },
-
-    // ... остальные методы остаются без изменений
-    // (showERPResult, showDetailedError, formatErrorDetails, getErrorSuggestions)
-};
 
     // Показать результат операции ERP
     showERPResult(result) {
@@ -175,24 +157,14 @@ const ERPHandler = {
             details += `Тип: ${error.name}\n`;
         }
         
-        if (error.stack) {
-            // Берем только первую строку stack trace
-            const stackFirstLine = error.stack.split('\n')[0];
-            details += `Stack: ${stackFirstLine}\n`;
-        }
-        
         if (response) {
             details += `\n📡 Ответ сервера:\n`;
             details += `Status: ${response.status} ${response.statusText}\n`;
             details += `URL: ${response.url}\n`;
-            
-            if (response.headers) {
-                details += `Headers: ${JSON.stringify(Object.fromEntries(response.headers.entries()), null, 2)}\n`;
-            }
         }
         
         // Добавляем информацию о CORS
-        if (error.message.includes('CORS') || error.message.includes('opaque')) {
+        if (error.message.includes('CORS')) {
             details += `\n🌐 CORS информация:\n`;
             details += `Origin: ${window.location.origin}\n`;
             details += `Target: https://d.tomato-pizza.ru:44300\n`;
@@ -205,7 +177,7 @@ const ERPHandler = {
     getErrorSuggestions(error) {
         const errorMessage = error.message.toLowerCase();
         
-        if (errorMessage.includes('cors') || errorMessage.includes('opaque')) {
+        if (errorMessage.includes('cors')) {
             return 'Решение: Необходимо настроить CORS на сервере ERP или использовать прокси-сервер.';
         }
         
@@ -217,30 +189,6 @@ const ERPHandler = {
             return 'Решение: Проверьте подключение к интернету, доступность сервера ERP и настройки firewall.';
         }
         
-        if (errorMessage.includes('ssl') || errorMessage.includes('certificate')) {
-            return 'Решение: Проблема с SSL сертификатом. Проверьте валидность сертификата на сервере ERP.';
-        }
-        
         return 'Проверьте консоль браузера для более детальной информации (F12 → Console).';
-    },
-
-    // Метод для тестирования подключения
-    async testConnection() {
-        try {
-            console.log('🧪 Тестирование подключения...');
-            
-            // Простой HEAD запрос для проверки доступности
-            const response = await fetch('https://d.tomato-pizza.ru:44300/', {
-                method: 'HEAD',
-                mode: 'no-cors'
-            });
-            
-            console.log('Тест подключения:', response);
-            return true;
-            
-        } catch (error) {
-            console.error('Тест подключения не пройден:', error);
-            return false;
-        }
     }
 };
