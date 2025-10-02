@@ -152,14 +152,6 @@ const DialogService = {
         };
     },
 
-        // Удаляем обработчик при закрытии
-        overlay._closeDialog = closeDialog;
-        
-        return {
-            close: closeDialog
-        };
-    },
-
     // Показать диалог загрузки
     showLoading(message = 'Выполнение запроса...') {
         const overlay = document.createElement('div');
