@@ -7,7 +7,7 @@ const Navigation = {
         'second-line': 'pages/second-line.html',
         'restaurants': 'pages/restaurants.html',
         'cash-servers': 'pages/cash-servers.html',
-        'cash-registers': 'pages/cash-registers.html'
+        'cash-registers': 'pages/cash-registers.html',
         'cash-details': 'pages/cash-details.html'
     },
 
@@ -18,7 +18,7 @@ const Navigation = {
         'second-line': '2nd Line - Системы',
         'restaurants': 'Управление ресторанами',
         'cash-servers': 'Кассовые серверы',
-        'cash-registers': 'Управление кассами'
+        'cash-registers': 'Управление кассами',
         'cash-details': 'Детали кассы'
     },
 
