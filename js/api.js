@@ -53,20 +53,12 @@ const ApiService = {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}. Body: ${errorBody}`);
             }
 
-            // Пытаемся прочитать успешный ответ
-            let responseBody;
-            try {
-                responseBody = await response.text();
-                console.log('📦 Тело ответа:', responseBody);
-                
-                // Пытаемся распарсить JSON
-                const data = responseBody ? JSON.parse(responseBody) : {};
-                return data;
-                
-            } catch (parseError) {
-                console.warn('⚠️ Не удалось распарсить JSON:', parseError);
-                return { rawResponse: responseBody };
-            }
+            // Читаем ответ как plain text (сервер возвращает текст, не JSON)
+            const responseBody = await response.text();
+            console.log('📦 Тело ответа:', responseBody);
+            
+            // Анализируем текстовый ответ
+            return this.parseTextResponse(responseBody);
             
         } catch (error) {
             console.error('💥 Ошибка при выполнении запроса:', error);
@@ -78,6 +70,37 @@ const ApiService = {
             
             throw enhancedError;
         }
+    },
+
+    // Парсинг текстового ответа от сервера
+    parseTextResponse(text) {
+        console.log('🔍 Анализ текстового ответа:', text);
+        
+        const result = {
+            rawResponse: text,
+            status: 'unknown',
+            message: text
+        };
+
+        // Анализируем текст для определения статуса
+        const lowerText = text.toLowerCase();
+        
+        if (lowerText.includes('включено') || lowerText.includes('on') || lowerText.includes('enabled')) {
+            result.status = 'enabled';
+            result.state = 'on';
+        } else if (lowerText.includes('выключено') || lowerText.includes('off') || lowerText.includes('disabled')) {
+            result.status = 'disabled';
+            result.state = 'off';
+        }
+
+        // Извлекаем название сервиса
+        const serviceMatch = text.match(/^([^:]+):/);
+        if (serviceMatch) {
+            result.service = serviceMatch[1].trim();
+        }
+
+        console.log('📊 Результат анализа:', result);
+        return result;
     },
 
     // Улучшенное сообщение об ошибке
