@@ -6,15 +6,25 @@ const ApiService = {
     // Базовый URL API
     baseUrl: 'https://d.tomato-pizza.ru:44300/ERP/hs/tomatoERP/System',
 
-    // Выполнить запрос к ERP API
+    // Прокси сервер для обхода CORS
+    proxyUrl: 'https://cors-anywhere.herokuapp.com/', // Или ваш прокси
+
+    // Выполнить запрос к ERP API через прокси
     async toggleERPServices() {
         try {
-            const response = await fetch(`${this.baseUrl}/ServicesOnOff`, {
+            const targetUrl = `${this.baseUrl}/ServicesOnOff`;
+            const proxiedUrl = `${this.proxyUrl}${targetUrl}`;
+
+            console.log('Отправка запроса через прокси:', proxiedUrl);
+
+            const response = await fetch(proxiedUrl, {
                 method: 'POST',
                 headers: {
                     'token': this.token,
                     'Content-Type': 'application/json',
-                }
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                mode: 'cors'
             });
 
             if (!response.ok) {
@@ -26,36 +36,48 @@ const ApiService = {
             
         } catch (error) {
             console.error('Ошибка при выполнении запроса:', error);
-            throw error;
+            
+            // Пробуем альтернативный метод
+            return await this.tryAlternativeMethod();
         }
     },
 
-    // Универсальный метод для API запросов
-    async makeRequest(endpoint, method = 'GET', body = null) {
-        const config = {
-            method: method,
-            headers: {
-                'token': this.token,
-                'Content-Type': 'application/json',
-            }
-        };
-
-        if (body) {
-            config.body = JSON.stringify(body);
-        }
-
+    // Альтернативный метод - JSONP или другие способы
+    async tryAlternativeMethod() {
         try {
-            const response = await fetch(`${this.baseUrl}${endpoint}`, config);
+            // Метод 1: Пробуем другой прокси
+            const alternativeProxy = 'https://api.allorigins.win/raw?url=';
+            const targetUrl = encodeURIComponent(`${this.baseUrl}/ServicesOnOff`);
             
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            const response = await fetch(alternativeProxy + targetUrl, {
+                method: 'POST',
+                headers: {
+                    'token': this.token,
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            return await response.json();
+            if (response.ok) {
+                return await response.json();
+            }
+            throw new Error('Alternative method failed');
             
         } catch (error) {
-            console.error('API request failed:', error);
-            throw error;
+            console.error('Альтернативный метод также не сработал:', error);
+            throw new Error('Не удалось подключиться к серверу ERP. Проверьте подключение к интернету и настройки CORS на сервере.');
+        }
+    },
+
+    // Метод для тестирования подключения
+    async testConnection() {
+        try {
+            const response = await fetch('https://cors-anywhere.herokuapp.com/https://d.tomato-pizza.ru:44300/', {
+                method: 'HEAD',
+                timeout: 5000
+            });
+            return response.ok;
+        } catch (error) {
+            return false;
         }
     }
 };
