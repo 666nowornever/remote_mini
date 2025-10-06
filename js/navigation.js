@@ -1,6 +1,6 @@
 // Управление навигацией
 const Navigation = {
-    // Маппинг страниц
+    // Маппинг страниц (ДОБАВЛЯЕМ НОВЫЕ СТРАНИЦЫ)
     pages: {
         'main': 'pages/main.html',
         'first-line': 'pages/first-line.html',
@@ -8,10 +8,13 @@ const Navigation = {
         'restaurants': 'pages/restaurants.html',
         'cash-servers': 'pages/cash-servers.html',
         'cash-registers': 'pages/cash-registers.html',
-        'cash-details': 'pages/cash-details.html'
+        'cash-details': 'pages/cash-details.html',
+        'manager-pcs': 'pages/manager-pcs.html',
+        'music-pcs': 'pages/music-pcs.html',
+        'device-details': 'pages/device-details.html'
     },
 
-    // Заголовки страниц
+    // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
     pageTitles: {
         'main': 'Главная страница',
         'first-line': '1st Line - Выбор раздела',
@@ -19,7 +22,10 @@ const Navigation = {
         'restaurants': 'Управление ресторанами',
         'cash-servers': 'Кассовые серверы',
         'cash-registers': 'Управление кассами',
-        'cash-details': 'Детали кассы'
+        'cash-details': 'Детали кассы',
+        'manager-pcs': 'ПК Менеджера',
+        'music-pcs': 'Музыкальные моноблоки',
+        'device-details': 'Управление устройством'
     },
 
     // Показать страницу
@@ -54,7 +60,7 @@ const Navigation = {
             });
     },
 
-    // Инициализация логики страницы после загрузки
+    // Инициализация логики страницы после загрузки (ОБНОВЛЯЕМ)
     initializePage: function(pageId) {
         switch(pageId) {
             case 'cash-registers':
@@ -67,6 +73,24 @@ const Navigation = {
                 console.log('🔄 Инициализация страницы деталей кассы...');
                 if (typeof CashManager !== 'undefined') {
                     CashManager.loadCashDetails();
+                }
+                break;
+            case 'manager-pcs':
+                console.log('🔄 Инициализация страницы ПК менеджера...');
+                if (typeof PCManager !== 'undefined') {
+                    PCManager.initialize(PCManager.deviceTypes.MANAGER_PC);
+                }
+                break;
+            case 'music-pcs':
+                console.log('🔄 Инициализация страницы музыкальных моноблоков...');
+                if (typeof PCManager !== 'undefined') {
+                    PCManager.initialize(PCManager.deviceTypes.MUSIC_PC);
+                }
+                break;
+            case 'device-details':
+                console.log('🔄 Инициализация страницы деталей устройства...');
+                if (typeof PCManager !== 'undefined') {
+                    PCManager.loadDeviceDetails();
                 }
                 break;
             case 'restaurants':
