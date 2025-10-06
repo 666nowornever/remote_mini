@@ -6,6 +6,19 @@ const PCManager = {
         MUSIC_PC: 'music_pc'
     },
 
+    // Списки устройств (исправленная инициализация)
+    devices: {},
+
+    // Инициализация менеджера
+    init: function() {
+        // Генерируем устройства при первой инициализации
+        this.devices = {
+            manager_pc: this.generateDevices('TM', 'PC01', 48),
+            music_pc: this.generateDevices('TM', 'PC02', 48)
+        };
+        console.log('✅ PCManager: устройства сгенерированы');
+    },
+
     // Генерация списка устройств
     generateDevices: function(prefix, suffix, count) {
         const devices = [];
@@ -19,16 +32,6 @@ const PCManager = {
             }
         }
         return devices;
-    },
-
-    // Получаем устройства динамически
-    getDevices: function(deviceType) {
-        if (deviceType === this.deviceTypes.MANAGER_PC) {
-            return this.generateDevices('TM', 'PC01', 48);
-        } else if (deviceType === this.deviceTypes.MUSIC_PC) {
-            return this.generateDevices('TM', 'PC02', 48);
-        }
-        return [];
     },
 
     // Текущее выбранное устройство
@@ -53,8 +56,13 @@ const PCManager = {
 
         listContainer.innerHTML = '';
 
-        const devices = this.getDevices(deviceType);
+        const devices = this.devices[deviceType];
         
+        if (!devices) {
+            console.error('❌ PCManager: устройства типа', deviceType, 'не найдены');
+            return;
+        }
+
         devices.forEach((device, index) => {
             if (device === '') {
                 // Добавляем разделитель
@@ -76,10 +84,7 @@ const PCManager = {
                         <span>${device}</span>
                     </div>
                 `;
-                deviceItem.addEventListener('click', () => {
-                    console.log(`🎯 Выбрано устройство: ${device}`);
-                    this.selectDevice(device, deviceType);
-                });
+                deviceItem.addEventListener('click', () => this.selectDevice(device, deviceType));
                 listContainer.appendChild(deviceItem);
             }
         });
@@ -89,7 +94,6 @@ const PCManager = {
 
     // Выбор устройства
     selectDevice: function(deviceName, deviceType) {
-        console.log(`🎯 PCManager: выбор устройства ${deviceName} типа ${deviceType}`);
         this.selectedDevice = deviceName;
         this.currentDeviceType = deviceType;
         
@@ -105,8 +109,6 @@ const PCManager = {
     loadDeviceDetails: function() {
         const deviceName = sessionStorage.getItem('selectedDevice');
         const deviceType = sessionStorage.getItem('selectedDeviceType');
-        
-        console.log(`🔍 PCManager: загрузка деталей устройства ${deviceName} типа ${deviceType}`);
         
         if (!deviceName || !deviceType) {
             console.error('❌ PCManager: данные устройства не найдены в sessionStorage');
@@ -168,12 +170,8 @@ const PCManager = {
 
     // Команда PING
     pingDevice: function() {
-        if (!this.selectedDevice) {
-            console.error('❌ PCManager: устройство не выбрано');
-            return;
-        }
+        if (!this.selectedDevice) return;
 
-        console.log(`🔄 PCManager: PING для ${this.selectedDevice}`);
         this.addToLog(`🔄 Отправка PING на ${this.selectedDevice}...`);
         
         // Имитация PING запроса
@@ -189,17 +187,13 @@ const PCManager = {
 
     // Команда RESTART
     restartDevice: function() {
-        if (!this.selectedDevice) {
-            console.error('❌ PCManager: устройство не выбрано');
-            return;
-        }
+        if (!this.selectedDevice) return;
 
         const deviceTypeText = this.currentDeviceType === this.deviceTypes.MANAGER_PC ? 
             'ПК менеджера' : 'музыкальный моноблок';
 
         // Подтверждение перезагрузки
         if (confirm(`Вы уверены, что хотите перезагрузить ${deviceTypeText} ${this.selectedDevice}?`)) {
-            console.log(`🔄 PCManager: RESTART для ${this.selectedDevice}`);
             this.addToLog(`🔄 Запуск перезагрузки ${this.selectedDevice}...`);
             
             // Имитация перезагрузки
@@ -217,10 +211,7 @@ const PCManager = {
     // Добавление сообщения в лог
     addToLog: function(message, type = 'info') {
         const logElement = document.getElementById('actionLog');
-        if (!logElement) {
-            console.error('❌ PCManager: элемент лога не найден');
-            return;
-        }
+        if (!logElement) return;
 
         const logEntry = document.createElement('div');
         logEntry.className = `log-entry log-${type}`;
@@ -232,3 +223,10 @@ const PCManager = {
         logElement.scrollTop = logElement.scrollHeight;
     }
 };
+
+// Инициализация PCManager при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof PCManager !== 'undefined' && PCManager.init) {
+        PCManager.init();
+    }
+});
