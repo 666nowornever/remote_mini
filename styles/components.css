@@ -659,3 +659,57 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+/* Device Specific Styles */
+.device-info {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.device-id {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-family: 'Courier New', monospace;
+}
+
+.device-name {
+    font-size: 16px;
+    opacity: 0.8;
+    margin-bottom: 10px;
+}
+
+.device-status {
+    font-size: 14px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.device-status.online {
+    color: #4CAF50;
+}
+
+.device-status.offline {
+    color: #f44336;
+}
+
+/* Device Separators */
+.device-separator {
+    margin: 15px 0;
+    text-align: center;
+}
+
+/* Manager PCs specific */
+.manager-pcs-page .server-item .server-name i {
+    color: #2196F3;
+}
+
+/* Music PCs specific */
+.music-pcs-page .server-item .server-name i {
+    color: #9C27B0;
+}
