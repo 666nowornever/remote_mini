@@ -11,6 +11,7 @@ const PCManager = {
 
     // Инициализация менеджера
     init: function() {
+        console.log('🔄 PCManager: инициализация...');
         // Генерируем устройства при первой инициализации
         this.devices = {
             manager_pc: this.generateDevices('TM', 'PC01', 48),
@@ -250,3 +251,4 @@ document.addEventListener('DOMContentLoaded', function() {
         PCManager.init();
     }
 });
+
