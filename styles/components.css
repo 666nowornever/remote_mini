@@ -808,3 +808,113 @@
     background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
     margin: 0 20px;
 }
+
+/* Printer Specific Styles */
+.printer-name-centered {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100%;
+    text-align: center;
+}
+
+.printer-address {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Department Styles */
+.department-item {
+    justify-content: center;
+    text-align: center;
+    padding: 20px 15px;
+}
+
+.department-name {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.department-name i {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+/* Printer Details Styles */
+.printer-info {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.printer-name {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: white;
+}
+
+.printer-ip {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 15px;
+    font-family: 'Courier New', monospace;
+    color: white;
+}
+
+.printer-status {
+    font-size: 16px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.printer-status.online {
+    color: #4CAF50;
+}
+
+.printer-status.offline {
+    color: #f44336;
+}
+
+/* Remove separators from printer lists */
+.printer-separator {
+    margin: 10px 0;
+    text-align: center;
+}
+
+/* Button grid adjustments for printer details */
+.printer-details-page .button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.printer-details-page .btn {
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Department Icons Colors */
+.department-item:nth-child(1) .department-name i { color: #FF6B6B; } /* Пицца */
+.department-item:nth-child(2) .department-name i { color: #FFD93D; } /* Кондитерский */
+.department-item:nth-child(3) .department-name i { color: #4FC3F7; } /* Холодный */
+.department-item:nth-child(4) .department-name i { color: #FF8A65; } /* Горячий */
+.department-item:nth-child(5) .department-name i { color: #BA68C8; } /* Бар */
