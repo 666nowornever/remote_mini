@@ -78,10 +78,12 @@ const PCManager = {
                 const icon = deviceType === this.deviceTypes.MANAGER_PC ? 
                     'fas fa-desktop' : 'fas fa-music';
                 
+                // Форматируем отображение: TM01 вместо TM001-PC01
+                const displayName = this.formatDeviceName(device);
+                
                 deviceItem.innerHTML = `
-                    <div class="server-name">
-                        <i class="${icon}"></i>
-                        <span>${device}</span>
+                    <div class="server-name device-name-centered">
+                        <span class="device-address">${displayName}</span>
                     </div>
                 `;
                 deviceItem.addEventListener('click', () => this.selectDevice(device, deviceType));
@@ -90,6 +92,17 @@ const PCManager = {
         });
 
         console.log(`✅ PCManager: загружено ${devices.filter(item => item !== '').length} устройств типа ${deviceType}`);
+    },
+
+    // Форматирование имени устройства для отображения
+    formatDeviceName: function(fullName) {
+        // Преобразуем TM001-PC01 в TM01
+        const match = fullName.match(/TM(\d+)-PC\d+/);
+        if (match) {
+            const number = parseInt(match[1]); // Получаем 001
+            return `TM${number}`; // Преобразуем в TM1, TM2, ... TM48
+        }
+        return fullName;
     },
 
     // Выбор устройства
@@ -128,8 +141,15 @@ const PCManager = {
         const deviceTitle = deviceType === this.deviceTypes.MANAGER_PC ? 
             'ПК Менеджера' : 'Музыкальный моноблок';
         
-        document.getElementById('selectedDeviceName').textContent = `${deviceTitle} ${this.getDeviceNumber(deviceName)}`;
-        document.getElementById('selectedDeviceId').textContent = deviceName;
+        // Форматируем отображение адреса
+        const displayAddress = this.formatDeviceName(deviceName);
+        document.getElementById('selectedDeviceId').textContent = displayAddress;
+
+        // Убираем строку с названием устройства (скрываем элемент)
+        const deviceNameElement = document.getElementById('selectedDeviceName');
+        if (deviceNameElement) {
+            deviceNameElement.style.display = 'none';
+        }
 
         // Устанавливаем соответствующий заголовок
         const titleElement = document.getElementById('deviceDetailsTitle');
