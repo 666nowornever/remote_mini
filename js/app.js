@@ -13,10 +13,8 @@ document.addEventListener('DOMContentLoaded', async function() {
         hideLoadingIndicator();
         
         if (accessGranted) {
-            // Инициализируем PCManager если он есть
-            if (typeof PCManager !== 'undefined' && PCManager.init) {
-                PCManager.init();
-            }
+            // Инициализируем все менеджеры
+            this.initializeManagers();
             
             // Загружаем главную страницу
             Navigation.showPage('main');
@@ -46,6 +44,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         );
     }
 });
+
+// Инициализация всех менеджеров
+function initializeManagers() {
+    console.log('🔄 Инициализация менеджеров...');
+    
+    // Инициализируем PCManager если он есть
+    if (typeof PCManager !== 'undefined' && PCManager.init) {
+        PCManager.init();
+        console.log('✅ PCManager инициализирован');
+    }
+    
+    // Инициализируем PrinterManager если он есть
+    if (typeof PrinterManager !== 'undefined' && PrinterManager.init) {
+        PrinterManager.init();
+        console.log('✅ PrinterManager инициализирован');
+    }
+    
+    console.log('✅ Все менеджеры инициализированы');
+}
 
 // Показать индикатор загрузки
 function showLoadingIndicator() {
