@@ -66,60 +66,62 @@ const Navigation = {
             });
     },
 
-    // Инициализация логики страницы после загрузки (ОБНОВЛЯЕМ)
-    initializePage: function(pageId) {
-        switch(pageId) {
-            case 'cash-registers':
-                console.log('🔄 Инициализация страницы касс...');
-                if (typeof CashManager !== 'undefined') {
-                    CashManager.initializeCashList();
-                }
-                break;
-            case 'cash-details':
-                console.log('🔄 Инициализация страницы деталей кассы...');
-                if (typeof CashManager !== 'undefined') {
-                    CashManager.loadCashDetails();
-                }
-                break;
-            case 'manager-pcs':
-                console.log('🔄 Инициализация страницы ПК менеджера...');
-                if (typeof PCManager !== 'undefined') {
-                    PCManager.initialize(PCManager.deviceTypes.MANAGER_PC);
-                }
-                break;
-            case 'music-pcs':
-                console.log('🔄 Инициализация страницы музыкальных моноблоков...');
-                if (typeof PCManager !== 'undefined') {
-                    PCManager.initialize(PCManager.deviceTypes.MUSIC_PC);
-                }
-                break;
-            case 'device-details':
-                console.log('🔄 Инициализация страницы деталей устройства...');
-                this.initializeDeviceDetailsPage();
-                break;
-            case 'service-printers':
-                console.log('🔄 Инициализация страницы сервис принтеров...');
-                if (typeof PrinterManager !== 'undefined') {
-                    PrinterManager.initialize();
-                }
-                break;
-            case 'printer-departments':
-                console.log('🔄 Инициализация страницы выбора цеха...');
-                if (typeof PrinterManager !== 'undefined') {
-                    PrinterManager.loadDepartmentsPage();
-                }
-                break;
-            case 'printer-details':
-                console.log('🔄 Инициализация страницы деталей принтера...');
-                if (typeof PrinterManager !== 'undefined') {
-                    PrinterManager.loadPrinterDetails();
-                }
-                break;
-            case 'restaurants':
-                console.log('🔄 Инициализация страницы ресторанов...');
-                break;
-        }
-    },
+   // Инициализация логики страницы после загрузки (ОБНОВЛЯЕМ С ПРОВЕРКАМИ)
+initializePage: function(pageId) {
+    switch(pageId) {
+        case 'cash-registers':
+            console.log('🔄 Инициализация страницы касс...');
+            if (typeof CashManager !== 'undefined') {
+                CashManager.initializeCashList();
+            }
+            break;
+        case 'cash-details':
+            console.log('🔄 Инициализация страницы деталей кассы...');
+            if (typeof CashManager !== 'undefined') {
+                CashManager.loadCashDetails();
+            }
+            break;
+        case 'manager-pcs':
+            console.log('🔄 Инициализация страницы ПК менеджера...');
+            if (typeof PCManager !== 'undefined' && PCManager.initialize) {
+                PCManager.initialize(PCManager.deviceTypes.MANAGER_PC);
+            }
+            break;
+        case 'music-pcs':
+            console.log('🔄 Инициализация страницы музыкальных моноблоков...');
+            if (typeof PCManager !== 'undefined' && PCManager.initialize) {
+                PCManager.initialize(PCManager.deviceTypes.MUSIC_PC);
+            }
+            break;
+        case 'device-details':
+            console.log('🔄 Инициализация страницы деталей устройства...');
+            this.initializeDeviceDetailsPage();
+            break;
+        case 'service-printers':
+            console.log('🔄 Инициализация страницы сервис принтеров...');
+            if (typeof PrinterManager !== 'undefined' && PrinterManager.initialize) {
+                PrinterManager.initialize();
+            } else {
+                console.error('❌ PrinterManager не доступен');
+            }
+            break;
+        case 'printer-departments':
+            console.log('🔄 Инициализация страницы выбора цеха...');
+            if (typeof PrinterManager !== 'undefined' && PrinterManager.loadDepartmentsPage) {
+                PrinterManager.loadDepartmentsPage();
+            }
+            break;
+        case 'printer-details':
+            console.log('🔄 Инициализация страницы деталей принтера...');
+            if (typeof PrinterManager !== 'undefined' && PrinterManager.loadPrinterDetails) {
+                PrinterManager.loadPrinterDetails();
+            }
+            break;
+        case 'restaurants':
+            console.log('🔄 Инициализация страницы ресторанов...');
+            break;
+    }
+},
 
     // Инициализация страницы деталей устройства
     initializeDeviceDetailsPage: function() {
