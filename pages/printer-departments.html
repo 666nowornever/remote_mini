@@ -1,0 +1,45 @@
+<div class="page printer-departments-page">
+    <button class="back-btn" onclick="Navigation.showPage('service-printers')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к принтерам
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-print"></i>
+            <span id="departmentsTitle">Выбор цеха</span>
+        </div>
+        <div class="servers-list">
+            <div class="server-item department-item" onclick="PrinterManager.selectDepartment({id: 15, name: 'Пицца'})">
+                <span class="server-name department-name">
+                    <i class="fas fa-pizza-slice"></i>
+                    Пицца
+                </span>
+            </div>
+            <div class="server-item department-item" onclick="PrinterManager.selectDepartment({id: 16, name: 'Кондитерский'})">
+                <span class="server-name department-name">
+                    <i class="fas fa-birthday-cake"></i>
+                    Кондитерский
+                </span>
+            </div>
+            <div class="server-item department-item" onclick="PrinterManager.selectDepartment({id: 17, name: 'Холодный'})">
+                <span class="server-name department-name">
+                    <i class="fas fa-snowflake"></i>
+                    Холодный
+                </span>
+            </div>
+            <div class="server-item department-item" onclick="PrinterManager.selectDepartment({id: 18, name: 'Горячий'})">
+                <span class="server-name department-name">
+                    <i class="fas fa-fire"></i>
+                    Горячий
+                </span>
+            </div>
+            <div class="server-item department-item" onclick="PrinterManager.selectDepartment({id: 19, name: 'Бар'})">
+                <span class="server-name department-name">
+                    <i class="fas fa-glass-martini-alt"></i>
+                    Бар
+                </span>
+            </div>
+        </div>
+    </div>
+</div>
