@@ -1,0 +1,34 @@
+<div class="page printer-details-page">
+    <button class="back-btn" onclick="Navigation.showPage('printer-departments')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к цехам
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-print"></i>
+            Управление принтером
+        </div>
+        
+        <div class="printer-info">
+            <div class="printer-name" id="selectedPrinterName"></div>
+            <div class="printer-ip" id="selectedPrinterIp"></div>
+            <div class="printer-status" id="printerStatus">Статус: проверка...</div>
+        </div>
+        
+        <div class="button-grid">
+            <div class="btn btn-ping" onclick="PrinterManager.pingPrinter()">
+                <i class="fas fa-network-wired"></i>
+                PING
+            </div>
+            <div class="btn btn-restart" onclick="PrinterManager.restartPrinter()">
+                <i class="fas fa-power-off"></i>
+                RESTART
+            </div>
+        </div>
+        
+        <div class="action-log" id="actionLog">
+            <!-- Лог действий будет появляться здесь -->
+        </div>
+    </div>
+</div>
