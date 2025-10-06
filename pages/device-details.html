@@ -1,0 +1,53 @@
+<div class="page device-details-page">
+    <button class="back-btn" id="deviceBackBtn">
+        <i class="fas fa-arrow-left"></i>
+        Назад
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-cog"></i>
+            <span id="deviceDetailsTitle">Управление устройством</span>
+        </div>
+        
+        <div class="device-info">
+            <div class="device-id" id="selectedDeviceId"></div>
+            <div class="device-name" id="selectedDeviceName"></div>
+            <div class="device-status" id="deviceStatus">Статус: проверка...</div>
+        </div>
+        
+        <div class="button-grid">
+            <div class="btn btn-ping" onclick="PCManager.pingDevice()">
+                <i class="fas fa-network-wired"></i>
+                PING
+            </div>
+            <div class="btn btn-restart" onclick="PCManager.restartDevice()">
+                <i class="fas fa-power-off"></i>
+                RESTART
+            </div>
+        </div>
+        
+        <div class="action-log" id="actionLog">
+            <!-- Лог действий будет появляться здесь -->
+        </div>
+    </div>
+</div>
+
+<script>
+// Динамическая обработка кнопки "Назад"
+document.addEventListener('DOMContentLoaded', function() {
+    const backBtn = document.getElementById('deviceBackBtn');
+    if (backBtn) {
+        backBtn.addEventListener('click', function() {
+            const deviceType = sessionStorage.getItem('selectedDeviceType');
+            if (deviceType === PCManager.deviceTypes.MANAGER_PC) {
+                Navigation.showPage('manager-pcs');
+            } else if (deviceType === PCManager.deviceTypes.MUSIC_PC) {
+                Navigation.showPage('music-pcs');
+            } else {
+                Navigation.showPage('restaurants');
+            }
+        });
+    }
+});
+</script>
