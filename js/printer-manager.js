@@ -1,7 +1,7 @@
 // Менеджер управления сервис принтерами
 const PrinterManager = {
-    // Список ресторанов (TM01-TM48)
-    restaurants: this.generateRestaurants(48),
+    // Список ресторанов (TM01-TM48) - будет инициализирован в init()
+    restaurants: [],
     
     // Список цехов
     departments: [
@@ -16,6 +16,14 @@ const PrinterManager = {
     selectedRestaurant: null,
     selectedDepartment: null,
     selectedPrinter: null,
+
+    // Инициализация менеджера
+    init: function() {
+        console.log('🔄 PrinterManager: инициализация...');
+        // Генерируем рестораны при инициализации
+        this.restaurants = this.generateRestaurants(48);
+        console.log('✅ PrinterManager: рестораны сгенерированы');
+    },
 
     // Генерация списка ресторанов
     generateRestaurants: function(count) {
@@ -218,10 +226,9 @@ const PrinterManager = {
     }
 };
 
-// Инициализация PrinterManager при загрузке
+// Инициализация PrinterManager при загрузке DOM
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof PrinterManager !== 'undefined' && PrinterManager.init) {
-        // Генерируем рестораны при инициализации
-        PrinterManager.restaurants = PrinterManager.generateRestaurants(48);
+        PrinterManager.init();
     }
 });
