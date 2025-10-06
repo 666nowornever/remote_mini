@@ -1,6 +1,6 @@
 // Управление навигацией
 const Navigation = {
-    // Маппинг страниц (ДОБАВЛЯЕМ НОВЫЕ СТРАНИЦЫ)
+    // Маппинг страниц
     pages: {
         'main': 'pages/main.html',
         'first-line': 'pages/first-line.html',
@@ -14,7 +14,7 @@ const Navigation = {
         'device-details': 'pages/device-details.html'
     },
 
-    // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
+    // Заголовки страниц
     pageTitles: {
         'main': 'Главная страница',
         'first-line': '1st Line - Выбор раздела',
@@ -60,7 +60,7 @@ const Navigation = {
             });
     },
 
-    // Инициализация логики страницы после загрузки (ОБНОВЛЯЕМ)
+    // Инициализация логики страницы после загрузки
     initializePage: function(pageId) {
         switch(pageId) {
             case 'cash-registers':
@@ -89,13 +89,45 @@ const Navigation = {
                 break;
             case 'device-details':
                 console.log('🔄 Инициализация страницы деталей устройства...');
-                if (typeof PCManager !== 'undefined') {
-                    PCManager.loadDeviceDetails();
-                }
+                this.initializeDeviceDetailsPage();
                 break;
             case 'restaurants':
                 console.log('🔄 Инициализация страницы ресторанов...');
                 break;
+        }
+    },
+
+    // Инициализация страницы деталей устройства
+    initializeDeviceDetailsPage: function() {
+        if (typeof PCManager !== 'undefined') {
+            PCManager.loadDeviceDetails();
+        }
+        
+        // Инициализируем кнопку "Назад" после загрузки страницы
+        this.initializeBackButton();
+    },
+
+    // Инициализация кнопки "Назад" для страницы device-details
+    initializeBackButton: function() {
+        const backBtn = document.getElementById('deviceBackBtn');
+        if (backBtn) {
+            backBtn.addEventListener('click', () => {
+                this.handleDeviceDetailsBack();
+            });
+        }
+    },
+
+    // Обработка кнопки "Назад" на странице device-details
+    handleDeviceDetailsBack: function() {
+        const deviceType = sessionStorage.getItem('selectedDeviceType');
+        
+        if (deviceType === 'manager_pc') {
+            this.showPage('manager-pcs');
+        } else if (deviceType === 'music_pc') {
+            this.showPage('music-pcs');
+        } else {
+            // По умолчанию возвращаем в рестораны
+            this.showPage('restaurants');
         }
     },
 
