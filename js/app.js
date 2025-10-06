@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         
         if (accessGranted) {
             // Инициализируем все менеджеры
-            this.initializeManagers();
+            initializeManagers();
             
             // Загружаем главную страницу
             Navigation.showPage('main');
