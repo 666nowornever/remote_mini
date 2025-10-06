@@ -1,6 +1,6 @@
 // Управление навигацией
 const Navigation = {
-    // Маппинг страниц
+    // Маппинг страниц (ДОБАВЛЯЕМ НОВЫЕ СТРАНИЦЫ)
     pages: {
         'main': 'pages/main.html',
         'first-line': 'pages/first-line.html',
@@ -11,10 +11,13 @@ const Navigation = {
         'cash-details': 'pages/cash-details.html',
         'manager-pcs': 'pages/manager-pcs.html',
         'music-pcs': 'pages/music-pcs.html',
-        'device-details': 'pages/device-details.html'
+        'device-details': 'pages/device-details.html',
+        'service-printers': 'pages/service-printers.html',
+        'printer-departments': 'pages/printer-departments.html',
+        'printer-details': 'pages/printer-details.html'
     },
 
-    // Заголовки страниц
+    // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
     pageTitles: {
         'main': 'Главная страница',
         'first-line': '1st Line - Выбор раздела',
@@ -25,7 +28,10 @@ const Navigation = {
         'cash-details': 'Детали кассы',
         'manager-pcs': 'ПК Менеджера',
         'music-pcs': 'Музыкальные моноблоки',
-        'device-details': 'Управление устройством'
+        'device-details': 'Управление устройством',
+        'service-printers': 'Сервис принтеры',
+        'printer-departments': 'Выбор цеха',
+        'printer-details': 'Управление принтером'
     },
 
     // Показать страницу
@@ -60,7 +66,7 @@ const Navigation = {
             });
     },
 
-    // Инициализация логики страницы после загрузки
+    // Инициализация логики страницы после загрузки (ОБНОВЛЯЕМ)
     initializePage: function(pageId) {
         switch(pageId) {
             case 'cash-registers':
@@ -90,6 +96,24 @@ const Navigation = {
             case 'device-details':
                 console.log('🔄 Инициализация страницы деталей устройства...');
                 this.initializeDeviceDetailsPage();
+                break;
+            case 'service-printers':
+                console.log('🔄 Инициализация страницы сервис принтеров...');
+                if (typeof PrinterManager !== 'undefined') {
+                    PrinterManager.initialize();
+                }
+                break;
+            case 'printer-departments':
+                console.log('🔄 Инициализация страницы выбора цеха...');
+                if (typeof PrinterManager !== 'undefined') {
+                    PrinterManager.loadDepartmentsPage();
+                }
+                break;
+            case 'printer-details':
+                console.log('🔄 Инициализация страницы деталей принтера...');
+                if (typeof PrinterManager !== 'undefined') {
+                    PrinterManager.loadPrinterDetails();
+                }
                 break;
             case 'restaurants':
                 console.log('🔄 Инициализация страницы ресторанов...');
