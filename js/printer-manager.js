@@ -190,25 +190,6 @@ const PrinterManager = {
         }, 2000);
     },
 
-    // Команда RESTART
-    restartPrinter: function() {
-        if (!this.selectedPrinter) return;
-
-        // Подтверждение перезагрузки
-        if (confirm(`Вы уверены, что хотите перезагрузить принтер ${this.selectedPrinter.name} (${this.selectedPrinter.ip})?`)) {
-            this.addToLog(`🔄 Запуск перезагрузки ${this.selectedPrinter.ip}...`);
-            
-            // Имитация перезагрузки
-            setTimeout(() => {
-                this.addToLog(`✅ Команда перезагрузки отправлена на ${this.selectedPrinter.ip}`, 'success');
-                
-                // Обновляем статус после "перезагрузки"
-                setTimeout(() => {
-                    this.checkPrinterStatus(this.selectedPrinter.ip);
-                }, 3000);
-            }, 1500);
-        }
-    },
 
     // Добавление сообщения в лог
     addToLog: function(message, type = 'info') {
