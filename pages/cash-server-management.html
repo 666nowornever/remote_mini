@@ -1,0 +1,36 @@
+<div class="page cash-server-management-page">
+    <button class="back-btn" onclick="Navigation.showPage('cash-servers')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к серверам
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-server"></i>
+            <span id="serverManagementTitle">Управление сервером</span>
+        </div>
+        
+        <div class="button-grid">
+            <div class="btn btn-services" onclick="CashServerManager.openServicesPage()">
+                <i class="fas fa-cogs"></i>
+                Службы
+            </div>
+            <div class="btn btn-status" onclick="CashServerManager.openServicesStatusPage()">
+                <i class="fas fa-chart-bar"></i>
+                Статус Служб
+            </div>
+            <div class="btn btn-ping" onclick="CashServerManager.pingServer()">
+                <i class="fas fa-network-wired"></i>
+                Ping
+            </div>
+            <div class="btn btn-restart" onclick="CashServerManager.restartServer()">
+                <i class="fas fa-power-off"></i>
+                Restart
+            </div>
+        </div>
+        
+        <div class="action-log" id="serverActionLog">
+            <!-- Лог действий будет появляться здесь -->
+        </div>
+    </div>
+</div>

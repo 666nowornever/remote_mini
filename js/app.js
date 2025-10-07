@@ -62,6 +62,13 @@ function initializeManagers() {
     }
     
     console.log('✅ Все менеджеры инициализированы');
+    // Инициализируем CashServerManager если он есть
+    if (typeof CashServerManager !== 'undefined' && CashServerManager.init) {
+        CashServerManager.init();
+        console.log('✅ CashServerManager инициализирован');
+    }
+    
+    console.log('✅ Все менеджеры инициализированы');
 }
 
 // Показать индикатор загрузки

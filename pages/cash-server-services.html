@@ -1,0 +1,45 @@
+<div class="page cash-server-services-page">
+    <button class="back-btn" onclick="Navigation.showPage('cash-server-management')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к управлению
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-cogs"></i>
+            <span id="servicesTitle">Службы сервера</span>
+        </div>
+        <div class="servers-list">
+            <div class="server-item service-item" onclick="CashServerManager.selectService({id: 'midserv', name: 'MidServ', displayName: 'MidServ'})">
+                <span class="server-name service-name">
+                    <i class="fas fa-cog"></i>
+                    MidServ
+                </span>
+            </div>
+            <div class="server-item service-item" onclick="CashServerManager.selectService({id: 'winprint', name: 'WinPrint', displayName: 'WinPrint'})">
+                <span class="server-name service-name">
+                    <i class="fas fa-print"></i>
+                    WinPrint
+                </span>
+            </div>
+            <div class="server-item service-item" onclick="CashServerManager.selectService({id: 'farcards_egais', name: 'Farcards EGAIS', displayName: 'Farcards EGAIS'})">
+                <span class="server-name service-name">
+                    <i class="fas fa-wine-bottle"></i>
+                    Farcards EGAIS
+                </span>
+            </div>
+            <div class="server-item service-item" onclick="CashServerManager.selectService({id: 'farcards', name: 'FarCards', displayName: 'FarCards'})">
+                <span class="server-name service-name">
+                    <i class="fas fa-credit-card"></i>
+                    FarCards
+                </span>
+            </div>
+            <div class="server-item service-item" onclick="CashServerManager.selectService({id: 'qrpay', name: 'QRpay', displayName: 'QRpay'})">
+                <span class="server-name service-name">
+                    <i class="fas fa-qrcode"></i>
+                    QRpay
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

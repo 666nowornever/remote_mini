@@ -918,3 +918,123 @@
 .department-item:nth-child(3) .department-name i { color: #4FC3F7; } /* Холодный */
 .department-item:nth-child(4) .department-name i { color: #FF8A65; } /* Горячий */
 .department-item:nth-child(5) .department-name i { color: #BA68C8; } /* Бар */
+
+/* Cash Server Specific Styles */
+.cash-server-name-centered {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100%;
+    text-align: center;
+}
+
+.server-address {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Service Management Styles */
+.service-item {
+    justify-content: center;
+    text-align: center;
+    padding: 20px 15px;
+}
+
+.service-name {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.service-name i {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+/* Service Status Styles */
+.services-status-container {
+    margin-top: 20px;
+}
+
+.service-status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.service-status-name {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.service-status-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.loading-status {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* Service Management Buttons */
+.service-management-page .button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.service-management-page .btn {
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.btn-restart { background: rgba(255, 193, 7, 0.3) !important; border: 1px solid rgba(255, 193, 7, 0.5) !important; }
+.btn-start { background: rgba(76, 175, 80, 0.3) !important; border: 1px solid rgba(76, 175, 80, 0.5) !important; }
+.btn-stop { background: rgba(244, 67, 54, 0.3) !important; border: 1px solid rgba(244, 67, 54, 0.5) !important; }
+.btn-status { background: rgba(33, 150, 243, 0.3) !important; border: 1px solid rgba(33, 150, 243, 0.5) !important; }
+.btn-services { background: rgba(156, 39, 176, 0.3) !important; border: 1px solid rgba(156, 39, 176, 0.5) !important; }
+
+/* Server Management Buttons */
+.cash-server-management-page .button-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.cash-server-management-page .btn {
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Service Icons Colors */
+.service-item:nth-child(1) .service-name i { color: #2196F3; } /* MidServ */
+.service-item:nth-child(2) .service-name i { color: #4CAF50; } /* WinPrint */
+.service-item:nth-child(3) .service-name i { color: #FF9800; } /* Farcards EGAIS */
+.service-item:nth-child(4) .service-name i { color: #9C27B0; } /* FarCards */
+.service-item:nth-child(5) .service-name i { color: #00BCD4; } /* QRpay */

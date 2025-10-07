@@ -1,0 +1,40 @@
+<div class="page service-management-page">
+    <button class="back-btn" onclick="Navigation.showPage('cash-server-services')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к службам
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-cog"></i>
+            <span id="serviceManagementTitle">Управление службой</span>
+        </div>
+        
+        <div class="service-info">
+            <div class="service-status" id="serviceStatus">Статус: проверка...</div>
+        </div>
+        
+        <div class="button-grid">
+            <div class="btn btn-restart" onclick="CashServerManager.restartService()">
+                <i class="fas fa-redo"></i>
+                Restart
+            </div>
+            <div class="btn btn-start" onclick="CashServerManager.startService()">
+                <i class="fas fa-play"></i>
+                Start
+            </div>
+            <div class="btn btn-stop" onclick="CashServerManager.stopService()">
+                <i class="fas fa-stop"></i>
+                Stop
+            </div>
+            <div class="btn btn-status" onclick="CashServerManager.checkServiceStatusAction()">
+                <i class="fas fa-info-circle"></i>
+                Status
+            </div>
+        </div>
+        
+        <div class="action-log" id="serviceActionLog">
+            <!-- Лог действий будет появляться здесь -->
+        </div>
+    </div>
+</div>

@@ -14,7 +14,11 @@ const Navigation = {
         'device-details': 'pages/device-details.html',
         'service-printers': 'pages/service-printers.html',
         'printer-departments': 'pages/printer-departments.html',
-        'printer-details': 'pages/printer-details.html'
+        'printer-details': 'pages/printer-details.html',
+        'cash-server-management': 'pages/cash-server-management.html',
+        'cash-server-services': 'pages/cash-server-services.html',
+        'service-management': 'pages/service-management.html',
+        'services-status': 'pages/services-status.html'
     },
 
     // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
@@ -31,7 +35,11 @@ const Navigation = {
         'device-details': 'Управление устройством',
         'service-printers': 'Сервис принтеры',
         'printer-departments': 'Выбор цеха',
-        'printer-details': 'Управление принтером'
+        'printer-details': 'Управление принтером',
+        'cash-server-management': 'Управление сервером',
+        'cash-server-services': 'Службы сервера',
+        'service-management': 'Управление службой',
+        'services-status': 'Статус служб'
     },
 
     // Показать страницу
@@ -120,6 +128,36 @@ initializePage: function(pageId) {
         case 'restaurants':
             console.log('🔄 Инициализация страницы ресторанов...');
             break;
+             case 'cash-servers':
+                console.log('🔄 Инициализация страницы кассовых серверов...');
+                if (typeof CashServerManager !== 'undefined' && CashServerManager.initialize) {
+                    CashServerManager.initialize();
+                }
+                break;
+            case 'cash-server-management':
+                console.log('🔄 Инициализация страницы управления сервером...');
+                if (typeof CashServerManager !== 'undefined' && CashServerManager.loadServerManagementPage) {
+                    CashServerManager.loadServerManagementPage();
+                }
+                break;
+            case 'cash-server-services':
+                console.log('🔄 Инициализация страницы служб сервера...');
+                if (typeof CashServerManager !== 'undefined' && CashServerManager.loadServicesPage) {
+                    CashServerManager.loadServicesPage();
+                }
+                break;
+            case 'service-management':
+                console.log('🔄 Инициализация страницы управления службой...');
+                if (typeof CashServerManager !== 'undefined' && CashServerManager.loadServiceManagementPage) {
+                    CashServerManager.loadServiceManagementPage();
+                }
+                break;
+            case 'services-status':
+                console.log('🔄 Инициализация страницы статуса служб...');
+                if (typeof CashServerManager !== 'undefined' && CashServerManager.loadServicesStatusPage) {
+                    CashServerManager.loadServicesStatusPage();
+                }
+                break;
     }
 },
 
