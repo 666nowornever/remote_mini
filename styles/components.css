@@ -896,8 +896,9 @@
 
 /* Button grid adjustments for printer details */
 .printer-details-page .button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
     gap: 15px;
     margin: 25px 0;
 }
@@ -910,6 +911,8 @@
     align-items: center;
     font-size: 16px;
     font-weight: 600;
+    width: auto;
+    min-width: 120px;
 }
 
 /* Department Icons Colors */
