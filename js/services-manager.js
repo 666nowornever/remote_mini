@@ -8,6 +8,7 @@ const ServicesManager = {
 
     // Текущая выбранная служба
     selectedService: null,
+    currentServiceType: null, // 'rkdexch' или 'crm'
 
     // Инициализация менеджера
     init: function() {
@@ -16,6 +17,8 @@ const ServicesManager = {
 
     // Выбор основного сервиса
     selectService: function(serviceName, serviceDisplayName) {
+        this.currentServiceType = serviceName;
+        
         if (serviceName === 'crm') {
             // Для CRM переходим на отдельную страницу со списком служб
             Navigation.showPage('crm-services');
@@ -29,6 +32,7 @@ const ServicesManager = {
         
         // Сохраняем выбранную службу в sessionStorage
         sessionStorage.setItem('selectedService', JSON.stringify(this.selectedService));
+        sessionStorage.setItem('serviceType', this.currentServiceType);
         
         // Переходим на страницу управления службой
         Navigation.showPage('service-management-global');
@@ -37,9 +41,11 @@ const ServicesManager = {
     // Выбор службы CRM
     selectCrmService: function(service) {
         this.selectedService = service;
+        this.currentServiceType = 'crm';
         
         // Сохраняем выбранную службу в sessionStorage
         sessionStorage.setItem('selectedService', JSON.stringify(this.selectedService));
+        sessionStorage.setItem('serviceType', this.currentServiceType);
         
         // Переходим на страницу управления службой
         Navigation.showPage('service-management-global');
@@ -54,6 +60,7 @@ const ServicesManager = {
     // Загрузка страницы управления службой
     loadServiceManagementPage: function() {
         const serviceData = sessionStorage.getItem('selectedService');
+        const serviceType = sessionStorage.getItem('serviceType');
         
         if (!serviceData) {
             Navigation.showPage('services');
@@ -61,6 +68,7 @@ const ServicesManager = {
         }
 
         this.selectedService = JSON.parse(serviceData);
+        this.currentServiceType = serviceType;
 
         // Обновляем заголовок
         const titleElement = document.getElementById('globalServiceManagementTitle');
@@ -68,8 +76,28 @@ const ServicesManager = {
             titleElement.textContent = `Управление службой: ${this.selectedService.displayName}`;
         }
 
+        // Инициализируем кнопку "Назад"
+        this.initializeBackButton();
+
         // Проверяем статус службы
         this.checkServiceStatus();
+    },
+
+    // Инициализация кнопки "Назад"
+    initializeBackButton: function() {
+        const backBtn = document.getElementById('globalServiceBackBtn');
+        if (backBtn) {
+            backBtn.onclick = () => this.handleBackButton();
+        }
+    },
+
+    // Обработка кнопки "Назад"
+    handleBackButton: function() {
+        if (this.currentServiceType === 'crm') {
+            Navigation.showPage('crm-services');
+        } else {
+            Navigation.showPage('services');
+        }
     },
 
     // Проверка статуса службы
