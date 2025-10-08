@@ -1041,3 +1041,24 @@
 .service-item:nth-child(3) .service-name i { color: #FF9800; } /* Farcards EGAIS */
 .service-item:nth-child(4) .service-name i { color: #9C27B0; } /* FarCards */
 .service-item:nth-child(5) .service-name i { color: #00BCD4; } /* QRpay */
+/* Центрирование состояния службы */
+.service-info {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.service-status {
+    font-size: 16px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+}
