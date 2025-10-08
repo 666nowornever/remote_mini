@@ -1,0 +1,27 @@
+<div class="page crm-services-page">
+    <button class="back-btn" onclick="Navigation.showPage('services')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к службам
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-users"></i>
+            Службы CRM
+        </div>
+        <div class="servers-list">
+            <div class="server-item service-item" onclick="ServicesManager.selectCrmService({id: 'authservice', name: 'AuthService', displayName: 'AuthService'})">
+                <span class="server-name service-name">
+                    <i class="fas fa-user-shield"></i>
+                    AuthService
+                </span>
+            </div>
+            <div class="server-item service-item" onclick="ServicesManager.selectCrmService({id: 'monitor_r_keeper', name: 'Monitor_r_keeper', displayName: 'Monitor_r_keeper'})">
+                <span class="server-name service-name">
+                    <i class="fas fa-desktop"></i>
+                    Monitor_r_keeper
+                </span>
+            </div>
+        </div>
+    </div>
+</div>

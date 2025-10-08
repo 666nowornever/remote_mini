@@ -20,7 +20,8 @@ const Navigation = {
         'service-management': 'pages/service-management.html',
         'services-status': 'pages/services-status.html',
         'services': 'pages/services.html',
-        'service-management-global': 'pages/service-management-global.html'
+        'service-management-global': 'pages/service-management-global.html',
+        'crm-services': 'pages/crm-services.html'
     },
 
     // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
@@ -43,7 +44,8 @@ const Navigation = {
         'service-management': 'Управление службой',
         'services-status': 'Статус служб',
         'services': 'Службы',
-        'service-management-global': 'Управление службой'
+        'service-management-global': 'Управление службой',
+        'crm-services': 'Службы CRM'
     },
 
     // Показать страницу
@@ -165,6 +167,12 @@ initializePage: function(pageId) {
              case 'services':
                 console.log('🔄 Инициализация страницы служб...');
                 // Страница не требует специальной инициализации
+                break;
+            case 'crm-services':
+                console.log('🔄 Инициализация страницы служб CRM...');
+                if (typeof ServicesManager !== 'undefined' && ServicesManager.loadCrmServicesPage) {
+                    ServicesManager.loadCrmServicesPage();
+                }
                 break;
             case 'service-management-global':
                 console.log('🔄 Инициализация страницы управления глобальной службой...');

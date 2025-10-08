@@ -1,5 +1,11 @@
 // Менеджер управления службами RkDexch и CRM
 const ServicesManager = {
+    // Службы CRM
+    crmServices: [
+        { id: 'authservice', name: 'AuthService', displayName: 'AuthService' },
+        { id: 'monitor_r_keeper', name: 'Monitor_r_keeper', displayName: 'Monitor_r_keeper' }
+    ],
+
     // Текущая выбранная служба
     selectedService: null,
 
@@ -8,8 +14,14 @@ const ServicesManager = {
         console.log('🔄 ServicesManager: инициализация...');
     },
 
-    // Выбор службы
+    // Выбор основного сервиса
     selectService: function(serviceName, serviceDisplayName) {
+        if (serviceName === 'crm') {
+            // Для CRM переходим на отдельную страницу со списком служб
+            Navigation.showPage('crm-services');
+            return;
+        }
+        
         this.selectedService = {
             name: serviceName,
             displayName: serviceDisplayName
@@ -20,6 +32,23 @@ const ServicesManager = {
         
         // Переходим на страницу управления службой
         Navigation.showPage('service-management-global');
+    },
+
+    // Выбор службы CRM
+    selectCrmService: function(service) {
+        this.selectedService = service;
+        
+        // Сохраняем выбранную службу в sessionStorage
+        sessionStorage.setItem('selectedService', JSON.stringify(this.selectedService));
+        
+        // Переходим на страницу управления службой
+        Navigation.showPage('service-management-global');
+    },
+
+    // Загрузка страницы служб CRM
+    loadCrmServicesPage: function() {
+        // Ничего особенного не требуется, просто отображаем список
+        console.log('🔄 Загрузка страницы служб CRM...');
     },
 
     // Загрузка страницы управления службой
