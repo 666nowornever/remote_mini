@@ -18,7 +18,9 @@ const Navigation = {
         'cash-server-management': 'pages/cash-server-management.html',
         'cash-server-services': 'pages/cash-server-services.html',
         'service-management': 'pages/service-management.html',
-        'services-status': 'pages/services-status.html'
+        'services-status': 'pages/services-status.html',
+        'services': 'pages/services.html',
+        'service-management-global': 'pages/service-management-global.html'
     },
 
     // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
@@ -39,7 +41,9 @@ const Navigation = {
         'cash-server-management': 'Управление сервером',
         'cash-server-services': 'Службы сервера',
         'service-management': 'Управление службой',
-        'services-status': 'Статус служб'
+        'services-status': 'Статус служб',
+        'services': 'Службы',
+        'service-management-global': 'Управление службой'
     },
 
     // Показать страницу
@@ -156,6 +160,16 @@ initializePage: function(pageId) {
                 console.log('🔄 Инициализация страницы статуса служб...');
                 if (typeof CashServerManager !== 'undefined' && CashServerManager.loadServicesStatusPage) {
                     CashServerManager.loadServicesStatusPage();
+                }
+                break;
+             case 'services':
+                console.log('🔄 Инициализация страницы служб...');
+                // Страница не требует специальной инициализации
+                break;
+            case 'service-management-global':
+                console.log('🔄 Инициализация страницы управления глобальной службой...');
+                if (typeof ServicesManager !== 'undefined' && ServicesManager.loadServiceManagementPage) {
+                    ServicesManager.loadServiceManagementPage();
                 }
                 break;
     }

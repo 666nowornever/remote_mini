@@ -1,0 +1,40 @@
+<div class="page service-management-global-page">
+    <button class="back-btn" onclick="Navigation.showPage('services')">
+        <i class="fas fa-arrow-left"></i>
+        Назад к службам
+    </button>
+    
+    <div class="card">
+        <div class="section-title">
+            <i class="fas fa-cog"></i>
+            <span id="globalServiceManagementTitle">Управление службой</span>
+        </div>
+        
+        <div class="service-info">
+            <div class="service-status" id="globalServiceStatus">Статус: проверка...</div>
+        </div>
+        
+        <div class="button-grid">
+            <div class="btn btn-status" onclick="ServicesManager.checkServiceStatusAction()">
+                <i class="fas fa-info-circle"></i>
+                Статус
+            </div>
+            <div class="btn btn-restart" onclick="ServicesManager.restartService()">
+                <i class="fas fa-redo"></i>
+                Restart
+            </div>
+            <div class="btn btn-start" onclick="ServicesManager.startService()">
+                <i class="fas fa-play"></i>
+                Start
+            </div>
+            <div class="btn btn-stop" onclick="ServicesManager.stopService()">
+                <i class="fas fa-stop"></i>
+                Stop
+            </div>
+        </div>
+        
+        <div class="action-log" id="globalServiceActionLog">
+            <!-- Лог действий будет появляться здесь -->
+        </div>
+    </div>
+</div>

@@ -61,11 +61,16 @@ function initializeManagers() {
         console.log('✅ PrinterManager инициализирован');
     }
     
-    console.log('✅ Все менеджеры инициализированы');
     // Инициализируем CashServerManager если он есть
     if (typeof CashServerManager !== 'undefined' && CashServerManager.init) {
         CashServerManager.init();
         console.log('✅ CashServerManager инициализирован');
+    }
+
+     // Инициализируем ServicesManager если он есть
+    if (typeof ServicesManager !== 'undefined' && ServicesManager.init) {
+        ServicesManager.init();
+        console.log('✅ ServicesManager инициализирован');
     }
     
     console.log('✅ Все менеджеры инициализированы');
