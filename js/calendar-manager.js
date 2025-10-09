@@ -9,7 +9,7 @@ const CalendarManager = {
         branch: 'main',
         
         // URL для чтения данных
-        dataUrl: 'https://raw.githubusercontent.com/666nowornever/remote_mini/refs/heads/main/data/calendar-data.json',
+        dataUrl: 'https://raw.githubusercontent.com/666nowornever/remote_mini/main/data/calendar-data.json',
         
         // Интервалы
         syncInterval: 30000, // 30 секунд
