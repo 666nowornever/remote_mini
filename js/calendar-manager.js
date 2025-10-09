@@ -45,8 +45,8 @@ const CalendarManager = {
 
     // === НАСТРОЙКИ GITHUB API ===
 github: {
-    // Твой GitHub Personal Access Token
-    token: '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', // ← ВСТАВЬ СВОЙ ТОКЕН ЗДЕСЬ
+    // ВСТАВЬТЕ СВОЙ НОВЫЙ ТОКЕН ЗДЕСЬ:
+    token: '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',
     
     // GitHub API endpoints
     apiBase: 'https://api.github.com',
@@ -103,12 +103,16 @@ github: {
         return;
     }
     
-    // Тестируем токен
-    const tokenValid = await this.testGitHubToken();
-    if (!tokenValid) {
-        this.updateSyncStatus('error', 'Неверный GitHub токен');
-        return;
+     const syncSuccess = await this.syncFromServer();
+    if (!syncSuccess) {
+        console.log('⚠️ Синхронизация не удалась, используем локальные данные');
     }
+    
+    // Запускаем периодическую синхронизацию
+    this.startSyncInterval();
+    
+    console.log('✅ CalendarManager: инициализация завершена');
+},
     
     // Пробуем синхронизировать с сервером
     await this.syncFromServer();
@@ -925,5 +929,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 });
+
 
 
