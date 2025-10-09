@@ -4,7 +4,7 @@ const CalendarManager = {
     config: {
         // Настройки репозитория
         owner: '666nowornever', // Твой GitHub username
-        repo: 'remote-mini-app', // Название репозитория
+        repo: 'remote_mini', // Название репозитория
         path: 'data/calendar-data.json', // Путь к файлу
         branch: 'main',
         
