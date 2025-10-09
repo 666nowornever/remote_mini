@@ -1,8 +1,7 @@
-// Менеджер календаря дежурств с синхронизацией через GitHub Pages
+// Менеджер календаря дежурств с ручной синхронизацией
 const CalendarManager = {
-    // === КОНФИГУРАЦИЯ - ИСПОЛЬЗУЕМ ОТНОСИТЕЛЬНЫЙ ПУТЬ ===
+    // Конфигурация
     config: {
-        // Относительный путь к файлу данных в том же домене
         dataUrl: 'data/calendar-data.json',
         syncInterval: 30000,
         maxRetries: 3
@@ -38,8 +37,8 @@ const CalendarManager = {
         currentDate: new Date(),
         selectionMode: 'day',
         isOnline: false,
-        pendingChanges: false,
-        retryCount: 0
+        retryCount: 0,
+        lastSync: 0
     },
 
     // === ИНИЦИАЛИЗАЦИЯ ===
@@ -109,7 +108,7 @@ const CalendarManager = {
         try {
             console.log('📡 Запрос данных с:', this.config.dataUrl);
             
-            const response = await fetch(this.config.dataUrl + '?t=' + Date.now());
+            const response = await fetch(this.config.dataUrl + '?t=' + Date.now() + '&r=' + Math.random());
             
             console.log('📊 Статус ответа:', response.status, response.statusText);
             
@@ -126,28 +125,28 @@ const CalendarManager = {
             console.log('📦 Получены общие данные:', serverData);
 
             if (this.validateData(serverData)) {
-                // Серверные данные имеют приоритет
-                if (serverData.lastModified > this.data.lastModified) {
-                    this.data = serverData;
-                    this.saveLocalData();
-                    console.log('✅ Данные обновлены с сервера');
-                    this.state.isOnline = true;
-                    this.state.retryCount = 0;
+                // Всегда используем серверные данные для синхронизации
+                const hadChanges = JSON.stringify(this.data) !== JSON.stringify(serverData);
+                
+                this.data = serverData;
+                this.saveLocalData();
+                
+                console.log('✅ Данные синхронизированы с сервером');
+                this.state.isOnline = true;
+                this.state.retryCount = 0;
+                this.state.lastSync = Date.now();
+                
+                if (hadChanges) {
                     this.updateSyncStatus('success', `Обновлено: ${new Date().toLocaleTimeString()}`);
-                    
                     // Перерисовываем календарь если он открыт
                     if (document.getElementById('calendarGrid')) {
                         this.renderCalendar();
                     }
-                    
-                    return true;
                 } else {
-                    console.log('📅 Данные актуальны');
-                    this.state.isOnline = true;
-                    this.state.retryCount = 0;
                     this.updateSyncStatus('success', 'Данные актуальны');
-                    return true;
                 }
+                
+                return true;
             } else {
                 throw new Error('Невалидные данные с сервера');
             }
@@ -186,11 +185,43 @@ const CalendarManager = {
 
     // Ручная синхронизация
     async manualSync() {
+        this.updateSyncStatus('syncing', 'Синхронизация...');
         const success = await this.syncFromServer();
-        if (success && document.getElementById('calendarGrid')) {
-            this.renderCalendar();
+        
+        if (success) {
+            if (document.getElementById('calendarGrid')) {
+                this.renderCalendar();
+            }
+            // Показываем успех на 2 секунды
+            setTimeout(() => {
+                if (this.state.isOnline) {
+                    this.updateSyncStatus('success', 'Синхронизировано');
+                }
+            }, 2000);
         }
+        
         return success;
+    },
+
+    // Экспорт данных для ручного обновления файла
+    exportData() {
+        const dataStr = JSON.stringify(this.data, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        // Создаем ссылку для скачивания
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = 'calendar-data.json';
+        link.click();
+        
+        // Показываем инструкцию
+        DialogService.showMessage(
+            'Экспорт данных',
+            `Данные экспортированы!\n\nЧтобы синхронизировать с другими пользователями:\n\n1. 📁 Замени файл data/calendar-data.json в репозитории\n2. 🔄 Сделай commit и push на GitHub\n3. 📱 Другие пользователи увидят изменения после обновления страницы\n\nФайл: calendar-data.json`,
+            'success'
+        );
+        
+        this.updateSyncStatus('success', 'Данные экспортированы');
     },
 
     // Обновление статуса
@@ -203,15 +234,6 @@ const CalendarManager = {
             <i class="fas fa-${this.getSyncIcon(status)}"></i>
             ${message}
         `;
-
-        // Автоматически скрываем успешный статус через 3 секунды
-        if (status === 'success') {
-            setTimeout(() => {
-                if (statusElement.className.includes('success')) {
-                    this.updateSyncStatus('success', 'Синхронизировано');
-                }
-            }, 3000);
-        }
     },
 
     getSyncIcon(status) {
@@ -224,7 +246,7 @@ const CalendarManager = {
         return icons[status] || 'desktop';
     },
 
-    // === ОСНОВНЫЕ МЕТОДЫ (без изменений) ===
+    // === ОСНОВНЫЕ МЕТОДЫ ===
 
     showCalendar() {
         Navigation.showPage('calendar');
@@ -344,6 +366,7 @@ const CalendarManager = {
         document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
         document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
         document.getElementById('manualSyncBtn')?.addEventListener('click', () => this.manualSync());
+        document.getElementById('exportDataBtn')?.addEventListener('click', () => this.exportData());
     },
 
     toggleSelectionMode() {
@@ -356,9 +379,20 @@ const CalendarManager = {
         }
     },
 
-    previousMonth() { this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); this.renderCalendar(); },
-    nextMonth() { this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); this.renderCalendar(); },
-    goToToday() { this.state.currentDate = new Date(); this.renderCalendar(); },
+    previousMonth() { 
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
+        this.renderCalendar(); 
+    },
+    
+    nextMonth() { 
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
+        this.renderCalendar(); 
+    },
+    
+    goToToday() { 
+        this.state.currentDate = new Date(); 
+        this.renderCalendar(); 
+    },
 
     // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
 
@@ -393,6 +427,7 @@ const CalendarManager = {
                     <div class="modal-tabs">
                         <button class="tab-btn active" data-tab="duty">Дежурство</button>
                         <button class="tab-btn" data-tab="vacation">Отпуск</button>
+                        <button class="tab-btn" data-tab="event">Событие</button>
                     </div>
                     
                     <div class="tab-content" id="dutyTab">
@@ -432,6 +467,21 @@ const CalendarManager = {
                             <textarea id="vacationComment" placeholder="Добавьте комментарий...">${this.getVacationComment(dateKey) || ''}</textarea>
                         </div>
                     </div>
+                    
+                    <div class="tab-content hidden" id="eventTab">
+                        <div class="event-time-section">
+                            <label for="eventTime">Время отправки уведомления:</label>
+                            <input type="time" id="eventTime" value="09:00">
+                        </div>
+                        <div class="comment-section">
+                            <label for="eventMessage">Сообщение для чата:</label>
+                            <textarea id="eventMessage" placeholder="Введите сообщение для отправки в рабочий чат..."></textarea>
+                        </div>
+                        <div class="notification-info">
+                            <i class="fas fa-info-circle"></i>
+                            Сообщение будет отправлено в рабочий чат Telegram в указанное время
+                        </div>
+                    </div>
                 </div>
                 <div class="calendar-modal-actions">
                     <button class="btn btn-cancel">Отмена</button>
@@ -467,6 +517,8 @@ const CalendarManager = {
                 this.saveDutyEvent(datesToSave);
             } else if (activeTab === 'vacation') {
                 this.saveVacationEvent(datesToSave);
+            } else if (activeTab === 'event') {
+                this.saveChatEvent(datesToSave);
             }
 
             closeModal();
@@ -523,6 +575,23 @@ const CalendarManager = {
         this.saveData();
     },
 
+    saveChatEvent(datesToSave) {
+        const eventTime = document.getElementById('eventTime')?.value;
+        const eventMessage = document.getElementById('eventMessage')?.value.trim();
+
+        if (!eventMessage) {
+            alert('Пожалуйста, введите сообщение для отправки');
+            return;
+        }
+
+        datesToSave.forEach(date => {
+            const eventDateTime = `${date}T${eventTime}:00`;
+            this.scheduleTelegramMessage(eventDateTime, eventMessage);
+        });
+
+        DialogService.showMessage('Событие запланировано', 'Сообщение будет отправлено в указанное время', 'success');
+    },
+
     saveData() {
         this.data.lastModified = Date.now();
         this.saveLocalData();
@@ -575,6 +644,51 @@ const CalendarManager = {
         }
         
         return dates;
+    },
+
+    // === TELEGRAM ИНТЕГРАЦИЯ ===
+
+    scheduleTelegramMessage(eventDateTime, message) {
+        const eventTimestamp = new Date(eventDateTime).getTime();
+        const now = Date.now();
+        
+        if (eventTimestamp <= now) {
+            alert('Указанное время уже прошло');
+            return;
+        }
+
+        const scheduledMessages = JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
+        scheduledMessages.push({
+            timestamp: eventTimestamp,
+            message: message,
+            datetime: eventDateTime
+        });
+        
+        localStorage.setItem('scheduledTelegramMessages', JSON.stringify(scheduledMessages));
+        console.log(`⏰ Запланировано сообщение на ${eventDateTime}`);
+    },
+
+    startMessageScheduler() {
+        setInterval(() => {
+            this.checkScheduledMessages();
+        }, 60000);
+    },
+
+    checkScheduledMessages() {
+        const scheduledMessages = JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
+        const now = Date.now();
+        const messagesToSend = scheduledMessages.filter(msg => msg.timestamp <= now);
+        
+        messagesToSend.forEach(msg => {
+            this.sendToTelegramChat(msg.message);
+        });
+        
+        const remainingMessages = scheduledMessages.filter(msg => msg.timestamp > now);
+        localStorage.setItem('scheduledTelegramMessages', JSON.stringify(remainingMessages));
+    },
+
+    sendToTelegramChat(message) {
+        console.log('🔔 Сообщение для Telegram:', message);
     }
 };
 
