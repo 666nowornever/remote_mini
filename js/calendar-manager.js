@@ -2,13 +2,13 @@
 const CalendarManager = {
     // === КОНФИГУРАЦИЯ GITHUB API ===
     config: {
-        // Настройки репозитория
+        // Настройки репозитория (замени на свои!)
         owner: '666nowornever', // Твой GitHub username
-        repo: 'remote_mini', // Название репозитория
+        repo: 'remote_mini', // Название твоего репозитория (обрати внимание на нижнее подчеркивание)
         path: 'data/calendar-data.json', // Путь к файлу
         branch: 'main',
         
-        // URL для чтения данных
+        // URL для чтения данных (тот что видишь при нажатии raw)
         dataUrl: 'https://raw.githubusercontent.com/666nowornever/remote_mini/main/data/calendar-data.json',
         
         // Интервалы
@@ -17,10 +17,9 @@ const CalendarManager = {
     },
 
     // === НАСТРОЙКИ GITHUB API ===
-    // ВАЖНО: Замени эти значения на свои!
     github: {
-        // GitHub Personal Access Token
-        
+        // Твой GitHub Personal Access Token
+        // ИНСТРУКЦИЯ: Замени на свой токен!
         token: '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', 
         
         // GitHub API endpoints
@@ -89,12 +88,12 @@ const CalendarManager = {
 
     // === ПРОВЕРКА НАСТРОЕК GITHUB ===
     validateGitHubConfig() {
-        if (!this.github.token || this.github.token === 'ghp_tvyour_actual_token_here') {
+        if (!this.github.token || this.github.token === 'ghp_your_actual_token_here') {
             console.error('❌ GitHub token не настроен');
             return false;
         }
         
-        if (!this.config.owner || this.config.owner === '666nowornever') {
+        if (!this.config.owner || this.config.owner === 'YOUR_GITHUB_USERNAME') {
             console.error('❌ GitHub owner не настроен');
             return false;
         }
@@ -117,7 +116,7 @@ const CalendarManager = {
    - Скопируй токен
 
 2. Обнови настройки в calendar-manager.js:
-   - Замени 'ghp_tvyour_actual_token_here' на свой токен
+   - Замени 'ghp_your_actual_token_here' на свой токен
    - Убедись что owner и repo указаны правильно
 
 Пока синхронизация отключена. Данные сохраняются только локально.
@@ -364,7 +363,7 @@ const CalendarManager = {
         return false;
     },
 
-    // Обновление статуса
+    // Обновление статуса синхронизации
     updateSyncStatus(status, message) {
         const statusElement = document.getElementById('syncStatus');
         if (!statusElement) return;
@@ -375,6 +374,9 @@ const CalendarManager = {
             ${message}
         `;
 
+        // Обновляем кнопку синхронизации
+        this.updateSyncButton(status);
+
         // Автоматически скрываем детали успешного статуса через 3 секунды
         if (status === 'success' && message.includes(':')) {
             setTimeout(() => {
@@ -382,6 +384,26 @@ const CalendarManager = {
                     this.updateSyncStatus('success', 'Синхронизировано');
                 }
             }, 3000);
+        }
+    },
+
+    // Обновление вида кнопки синхронизации
+    updateSyncButton(status) {
+        const syncBtn = document.getElementById('manualSyncBtn');
+        if (!syncBtn) return;
+
+        // Удаляем предыдущие классы статуса
+        syncBtn.classList.remove('syncing', 'success', 'error', 'warning', 'offline');
+        
+        // Добавляем текущий статус
+        if (status !== 'success') {
+            syncBtn.classList.add(status);
+        }
+
+        // Обновляем иконку
+        const icon = syncBtn.querySelector('i');
+        if (icon) {
+            icon.className = `fas fa-${this.getSyncIcon(status)}`;
         }
     },
 
@@ -396,8 +418,8 @@ const CalendarManager = {
         return icons[status] || 'cloud';
     },
 
-    // === ОСНОВНЫЕ МЕТОДЫ ===
-
+    // === ОСНОВНЫЕ МЕТОДЫ КАЛЕНДАРЯ ===
+    // (остальные методы остаются без изменений)
     showCalendar() {
         Navigation.showPage('calendar');
     },
@@ -528,12 +550,22 @@ const CalendarManager = {
         }
     },
 
-    previousMonth() { this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); this.renderCalendar(); },
-    nextMonth() { this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); this.renderCalendar(); },
-    goToToday() { this.state.currentDate = new Date(); this.renderCalendar(); },
+    previousMonth() { 
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
+        this.renderCalendar(); 
+    },
+    
+    nextMonth() { 
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
+        this.renderCalendar(); 
+    },
+    
+    goToToday() { 
+        this.state.currentDate = new Date(); 
+        this.renderCalendar(); 
+    },
 
     // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
-
     openEventModal(dateKey, weekDates = null) {
         const isWeekMode = weekDates !== null;
         const date = this.parseDateKey(dateKey);
@@ -747,7 +779,6 @@ const CalendarManager = {
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-
     isPersonOnDuty(dateKey, personId) {
         return this.data.events[dateKey]?.some(event => event.id === personId);
     },
