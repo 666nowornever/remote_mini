@@ -1504,3 +1504,337 @@
 .btn-save:hover {
     background: #5a6fd8;
 }
+/* Calendar Mode Button */
+.calendar-mode-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.calendar-mode-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* Weekend days */
+.calendar-day.weekend {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.calendar-day.weekend .calendar-day-number {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Vacation events */
+.calendar-vacation {
+    height: 4px;
+    border-radius: 2px;
+    background: #FF6B6B;
+    border: 1px solid #FF5252;
+}
+
+.vacation-color {
+    background: #FF6B6B !important;
+}
+
+/* Modal Tabs */
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-btn:hover {
+    background: #f5f5f5;
+}
+
+.tab-content {
+    transition: all 0.3s ease;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* Event Time Section */
+.event-time-section {
+    margin-bottom: 20px;
+}
+
+.event-time-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.event-time-section input {
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 16px;
+    width: 100%;
+}
+
+/* Notification Info */
+.notification-info {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 15px;
+    font-size: 14px;
+    color: #1976d2;
+}
+
+.notification-info i {
+    margin-right: 8px;
+}
+/* Calendar Day Styles */
+.calendar-day {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 8px;
+    min-height: 90px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-day.holiday .calendar-day-number {
+    color: #ff6b6b !important;
+    font-weight: 600;
+}
+
+.calendar-day-number {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.calendar-day-events {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+/* Duty Events - шире */
+.calendar-event {
+    height: 8px;
+    border-radius: 4px;
+    background: #667eea;
+    min-width: 100%;
+}
+
+/* Vacation Container - отдельная полоса внизу */
+.calendar-vacation-container {
+    display: flex;
+    gap: 2px;
+    margin-top: auto;
+    padding-top: 2px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.calendar-vacation {
+    height: 6px;
+    border-radius: 3px;
+    background: #ff6b6b;
+    flex: 1;
+    min-width: 0;
+}
+
+/* Legend */
+.vacation-color {
+    background: #ff6b6b !important;
+    height: 12px;
+    border-radius: 3px;
+}
+
+/* Sync Status */
+.sync-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 12px;
+    z-index: 1000;
+}
+
+.sync-status.syncing {
+    background: rgba(255, 193, 7, 0.8);
+}
+
+.sync-status.error {
+    background: rgba(244, 67, 54, 0.8);
+}
+
+/* Calendar Control Buttons */
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.calendar-nav-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.calendar-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.calendar-today-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.calendar-today-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+}
+
+.calendar-mode-btn {
+    background: rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(102, 126, 234, 0.5);
+    border-radius: 10px;
+    color: white;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.calendar-mode-btn:hover {
+    background: rgba(102, 126, 234, 0.4);
+    transform: translateY(-1px);
+}
+
+.calendar-sync-btn {
+    background: rgba(76, 175, 80, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    border-radius: 10px;
+    color: white;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.calendar-sync-btn:hover {
+    background: rgba(76, 175, 80, 0.4);
+    transform: translateY(-1px);
+}
+
+.calendar-export-btn {
+    background: rgba(255, 193, 7, 0.3);
+    border: 1px solid rgba(255, 193, 7, 0.5);
+    border-radius: 10px;
+    color: white;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.calendar-export-btn:hover {
+    background: rgba(255, 193, 7, 0.4);
+    transform: translateY(-1px);
+}
+
+/* Sync Status */
+.sync-status {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(10px);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 25px;
+    font-size: 14px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.sync-status.syncing {
+    background: rgba(255, 193, 7, 0.8);
+}
+
+.sync-status.success {
+    background: rgba(76, 175, 80, 0.8);
+}
+
+.sync-status.error {
+    background: rgba(244, 67, 54, 0.8);
+}
+
+.sync-status.offline {
+    background: rgba(158, 158, 158, 0.8);
+}

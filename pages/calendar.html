@@ -4,6 +4,11 @@
         Назад
     </button>
     
+    <!-- Индикатор синхронизации -->
+    <div class="sync-status" id="syncStatus">
+        <i class="fas fa-desktop"></i> Локальные данные
+    </div>
+    
     <div class="card">
         <div class="calendar-header">
             <div class="calendar-title">
@@ -11,12 +16,21 @@
                 <span id="calendarTitle">Календарь дежурств</span>
             </div>
             <div class="calendar-controls">
-                <button class="calendar-nav-btn" id="calendarPrev">
+                <button class="calendar-nav-btn" id="calendarPrev" title="Предыдущий месяц">
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <button class="calendar-today-btn" id="calendarToday">Сегодня</button>
-                <button class="calendar-nav-btn" id="calendarNext">
+                <button class="calendar-nav-btn" id="calendarNext" title="Следующий месяц">
                     <i class="fas fa-chevron-right"></i>
+                </button>
+                <button class="calendar-mode-btn" id="selectionModeBtn" title="Переключить режим выбора">
+                    <i class="fas fa-calendar-day"></i> Режим: День
+                </button>
+                <button class="calendar-sync-btn" id="manualSyncBtn" title="Проверить обновления">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="calendar-export-btn" id="exportDataBtn" title="Экспорт данных">
+                    <i class="fas fa-download"></i>
                 </button>
             </div>
         </div>
@@ -26,7 +40,7 @@
         </div>
 
         <div class="calendar-legend">
-            <div class="legend-title">Дежурные:</div>
+            <div class="legend-title">Обозначения:</div>
             <div class="legend-items">
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #2196F3"></div>
@@ -39,6 +53,10 @@
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #FF9800"></div>
                     <span>Преображенский Дмитрий</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color vacation-color"></div>
+                    <span>Отпуск</span>
                 </div>
             </div>
         </div>
