@@ -13,21 +13,47 @@ const CalendarManager = {
         
         // Интервалы
         syncInterval: 30000, // 30 секунд
-        maxRetries: 3
+        maxRetries: 3,
+
+        // Метод для проверки токена (добавь в класс CalendarManager)
+        async testGitHubToken() {
+        console.log('🔐 Тестирование GitHub токена...');
+    
+    try {
+        const response = await fetch('https://api.github.com/user', {
+            headers: {
+                'Authorization': `Bearer ${this.github.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Telegram-Mini-App'
+            }
+        });
+        
+        if (response.ok) {
+            const userData = await response.json();
+            console.log('✅ Токен валиден. Пользователь:', userData.login);
+            return true;
+        } else {
+            console.error('❌ Токен невалиден. Статус:', response.status);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Ошибка проверки токена:', error.message);
+        return false;
+    }
+},
     },
 
     // === НАСТРОЙКИ GITHUB API ===
-    github: {
-        // Твой GitHub Personal Access Token
-        // ИНСТРУКЦИЯ: Замени на свой токен!
-        token: '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', 
-        
-        // GitHub API endpoints
-        apiBase: 'https://api.github.com',
-        get contentUrl() {
-            return `${this.apiBase}/repos/${CalendarManager.config.owner}/${CalendarManager.config.repo}/contents/${CalendarManager.config.path}`;
-        }
-    },
+github: {
+    // Твой GitHub Personal Access Token
+    token: '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', // ← ВСТАВЬ СВОЙ ТОКЕН ЗДЕСЬ
+    
+    // GitHub API endpoints
+    apiBase: 'https://api.github.com',
+    get contentUrl() {
+        return `${this.apiBase}/repos/${CalendarManager.config.owner}/${CalendarManager.config.repo}/contents/${CalendarManager.config.path}`;
+    }
+},
 
     // Данные
     data: {
@@ -66,25 +92,32 @@ const CalendarManager = {
 
     // === ИНИЦИАЛИЗАЦИЯ ===
     async init() {
-        console.log('🔄 CalendarManager: инициализация...');
-        
-        // Загружаем локальные данные
-        this.loadLocalData();
-        
-        // Проверяем настройки GitHub
-        if (!this.validateGitHubConfig()) {
-            this.showGitHubConfigError();
-            return;
-        }
-        
-        // Пробуем синхронизировать с сервером
-        await this.syncFromServer();
-        
-        // Запускаем периодическую синхронизацию
-        this.startSyncInterval();
-        
-        console.log('✅ CalendarManager: инициализация завершена');
-    },
+    console.log('🔄 CalendarManager: инициализация...');
+    
+    // Загружаем локальные данные
+    this.loadLocalData();
+    
+    // Проверяем настройки GitHub
+    if (!this.validateGitHubConfig()) {
+        this.showGitHubConfigError();
+        return;
+    }
+    
+    // Тестируем токен
+    const tokenValid = await this.testGitHubToken();
+    if (!tokenValid) {
+        this.updateSyncStatus('error', 'Неверный GitHub токен');
+        return;
+    }
+    
+    // Пробуем синхронизировать с сервером
+    await this.syncFromServer();
+    
+    // Запускаем периодическую синхронизацию
+    this.startSyncInterval();
+    
+    console.log('✅ CalendarManager: инициализация завершена');
+},
 
     // === ПРОВЕРКА НАСТРОЕК GITHUB ===
     validateGitHubConfig() {
@@ -236,76 +269,116 @@ const CalendarManager = {
     },
 
     // Синхронизация на сервер (запись)
-    async syncToServer() {
-        if (this.state.isSyncing) {
-            console.log('🔄 Уже выполняется синхронизация...');
-            return false;
+async syncToServer() {
+    if (this.state.isSyncing) {
+        console.log('🔄 Уже выполняется синхронизация...');
+        return false;
+    }
+
+    this.state.isSyncing = true;
+    this.updateSyncStatus('syncing', 'Отправка на GitHub...');
+
+    try {
+        console.log('📤 Отправка данных на GitHub...');
+        
+        // Сначала получаем текущий файл чтобы узнать sha
+        const currentFile = await this.getCurrentFile();
+        
+        // Подготавливаем данные для отправки
+        this.data.lastModified = Date.now();
+        const content = JSON.stringify(this.data, null, 2);
+        const contentEncoded = btoa(unescape(encodeURIComponent(content)));
+        
+        // Подготавливаем тело запроса
+        const requestBody = {
+            message: `Calendar update: ${new Date().toLocaleString()}`,
+            content: contentEncoded,
+            branch: this.config.branch
+        };
+        
+        // Добавляем sha если файл существует
+        if (currentFile?.sha) {
+            requestBody.sha = currentFile.sha;
+        }
+        
+        console.log('📦 Отправка запроса:', {
+            url: this.github.contentUrl,
+            method: 'PUT',
+            hasSha: !!currentFile?.sha,
+            contentLength: content.length
+        });
+        
+        // Отправляем на GitHub
+        const response = await fetch(this.github.contentUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${this.github.token}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Telegram-Mini-App'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        console.log('📡 Ответ GitHub:', response.status, response.statusText);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('❌ GitHub API error:', errorText);
+            
+            let errorData;
+            try {
+                errorData = JSON.parse(errorText);
+            } catch (e) {
+                errorData = { message: errorText };
+            }
+            
+            throw new Error(`GitHub API: ${response.status} - ${errorData.message || response.statusText}`);
         }
 
-        this.state.isSyncing = true;
-        this.updateSyncStatus('syncing', 'Отправка на GitHub...');
+        const result = await response.json();
+        console.log('✅ Данные успешно отправлены на GitHub:', result);
+        
+        this.state.isOnline = true;
+        this.state.retryCount = 0;
+        this.state.lastSync = Date.now();
+        this.updateSyncStatus('success', `Сохранено: ${new Date().toLocaleTimeString()}`);
+        
+        return true;
 
-        try {
-            console.log('📤 Отправка данных на GitHub...');
-            
-            // Сначала получаем текущий файл чтобы узнать sha
-            const currentFile = await this.getCurrentFile();
-            
-            // Подготавливаем данные для отправки
-            this.data.lastModified = Date.now();
-            const content = JSON.stringify(this.data, null, 2);
-            const contentEncoded = btoa(unescape(encodeURIComponent(content)));
-            
-            // Отправляем на GitHub
-            const response = await fetch(this.github.contentUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${this.github.token}`,
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/vnd.github.v3+json'
-                },
-                body: JSON.stringify({
-                    message: `Calendar update: ${new Date().toLocaleString()}`,
-                    content: contentEncoded,
-                    sha: currentFile?.sha || null,
-                    branch: this.config.branch
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`GitHub API: ${response.status} - ${errorData.message || response.statusText}`);
-            }
-
-            const result = await response.json();
-            console.log('✅ Данные успешно отправлены на GitHub:', result);
-            
-            this.state.isOnline = true;
-            this.state.retryCount = 0;
-            this.state.lastSync = Date.now();
-            this.updateSyncStatus('success', `Сохранено: ${new Date().toLocaleTimeString()}`);
-            
-            return true;
-
-        } catch (error) {
-            console.error('❌ Ошибка отправки на GitHub:', error.message);
-            
-            // Сохраняем локально даже при ошибке
-            this.saveLocalData();
-            
-            if (error.message.includes('401') || error.message.includes('403')) {
-                this.updateSyncStatus('error', 'Ошибка авторизации GitHub');
-            } else if (error.message.includes('404')) {
-                this.updateSyncStatus('error', 'Репозиторий не найден');
-            } else {
-                this.updateSyncStatus('warning', 'Сохранено локально (ошибка GitHub)');
-            }
-            
-            return false;
-        } finally {
-            this.state.isSyncing = false;
+    } catch (error) {
+        console.error('❌ Ошибка отправки на GitHub:', error.message);
+        
+        // Детальный анализ ошибки
+        if (error.message.includes('401') || error.message.includes('Bad credentials')) {
+            console.error('🔐 Ошибка аутентификации:');
+            console.error('1. Проверь правильность GitHub токена');
+            console.error('2. Убедись что токен имеет права repo');
+            console.error('3. Убедись что токен не истек');
+            this.updateSyncStatus('error', 'Ошибка аутентификации GitHub');
+        } else if (error.message.includes('403')) {
+            console.error('🚫 Ошибка доступа:');
+            console.error('1. Проверь права токена');
+            console.error('2. Убедись что репозиторий существует и доступен');
+            this.updateSyncStatus('error', 'Нет доступа к репозиторию');
+        } else if (error.message.includes('404')) {
+            console.error('📁 Репозиторий не найден:');
+            console.error('1. Проверь owner и repo в настройках');
+            console.error('2. Убедись что репозиторий существует');
+            this.updateSyncStatus('error', 'Репозиторий не найден');
+        } else {
+            console.error('🌐 Сетевая ошибка:', error.message);
+            this.updateSyncStatus('warning', 'Сохранено локально (ошибка GitHub)');
         }
-    },
+        
+        // Сохраняем локально даже при ошибке
+        this.saveLocalData();
+        
+        return false;
+    } finally {
+        this.state.isSyncing = false;
+    }
+},
 
     // Получение информации о текущем файле
     async getCurrentFile() {
