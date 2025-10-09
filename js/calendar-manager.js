@@ -1,10 +1,10 @@
 // Менеджер календаря дежурств с реальной синхронизацией
 const CalendarManager = {
-    // === КОНФИГУРАЦИЯ - ЗАМЕНИ НА СВОЙ URL ===
+    // === КОНФИГУРАЦИЯ - ПРАВИЛЬНЫЙ URL ===
     config: {
-        // ВАЖНО: Замени на свой GitHub Raw URL
-        dataUrl: 'https://raw.githubusercontent.com/666nowornever/team-calendar-data/refs/heads/main/calendar-data.json',
-        syncInterval: 30000, // 30 секунд
+        
+        dataUrl: 'https://raw.githubusercontent.com/666nowornever/team-calendar-data/main/calendar-data.json',
+        syncInterval: 30000,
         maxRetries: 3
     },
 
