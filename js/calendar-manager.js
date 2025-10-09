@@ -46,7 +46,7 @@ const CalendarManager = {
     // === НАСТРОЙКИ GITHUB API ===
 github: {
     // Твой GitHub Personal Access Token
-    token: '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', // 
+    token: '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', // 
     
     // GitHub API endpoints
     apiBase: 'https://api.github.com',
@@ -308,14 +308,15 @@ async syncToServer() {
             contentLength: content.length
         });
         
-        // Отправляем на GitHub
+        // Отправляем на GitHub с правильными заголовками
         const response = await fetch(this.github.contentUrl, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${this.github.token}`,
                 'Content-Type': 'application/json',
                 'Accept': 'application/vnd.github.v3+json',
-                'User-Agent': 'Telegram-Mini-App'
+                'User-Agent': 'Telegram-Mini-App',
+                'X-GitHub-Api-Version': '2022-11-28'
             },
             body: JSON.stringify(requestBody)
         });
@@ -348,32 +349,7 @@ async syncToServer() {
 
     } catch (error) {
         console.error('❌ Ошибка отправки на GitHub:', error.message);
-        
-        // Детальный анализ ошибки
-        if (error.message.includes('401') || error.message.includes('Bad credentials')) {
-            console.error('🔐 Ошибка аутентификации:');
-            console.error('1. Проверь правильность GitHub токена');
-            console.error('2. Убедись что токен имеет права repo');
-            console.error('3. Убедись что токен не истек');
-            this.updateSyncStatus('error', 'Ошибка аутентификации GitHub');
-        } else if (error.message.includes('403')) {
-            console.error('🚫 Ошибка доступа:');
-            console.error('1. Проверь права токена');
-            console.error('2. Убедись что репозиторий существует и доступен');
-            this.updateSyncStatus('error', 'Нет доступа к репозиторию');
-        } else if (error.message.includes('404')) {
-            console.error('📁 Репозиторий не найден:');
-            console.error('1. Проверь owner и repo в настройках');
-            console.error('2. Убедись что репозиторий существует');
-            this.updateSyncStatus('error', 'Репозиторий не найден');
-        } else {
-            console.error('🌐 Сетевая ошибка:', error.message);
-            this.updateSyncStatus('warning', 'Сохранено локально (ошибка GitHub)');
-        }
-        
-        // Сохраняем локально даже при ошибке
-        this.saveLocalData();
-        
+        this.updateSyncStatus('error', 'Ошибка синхронизации');
         return false;
     } finally {
         this.state.isSyncing = false;
@@ -382,23 +358,30 @@ async syncToServer() {
 
     // Получение информации о текущем файле
     async getCurrentFile() {
-        try {
-            const response = await fetch(this.github.contentUrl, {
-                headers: {
-                    'Authorization': `token ${this.github.token}`,
-                    'Accept': 'application/vnd.github.v3+json'
-                }
-            });
-            
-            if (response.ok) {
-                return await response.json();
+    try {
+        const response = await fetch(this.github.contentUrl, {
+            headers: {
+                'Authorization': `Bearer ${this.github.token}`,
+                'Accept': 'application/vnd.github.v3+json',
+                'User-Agent': 'Telegram-Mini-App',
+                'X-GitHub-Api-Version': '2022-11-28'
             }
+        });
+        
+        if (response.ok) {
+            return await response.json();
+        } else if (response.status === 404) {
+            console.log('📁 Файл не найден, будет создан новый');
             return null;
-        } catch (error) {
-            console.log('📁 Файл не найден или ошибка доступа');
+        } else {
+            console.error('❌ Ошибка получения файла:', response.status);
             return null;
         }
-    },
+    } catch (error) {
+        console.error('❌ Ошибка доступа к файлу:', error.message);
+        return null;
+    }
+},
 
     // Валидация данных
     validateData(data) {
