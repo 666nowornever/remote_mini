@@ -4,6 +4,11 @@
         Назад
     </button>
     
+    <!-- Индикатор синхронизации -->
+    <div class="sync-status" id="syncStatus">
+        <i class="fas fa-cloud"></i> Локальные данные
+    </div>
+    
     <div class="card">
         <div class="calendar-header">
             <div class="calendar-title">
@@ -20,6 +25,9 @@
                 </button>
                 <button class="calendar-mode-btn" id="selectionModeBtn">
                     <i class="fas fa-calendar-day"></i> Режим: День
+                </button>
+                <button class="calendar-sync-btn" id="manualSyncBtn" title="Синхронизировать">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
         </div>

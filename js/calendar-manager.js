@@ -1,5 +1,21 @@
-// Менеджер календаря дежурств и отпусков
+// Менеджер календаря дежурств и отпусков с синхронизацией
 const CalendarManager = {
+    // Конфигурация
+    config: {
+        // === ВАЖНО: ЗАМЕНИ ЭТОТ URL НА СВОЙ ===
+        dataUrl: 'https://raw.githubusercontent.com/666nowornever/team-calendar-data/main/calendar-data.json',
+        syncInterval: 30000, // 30 секунд
+        retryInterval: 5000  // 5 секунд при ошибке
+    },
+
+    // Данные
+    data: {
+        events: {},
+        vacations: {},
+        lastModified: 0,
+        version: 1
+    },
+
     // Список дежурных
     dutyPersons: [
         { id: 1, name: 'Кремнев Андрей', color: '#2196F3' },
@@ -7,78 +23,197 @@ const CalendarManager = {
         { id: 3, name: 'Преображенский Дмитрий', color: '#FF9800' }
     ],
 
-    // Текущий месяц и год
-    currentDate: new Date(),
-    events: {},
-    vacations: {},
+    // Праздничные дни России 2024
+    holidays: [
+        '2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06', '2024-01-07', '2024-01-08',
+        '2024-02-23', '2024-02-24', '2024-02-25', // День защитника Отечества + выходные
+        '2024-03-08', '2024-03-09', '2024-03-10', // Международный женский день + выходные
+        '2024-04-28', '2024-04-29', '2024-04-30', '2024-05-01', '2024-05-02', '2024-05-03', '2024-05-09', '2024-05-10', // Майские праздники
+        '2024-06-11', '2024-06-12', '2024-06-13', // День России
+        '2024-11-02', '2024-11-03', '2024-11-04' // День народного единства
+    ],
 
-    // Режим выбора (один день / неделя)
-    selectionMode: 'day', // 'day' или 'week'
+    // Состояние
+    state: {
+        currentDate: new Date(),
+        selectionMode: 'day', // 'day' или 'week'
+        isSyncing: false,
+        lastSyncAttempt: 0,
+        syncError: null
+    },
 
-    // Инициализация менеджера
-    init: function() {
+    // Инициализация
+    async init() {
         console.log('🔄 CalendarManager: инициализация...');
-        this.loadEventsFromStorage();
-        this.loadVacationsFromStorage();
-    },
-
-    // Загрузка событий из localStorage
-    loadEventsFromStorage: function() {
-        const savedEvents = localStorage.getItem('dutyCalendarEvents');
-        const savedVacations = localStorage.getItem('dutyCalendarVacations');
         
-        if (savedEvents) {
-            this.events = JSON.parse(savedEvents);
-            console.log('📅 События загружены из хранилища');
-        } else {
-            this.events = {};
+        // Загружаем локальные данные
+        this.loadLocalData();
+        
+        // Пытаемся синхронизировать с сервером
+        await this.syncFromServer();
+        
+        // Запускаем периодическую синхронизацию
+        this.startSyncInterval();
+        
+        // Запускаем планировщик сообщений
+        this.startMessageScheduler();
+        
+        console.log('✅ CalendarManager: инициализация завершена');
+    },
+
+    // === СИНХРОНИЗАЦИЯ ===
+
+    // Загрузка локальных данных
+    loadLocalData() {
+        try {
+            const saved = localStorage.getItem('calendarData');
+            if (saved) {
+                const localData = JSON.parse(saved);
+                this.data = { ...this.data, ...localData };
+                console.log('📅 Локальные данные загружены');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки локальных данных:', error);
+        }
+    },
+
+    // Сохранение данных (локально)
+    saveLocalData() {
+        try {
+            localStorage.setItem('calendarData', JSON.stringify(this.data));
+            console.log('💾 Данные сохранены локально');
+        } catch (error) {
+            console.error('❌ Ошибка сохранения локальных данных:', error);
+        }
+    },
+
+    // Синхронизация с сервером
+    async syncFromServer() {
+        if (this.state.isSyncing) return false;
+        
+        this.state.isSyncing = true;
+        this.state.lastSyncAttempt = Date.now();
+        this.updateSyncStatus('syncing', 'Синхронизация...');
+
+        try {
+            const response = await fetch(`${this.config.dataUrl}?t=${Date.now()}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+
+            const serverData = await response.json();
+            
+            // Проверяем валидность данных
+            if (this.validateData(serverData)) {
+                // Объединяем данные (серверные имеют приоритет)
+                this.mergeData(serverData);
+                this.state.syncError = null;
+                this.updateSyncStatus('success', `Синхронизировано: ${new Date().toLocaleTimeString()}`);
+                console.log('✅ Данные синхронизированы с сервером');
+                return true;
+            } else {
+                throw new Error('Невалидные данные с сервера');
+            }
+
+        } catch (error) {
+            this.state.syncError = error.message;
+            this.updateSyncStatus('error', 'Ошибка синхронизации');
+            console.log('📡 Не удалось синхронизировать с сервером:', error.message);
+            return false;
+        } finally {
+            this.state.isSyncing = false;
+        }
+    },
+
+    // Валидация данных
+    validateData(data) {
+        return data && 
+               typeof data === 'object' &&
+               typeof data.events === 'object' &&
+               typeof data.vacations === 'object' &&
+               typeof data.lastModified === 'number' &&
+               typeof data.version === 'number';
+    },
+
+    // Объединение данных
+    mergeData(serverData) {
+        // Для событий и отпусков: серверные данные имеют приоритет
+        if (serverData.lastModified > this.data.lastModified) {
+            this.data.events = { ...this.data.events, ...serverData.events };
+            this.data.vacations = { ...this.data.vacations, ...serverData.vacations };
+            this.data.lastModified = serverData.lastModified;
         }
         
-        if (savedVacations) {
-            this.vacations = JSON.parse(savedVacations);
-            console.log('🏖️ Отпуска загружены из хранилища');
-        } else {
-            this.vacations = {};
-        }
+        // Сохраняем локально
+        this.saveLocalData();
     },
 
-    // Сохранение событий в localStorage
-    saveEventsToStorage: function() {
-        localStorage.setItem('dutyCalendarEvents', JSON.stringify(this.events));
-        localStorage.setItem('dutyCalendarVacations', JSON.stringify(this.vacations));
-        console.log('💾 Данные сохранены в хранилище');
+    // Периодическая синхронизация
+    startSyncInterval() {
+        setInterval(async () => {
+            await this.syncFromServer();
+        }, this.config.syncInterval);
     },
 
-    // Переключение режима выбора
-    toggleSelectionMode: function() {
-        this.selectionMode = this.selectionMode === 'day' ? 'week' : 'day';
-        const modeBtn = document.getElementById('selectionModeBtn');
-        if (modeBtn) {
-            modeBtn.innerHTML = this.selectionMode === 'day' ? 
-                '<i class="fas fa-calendar-day"></i> Режим: День' : 
-                '<i class="fas fa-calendar-week"></i> Режим: Неделя';
+    // Ручная синхронизация
+    async manualSync() {
+        const success = await this.syncFromServer();
+        if (success) {
+            this.renderCalendar(); // Перерисовываем календарь
         }
-        console.log(`📅 Режим выбора: ${this.selectionMode}`);
+        return success;
     },
+
+    // Обновление статуса синхронизации
+    updateSyncStatus(status, message) {
+        const statusElement = document.getElementById('syncStatus');
+        if (!statusElement) return;
+
+        statusElement.className = `sync-status ${status}`;
+        statusElement.innerHTML = `
+            <i class="fas fa-${this.getSyncIcon(status)}"></i>
+            ${message}
+        `;
+    },
+
+    getSyncIcon(status) {
+        const icons = {
+            syncing: 'sync-alt fa-spin',
+            success: 'cloud-check',
+            error: 'cloud-exclamation',
+            offline: 'cloud'
+        };
+        return icons[status] || 'cloud';
+    },
+
+    // === ОСНОВНЫЕ МЕТОДЫ ===
 
     // Показать календарь
-    showCalendar: function() {
+    showCalendar() {
         Navigation.showPage('calendar');
     },
 
     // Загрузка страницы календаря
-    loadCalendarPage: function() {
+    loadCalendarPage() {
         this.renderCalendar();
         this.initializeCalendarHandlers();
+        this.updateSyncStatus('success', `Синхронизировано: ${new Date(this.data.lastModified).toLocaleTimeString()}`);
     },
 
     // Рендер календаря
-    renderCalendar: function() {
+    renderCalendar() {
         const calendarElement = document.getElementById('calendarGrid');
         if (!calendarElement) return;
 
-        const year = this.currentDate.getFullYear();
-        const month = this.currentDate.getMonth();
+        const year = this.state.currentDate.getFullYear();
+        const month = this.state.currentDate.getMonth();
 
         // Заголовок календаря
         const monthNames = [
@@ -120,72 +255,95 @@ const CalendarManager = {
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dateKey = this.getDateKey(date);
-            const dayElement = document.createElement('div');
-            dayElement.className = 'calendar-day';
-            dayElement.dataset.date = dateKey;
-
-            // Проверяем выходной
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            if (isWeekend) {
-                dayElement.classList.add('weekend');
-            }
-
-            const dayNumber = document.createElement('div');
-            dayNumber.className = 'calendar-day-number';
-            dayNumber.textContent = day;
-
-            const eventsContainer = document.createElement('div');
-            eventsContainer.className = 'calendar-day-events';
-
-            // Добавляем дежурства для этого дня
-            if (this.events[dateKey]) {
-                this.events[dateKey].forEach(event => {
-                    const eventElement = document.createElement('div');
-                    eventElement.className = 'calendar-event';
-                    eventElement.style.backgroundColor = event.color;
-                    eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
-                    eventsContainer.appendChild(eventElement);
-                });
-            }
-
-            // Добавляем отпуска для этого дня
-            if (this.vacations[dateKey]) {
-                this.vacations[dateKey].forEach(vacation => {
-                    const vacationElement = document.createElement('div');
-                    vacationElement.className = 'calendar-vacation';
-                    vacationElement.style.backgroundColor = vacation.color;
-                    vacationElement.title = `Отпуск: ${vacation.person}`;
-                    eventsContainer.appendChild(vacationElement);
-                });
-            }
-
-            dayElement.appendChild(dayNumber);
-            dayElement.appendChild(eventsContainer);
-            
-            // Обработчик клика в зависимости от режима
-            dayElement.addEventListener('click', () => {
-                if (this.selectionMode === 'day') {
-                    this.openEventModal(dateKey);
-                } else {
-                    this.handleWeekSelection(date);
-                }
-            });
-
+            const dayElement = this.createDayElement(date, dateKey, day);
             calendarElement.appendChild(dayElement);
         }
     },
 
+    // Создание элемента дня
+    createDayElement(date, dateKey, dayNumber) {
+        const dayElement = document.createElement('div');
+        dayElement.className = 'calendar-day';
+        dayElement.dataset.date = dateKey;
+
+        // Проверяем выходной или праздник
+        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+        const isHoliday = this.holidays.includes(dateKey);
+        
+        if (isWeekend || isHoliday) {
+            dayElement.classList.add('holiday');
+        }
+
+        // Номер дня
+        const dayNumberElement = document.createElement('div');
+        dayNumberElement.className = 'calendar-day-number';
+        dayNumberElement.textContent = dayNumber;
+        dayElement.appendChild(dayNumberElement);
+
+        // Контейнер событий
+        const eventsContainer = document.createElement('div');
+        eventsContainer.className = 'calendar-day-events';
+
+        // Дежурства
+        if (this.data.events[dateKey]) {
+            this.data.events[dateKey].forEach(event => {
+                eventsContainer.appendChild(this.createEventElement(event));
+            });
+        }
+
+        // Отпуска (отдельная полоса внизу)
+        if (this.data.vacations[dateKey]) {
+            eventsContainer.appendChild(this.createVacationContainer(dateKey));
+        }
+
+        dayElement.appendChild(eventsContainer);
+        
+        // Обработчик клика
+        dayElement.addEventListener('click', () => {
+            if (this.state.selectionMode === 'day') {
+                this.openEventModal(dateKey);
+            } else {
+                this.handleWeekSelection(date);
+            }
+        });
+
+        return dayElement;
+    },
+
+    // Создание элемента дежурства
+    createEventElement(event) {
+        const eventElement = document.createElement('div');
+        eventElement.className = 'calendar-event';
+        eventElement.style.backgroundColor = event.color;
+        eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
+        return eventElement;
+    },
+
+    // Создание контейнера отпусков
+    createVacationContainer(dateKey) {
+        const container = document.createElement('div');
+        container.className = 'calendar-vacation-container';
+        
+        this.data.vacations[dateKey].forEach(vacation => {
+            const vacationElement = document.createElement('div');
+            vacationElement.className = 'calendar-vacation';
+            vacationElement.style.backgroundColor = vacation.color;
+            vacationElement.title = `Отпуск: ${vacation.person}`;
+            container.appendChild(vacationElement);
+        });
+        
+        return container;
+    },
+
     // Обработка выбора недели
-    handleWeekSelection: function(selectedDate) {
+    handleWeekSelection(selectedDate) {
         const weekDates = this.getWeekDates(selectedDate);
         const dateKeys = weekDates.map(date => this.getDateKey(date));
-        
-        console.log('📅 Выбрана неделя:', dateKeys);
-        this.openEventModalForWeek(dateKeys);
+        this.openEventModal(dateKeys[0], dateKeys);
     },
 
     // Получение всех дат недели
-    getWeekDates: function(date) {
+    getWeekDates(date) {
         const dates = [];
         const dayOfWeek = date.getDay();
         const startDate = new Date(date);
@@ -200,18 +358,47 @@ const CalendarManager = {
         return dates;
     },
 
-    // Открытие модального окна для недели
-    openEventModalForWeek: function(dateKeys) {
-        const firstDate = this.parseDateKey(dateKeys[0]);
-        const lastDate = this.parseDateKey(dateKeys[6]);
-        
-        const dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
-
-        this.openEventModal(dateKeys[0], dateKeys);
+    // Инициализация обработчиков
+    initializeCalendarHandlers() {
+        // Кнопки навигации
+        document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
+        document.getElementById('calendarNext')?.addEventListener('click', () => this.nextMonth());
+        document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
+        document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
+        document.getElementById('manualSyncBtn')?.addEventListener('click', () => this.manualSync());
     },
 
-    // Открытие модального окна для добавления/редактирования события
-    openEventModal: function(dateKey, weekDates = null) {
+    // Переключение режима выбора
+    toggleSelectionMode() {
+        this.state.selectionMode = this.state.selectionMode === 'day' ? 'week' : 'day';
+        const modeBtn = document.getElementById('selectionModeBtn');
+        if (modeBtn) {
+            modeBtn.innerHTML = this.state.selectionMode === 'day' ? 
+                '<i class="fas fa-calendar-day"></i> Режим: День' : 
+                '<i class="fas fa-calendar-week"></i> Режим: Неделя';
+        }
+    },
+
+    // Навигация по месяцам
+    previousMonth() {
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1);
+        this.renderCalendar();
+    },
+
+    nextMonth() {
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1);
+        this.renderCalendar();
+    },
+
+    goToToday() {
+        this.state.currentDate = new Date();
+        this.renderCalendar();
+    },
+
+    // === МОДАЛЬНОЕ ОКНО ===
+
+    // Открытие модального окна
+    openEventModal(dateKey, weekDates = null) {
         const isWeekMode = weekDates !== null;
         const date = this.parseDateKey(dateKey);
         
@@ -228,74 +415,23 @@ const CalendarManager = {
             });
         }
 
-        // Создаем модальное окно
+        const modal = this.createModal(dateString, dateKey, weekDates);
+        document.body.appendChild(modal);
+        this.initializeModalHandlers(modal, dateKey, weekDates);
+    },
+
+    // Создание модального окна
+    createModal(dateString, dateKey, weekDates) {
         const modal = document.createElement('div');
         modal.className = 'calendar-modal-overlay';
         modal.innerHTML = `
             <div class="calendar-modal">
                 <div class="calendar-modal-header">
-                    <h3>${isWeekMode ? 'Дежурство на неделю' : 'Дежурство на'} ${dateString}</h3>
+                    <h3>${weekDates ? 'Дежурство на неделю' : 'Дежурство на'} ${dateString}</h3>
                     <button class="calendar-modal-close">&times;</button>
                 </div>
                 <div class="calendar-modal-content">
-                    <div class="modal-tabs">
-                        <button class="tab-btn active" data-tab="duty">Дежурство</button>
-                        <button class="tab-btn" data-tab="vacation">Отпуск</button>
-                        <button class="tab-btn" data-tab="event">Событие</button>
-                    </div>
-                    
-                    <div class="tab-content" id="dutyTab">
-                        <div class="duty-persons-list">
-                            ${this.dutyPersons.map(person => `
-                                <div class="duty-person-item" data-person-id="${person.id}">
-                                    <div class="person-color" style="background-color: ${person.color}"></div>
-                                    <div class="person-name">${person.name}</div>
-                                    <div class="person-checkbox">
-                                        <input type="checkbox" id="person-${person.id}" 
-                                               ${this.isPersonOnDuty(dateKey, person.id) ? 'checked' : ''}>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="comment-section">
-                            <label for="eventComment">Комментарий к дежурству:</label>
-                            <textarea id="eventComment" placeholder="Добавьте комментарий к дежурству...">${this.getEventComment(dateKey) || ''}</textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content hidden" id="vacationTab">
-                        <div class="duty-persons-list">
-                            ${this.dutyPersons.map(person => `
-                                <div class="duty-person-item" data-person-id="${person.id}">
-                                    <div class="person-color" style="background-color: ${person.color}"></div>
-                                    <div class="person-name">${person.name}</div>
-                                    <div class="person-checkbox">
-                                        <input type="checkbox" id="vacation-person-${person.id}" 
-                                               ${this.isPersonOnVacation(dateKey, person.id) ? 'checked' : ''}>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                        <div class="comment-section">
-                            <label for="vacationComment">Комментарий к отпуску:</label>
-                            <textarea id="vacationComment" placeholder="Добавьте комментарий к отпуску...">${this.getVacationComment(dateKey) || ''}</textarea>
-                        </div>
-                    </div>
-                    
-                    <div class="tab-content hidden" id="eventTab">
-                        <div class="event-time-section">
-                            <label for="eventTime">Время отправки уведомления:</label>
-                            <input type="time" id="eventTime" value="09:00">
-                        </div>
-                        <div class="comment-section">
-                            <label for="eventMessage">Сообщение для чата:</label>
-                            <textarea id="eventMessage" placeholder="Введите сообщение для отправки в рабочий чат..."></textarea>
-                        </div>
-                        <div class="notification-info">
-                            <i class="fas fa-info-circle"></i>
-                            Сообщение будет отправлено в рабочий чат Telegram в указанное время
-                        </div>
-                    </div>
+                    ${this.createModalTabs(dateKey)}
                 </div>
                 <div class="calendar-modal-actions">
                     <button class="btn btn-cancel">Отмена</button>
@@ -303,176 +439,260 @@ const CalendarManager = {
                 </div>
             </div>
         `;
+        return modal;
+    },
 
-        document.body.appendChild(modal);
+    // Создание табов модального окна
+    createModalTabs(dateKey) {
+        return `
+            <div class="modal-tabs">
+                <button class="tab-btn active" data-tab="duty">Дежурство</button>
+                <button class="tab-btn" data-tab="vacation">Отпуск</button>
+                <button class="tab-btn" data-tab="event">Событие</button>
+            </div>
+            
+            <div class="tab-content" id="dutyTab">
+                ${this.createDutyTab(dateKey)}
+            </div>
+            
+            <div class="tab-content hidden" id="vacationTab">
+                ${this.createVacationTab(dateKey)}
+            </div>
+            
+            <div class="tab-content hidden" id="eventTab">
+                ${this.createEventTab()}
+            </div>
+        `;
+    },
 
-        // Инициализация табов
+    createDutyTab(dateKey) {
+        return `
+            <div class="duty-persons-list">
+                ${this.dutyPersons.map(person => `
+                    <div class="duty-person-item" data-person-id="${person.id}">
+                        <div class="person-color" style="background-color: ${person.color}"></div>
+                        <div class="person-name">${person.name}</div>
+                        <div class="person-checkbox">
+                            <input type="checkbox" id="person-${person.id}" 
+                                   ${this.isPersonOnDuty(dateKey, person.id) ? 'checked' : ''}>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="comment-section">
+                <label for="eventComment">Комментарий к дежурству:</label>
+                <textarea id="eventComment" placeholder="Добавьте комментарий к дежурству...">${this.getEventComment(dateKey) || ''}</textarea>
+            </div>
+        `;
+    },
+
+    createVacationTab(dateKey) {
+        return `
+            <div class="duty-persons-list">
+                ${this.dutyPersons.map(person => `
+                    <div class="duty-person-item" data-person-id="${person.id}">
+                        <div class="person-color" style="background-color: ${person.color}"></div>
+                        <div class="person-name">${person.name}</div>
+                        <div class="person-checkbox">
+                            <input type="checkbox" id="vacation-person-${person.id}" 
+                                   ${this.isPersonOnVacation(dateKey, person.id) ? 'checked' : ''}>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="comment-section">
+                <label for="vacationComment">Комментарий к отпуску:</label>
+                <textarea id="vacationComment" placeholder="Добавьте комментарий к отпуску...">${this.getVacationComment(dateKey) || ''}</textarea>
+            </div>
+        `;
+    },
+
+    createEventTab() {
+        return `
+            <div class="event-time-section">
+                <label for="eventTime">Время отправки уведомления:</label>
+                <input type="time" id="eventTime" value="09:00">
+            </div>
+            <div class="comment-section">
+                <label for="eventMessage">Сообщение для чата:</label>
+                <textarea id="eventMessage" placeholder="Введите сообщение для отправки в рабочий чат..."></textarea>
+            </div>
+            <div class="notification-info">
+                <i class="fas fa-info-circle"></i>
+                Сообщение будет отправлено в рабочий чат Telegram в указанное время
+            </div>
+        `;
+    },
+
+    // Инициализация обработчиков модального окна
+    initializeModalHandlers(modal, dateKey, weekDates) {
         this.initializeModalTabs(modal);
 
-        // Обработчики событий модального окна
-        const closeBtn = modal.querySelector('.calendar-modal-close');
-        const cancelBtn = modal.querySelector('.btn-cancel');
-        const saveBtn = modal.querySelector('.btn-save');
-
-        const closeModal = () => {
-            document.body.removeChild(modal);
-        };
-
-        closeBtn.addEventListener('click', closeModal);
-        cancelBtn.addEventListener('click', closeModal);
-
-        saveBtn.addEventListener('click', () => {
-            const activeTab = modal.querySelector('.tab-btn.active').dataset.tab;
-            
-            if (activeTab === 'duty') {
-                this.saveDutyEvent(dateKey, weekDates);
-            } else if (activeTab === 'vacation') {
-                this.saveVacationEvent(dateKey, weekDates);
-            } else if (activeTab === 'event') {
-                this.saveChatEvent(dateKey, weekDates);
-            }
-            
+        const closeModal = () => document.body.removeChild(modal);
+        
+        modal.querySelector('.calendar-modal-close').addEventListener('click', closeModal);
+        modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+        
+        modal.querySelector('.btn-save').addEventListener('click', () => {
+            this.handleModalSave(modal, dateKey, weekDates);
             closeModal();
-            this.renderCalendar();
         });
 
-        // Закрытие по клику вне модального окна
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal();
-            }
+            if (e.target === modal) closeModal();
         });
     },
 
-    // Инициализация табов в модальном окне
-    initializeModalTabs: function(modal) {
+    // Инициализация табов
+    initializeModalTabs(modal) {
         const tabBtns = modal.querySelectorAll('.tab-btn');
         const tabContents = modal.querySelectorAll('.tab-content');
 
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Деактивируем все табы
                 tabBtns.forEach(b => b.classList.remove('active'));
                 tabContents.forEach(c => c.classList.add('hidden'));
-
-                // Активируем выбранный таб
+                
                 btn.classList.add('active');
                 const tabId = btn.dataset.tab + 'Tab';
-                const tabContent = modal.querySelector(`#${tabId}`);
-                if (tabContent) {
-                    tabContent.classList.remove('hidden');
-                }
+                modal.querySelector(`#${tabId}`).classList.remove('hidden');
             });
         });
     },
 
-    // Сохранение дежурства
-    saveDutyEvent: function(dateKey, weekDates = null) {
+    // Обработка сохранения
+    handleModalSave(modal, dateKey, weekDates) {
+        const activeTab = modal.querySelector('.tab-btn.active').dataset.tab;
         const datesToSave = weekDates || [dateKey];
+
+        if (activeTab === 'duty') {
+            this.saveDutyEvent(datesToSave);
+        } else if (activeTab === 'vacation') {
+            this.saveVacationEvent(datesToSave);
+        } else if (activeTab === 'event') {
+            this.saveChatEvent(datesToSave);
+        }
+
+        this.renderCalendar();
+    },
+
+    // Сохранение дежурства
+    saveDutyEvent(datesToSave) {
         const selectedPersons = [];
-        const checkboxes = document.querySelectorAll('.duty-person-item input[type="checkbox"]:checked');
-        
-        checkboxes.forEach(checkbox => {
+        document.querySelectorAll('.duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
             const personId = parseInt(checkbox.id.replace('person-', ''));
             const person = this.dutyPersons.find(p => p.id === personId);
-            if (person) {
-                selectedPersons.push({
-                    id: person.id,
-                    person: person.name,
-                    color: person.color
-                });
-            }
+            if (person) selectedPersons.push(person);
         });
 
-        const comment = document.getElementById('eventComment').value.trim();
+        const comment = document.getElementById('eventComment')?.value.trim() || '';
 
         datesToSave.forEach(date => {
             if (selectedPersons.length > 0) {
-                this.events[date] = selectedPersons.map(person => ({
+                this.data.events[date] = selectedPersons.map(person => ({
                     ...person,
                     comment: comment
                 }));
                 
-                // Отправляем уведомление только если нет комментария
                 if (!comment) {
                     this.sendDutyNotification(date);
                 }
             } else {
-                delete this.events[date];
+                delete this.data.events[date];
             }
         });
 
-        this.saveEventsToStorage();
-        console.log(`💾 Дежурства сохранены для дат: ${datesToSave.join(', ')}`);
+        this.updateData();
     },
 
     // Сохранение отпуска
-    saveVacationEvent: function(dateKey, weekDates = null) {
-        const datesToSave = weekDates || [dateKey];
+    saveVacationEvent(datesToSave) {
         const selectedPersons = [];
-        const checkboxes = document.querySelectorAll('#vacationTab .duty-person-item input[type="checkbox"]:checked');
-        
-        checkboxes.forEach(checkbox => {
+        document.querySelectorAll('#vacationTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
             const personId = parseInt(checkbox.id.replace('vacation-person-', ''));
             const person = this.dutyPersons.find(p => p.id === personId);
-            if (person) {
-                selectedPersons.push({
-                    id: person.id,
-                    person: person.name,
-                    color: person.color
-                });
-            }
+            if (person) selectedPersons.push(person);
         });
 
-        const comment = document.getElementById('vacationComment').value.trim();
+        const comment = document.getElementById('vacationComment')?.value.trim() || '';
 
         datesToSave.forEach(date => {
             if (selectedPersons.length > 0) {
-                this.vacations[date] = selectedPersons.map(person => ({
+                this.data.vacations[date] = selectedPersons.map(person => ({
                     ...person,
                     comment: comment,
                     type: 'vacation'
                 }));
             } else {
-                delete this.vacations[date];
+                delete this.data.vacations[date];
             }
         });
 
-        this.saveEventsToStorage();
-        console.log(`🏖️ Отпуска сохранены для дат: ${datesToSave.join(', ')}`);
+        this.updateData();
     },
 
-    // Сохранение события для чата
-    saveChatEvent: function(dateKey, weekDates = null) {
-        const eventTime = document.getElementById('eventTime').value;
-        const eventMessage = document.getElementById('eventMessage').value.trim();
-        
+    // Сохранение события чата
+    saveChatEvent(datesToSave) {
+        const eventTime = document.getElementById('eventTime')?.value;
+        const eventMessage = document.getElementById('eventMessage')?.value.trim();
+
         if (!eventMessage) {
             alert('Пожалуйста, введите сообщение для отправки');
             return;
         }
 
-        const datesToSave = weekDates || [dateKey];
-        
         datesToSave.forEach(date => {
             const eventDateTime = `${date}T${eventTime}:00`;
             this.scheduleTelegramMessage(eventDateTime, eventMessage);
         });
-
-        console.log(`📨 События чата сохранены для дат: ${datesToSave.join(', ')}`);
     },
 
-    // Планирование отправки сообщения в Telegram
-    scheduleTelegramMessage: function(eventDateTime, message) {
+    // Обновление данных
+    updateData() {
+        this.data.lastModified = Date.now();
+        this.saveLocalData();
+        
+        // В реальном приложении здесь будет отправка на сервер
+        console.log('📝 Данные обновлены');
+    },
+
+    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
+
+    isPersonOnDuty(dateKey, personId) {
+        return this.data.events[dateKey]?.some(event => event.id === personId);
+    },
+
+    isPersonOnVacation(dateKey, personId) {
+        return this.data.vacations[dateKey]?.some(vacation => vacation.id === personId);
+    },
+
+    getEventComment(dateKey) {
+        return this.data.events[dateKey]?.[0]?.comment || '';
+    },
+
+    getVacationComment(dateKey) {
+        return this.data.vacations[dateKey]?.[0]?.comment || '';
+    },
+
+    getDateKey(date) {
+        return date.toISOString().split('T')[0];
+    },
+
+    parseDateKey(dateKey) {
+        return new Date(dateKey + 'T00:00:00');
+    },
+
+    // === TELEGRAM ИНТЕГРАЦИЯ ===
+
+    scheduleTelegramMessage(eventDateTime, message) {
         const eventTimestamp = new Date(eventDateTime).getTime();
         const now = Date.now();
         
         if (eventTimestamp <= now) {
-            alert('Указанное время уже прошло. Пожалуйста, выберите будущее время.');
+            alert('Указанное время уже прошло');
             return;
         }
 
-        // Сохраняем запланированное сообщение
         const scheduledMessages = JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
         scheduledMessages.push({
             timestamp: eventTimestamp,
@@ -481,157 +701,49 @@ const CalendarManager = {
         });
         
         localStorage.setItem('scheduledTelegramMessages', JSON.stringify(scheduledMessages));
-        
-        // Здесь будет интеграция с сервером для отправки в Telegram
-        console.log(`⏰ Запланировано сообщение на ${eventDateTime}: ${message}`);
-        
-        // Запускаем проверку запланированных сообщений
-        this.startMessageScheduler();
+        console.log(`⏰ Запланировано сообщение на ${eventDateTime}`);
     },
 
-    // Запуск планировщика сообщений
-    startMessageScheduler: function() {
+    startMessageScheduler() {
         setInterval(() => {
             this.checkScheduledMessages();
-        }, 60000); // Проверяем каждую минуту
+        }, 60000);
     },
 
-    // Проверка запланированных сообщений
-    checkScheduledMessages: function() {
+    checkScheduledMessages() {
         const scheduledMessages = JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
         const now = Date.now();
         const messagesToSend = scheduledMessages.filter(msg => msg.timestamp <= now);
         
-        if (messagesToSend.length > 0) {
-            messagesToSend.forEach(msg => {
-                this.sendToTelegramChat(msg.message);
-                console.log(`📨 Отправлено сообщение в Telegram: ${msg.message}`);
-            });
-            
-            // Удаляем отправленные сообщения
-            const remainingMessages = scheduledMessages.filter(msg => msg.timestamp > now);
-            localStorage.setItem('scheduledTelegramMessages', JSON.stringify(remainingMessages));
-        }
-    },
-
-    // Отправка в Telegram чат (заглушка - нужно реализовать интеграцию)
-    sendToTelegramChat: function(message) {
-        // Интеграция с Telegram Bot API
-        // Пример: fetch(`https://api.telegram.org/bot<YOUR_BOT_TOKEN>/sendMessage`, {
-        //     method: 'POST',
-        //     headers: { 'Content-Type': 'application/json' },
-        //     body: JSON.stringify({
-        //         chat_id: <YOUR_CHAT_ID>,
-        //         text: message
-        //     })
-        // });
+        messagesToSend.forEach(msg => {
+            this.sendToTelegramChat(msg.message);
+        });
         
-        console.log('🔔 Сообщение для Telegram:', message);
+        const remainingMessages = scheduledMessages.filter(msg => msg.timestamp > now);
+        localStorage.setItem('scheduledTelegramMessages', JSON.stringify(remainingMessages));
     },
 
-    // Отправка уведомления о дежурстве (только если нет комментария)
-    sendDutyNotification: function(dateKey) {
+    sendToTelegramChat(message) {
+        console.log('🔔 Сообщение для Telegram:', message);
+        // Реальная интеграция с Telegram API
+    },
+
+    sendDutyNotification(dateKey) {
         const date = this.parseDateKey(dateKey);
         const dateString = date.toLocaleDateString('ru-RU');
-        const events = this.events[dateKey];
+        const events = this.data.events[dateKey];
 
-        if (events && events.length > 0) {
+        if (events?.length > 0) {
             const persons = events.map(e => e.person).join(', ');
             const message = `📅 Дежурство на ${dateString}\nДежурные: ${persons}`;
-            
-            console.log('🔔 Уведомление о дежурстве:', message);
             this.sendToTelegramChat(message);
         }
-    },
-
-    // Проверка, дежурит ли человек в указанную дату
-    isPersonOnDuty: function(dateKey, personId) {
-        return this.events[dateKey] && this.events[dateKey].some(event => event.id === personId);
-    },
-
-    // Проверка, в отпуске ли человек в указанную дату
-    isPersonOnVacation: function(dateKey, personId) {
-        return this.vacations[dateKey] && this.vacations[dateKey].some(vacation => vacation.id === personId);
-    },
-
-    // Получение комментария для даты
-    getEventComment: function(dateKey) {
-        if (this.events[dateKey] && this.events[dateKey].length > 0) {
-            return this.events[dateKey][0].comment;
-        }
-        return '';
-    },
-
-    // Получение комментария к отпуску
-    getVacationComment: function(dateKey) {
-        if (this.vacations[dateKey] && this.vacations[dateKey].length > 0) {
-            return this.vacations[dateKey][0].comment;
-        }
-        return '';
-    },
-
-    // Загрузка отпусков из хранилища
-    loadVacationsFromStorage: function() {
-        const savedVacations = localStorage.getItem('dutyCalendarVacations');
-        if (savedVacations) {
-            this.vacations = JSON.parse(savedVacations);
-        } else {
-            this.vacations = {};
-        }
-    },
-
-    // Инициализация обработчиков календаря
-    initializeCalendarHandlers: function() {
-        // Кнопки навигации
-        const prevBtn = document.getElementById('calendarPrev');
-        const nextBtn = document.getElementById('calendarNext');
-        const todayBtn = document.getElementById('calendarToday');
-        const modeBtn = document.getElementById('selectionModeBtn');
-
-        if (prevBtn) {
-            prevBtn.addEventListener('click', () => this.previousMonth());
-        }
-        if (nextBtn) {
-            nextBtn.addEventListener('click', () => this.nextMonth());
-        }
-        if (todayBtn) {
-            todayBtn.addEventListener('click', () => this.goToToday());
-        }
-        if (modeBtn) {
-            modeBtn.addEventListener('click', () => this.toggleSelectionMode());
-        }
-    },
-
-    // Вспомогательные методы
-    getDateKey: function(date) {
-        return date.toISOString().split('T')[0]; // YYYY-MM-DD
-    },
-
-    parseDateKey: function(dateKey) {
-        return new Date(dateKey + 'T00:00:00');
-    },
-
-    previousMonth: function() {
-        this.currentDate.setMonth(this.currentDate.getMonth() - 1);
-        this.renderCalendar();
-    },
-
-    nextMonth: function() {
-        this.currentDate.setMonth(this.currentDate.getMonth() + 1);
-        this.renderCalendar();
-    },
-
-    goToToday: function() {
-        this.currentDate = new Date();
-        this.renderCalendar();
     }
 };
 
-// Инициализация CalendarManager при загрузке DOM
+// Инициализация
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof CalendarManager !== 'undefined' && CalendarManager.init) {
         CalendarManager.init();
-        // Запускаем планировщик сообщений
-        CalendarManager.startMessageScheduler();
     }
 });
