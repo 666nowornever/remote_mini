@@ -72,6 +72,11 @@ function initializeManagers() {
         ServicesManager.init();
         console.log('✅ ServicesManager инициализирован');
     }
+    // Инициализируем CalendarManager если он есть
+    if (typeof CalendarManager !== 'undefined' && CalendarManager.init) {
+        CalendarManager.init();
+        console.log('✅ CalendarManager инициализирован');
+    }
     
     console.log('✅ Все менеджеры инициализированы');
 }

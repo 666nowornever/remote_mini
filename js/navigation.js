@@ -21,7 +21,8 @@ const Navigation = {
         'services-status': 'pages/services-status.html',
         'services': 'pages/services.html',
         'service-management-global': 'pages/service-management-global.html',
-        'crm-services': 'pages/crm-services.html'
+        'crm-services': 'pages/crm-services.html',
+        'calendar': 'pages/calendar.html'
     },
 
     // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
@@ -45,7 +46,8 @@ const Navigation = {
         'services-status': 'Статус служб',
         'services': 'Службы',
         'service-management-global': 'Управление службой',
-        'crm-services': 'Службы CRM'
+        'crm-services': 'Службы CRM',
+        'calendar': 'Календарь дежурств'
     },
 
     // Показать страницу
@@ -178,6 +180,12 @@ initializePage: function(pageId) {
                 console.log('🔄 Инициализация страницы управления глобальной службой...');
                 if (typeof ServicesManager !== 'undefined' && ServicesManager.loadServiceManagementPage) {
                     ServicesManager.loadServiceManagementPage();
+                }
+                break;
+            case 'calendar':
+                console.log('🔄 Инициализация страницы календаря...');
+                if (typeof CalendarManager !== 'undefined' && CalendarManager.loadCalendarPage) {
+                    CalendarManager.loadCalendarPage();
                 }
                 break;
     }
