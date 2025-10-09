@@ -1,9 +1,9 @@
-// Менеджер календаря дежурств с реальной синхронизацией
+// Менеджер календаря дежурств с синхронизацией через GitHub Pages
 const CalendarManager = {
-    // === КОНФИГУРАЦИЯ - ПРАВИЛЬНЫЙ URL ===
+    // === КОНФИГУРАЦИЯ - ИСПОЛЬЗУЕМ ОТНОСИТЕЛЬНЫЙ ПУТЬ ===
     config: {
-        
-        dataUrl: 'https://raw.githubusercontent.com/666nowornever/team-calendar-data/main/calendar-data.json',
+        // Относительный путь к файлу данных в том же домене
+        dataUrl: 'data/calendar-data.json',
         syncInterval: 30000,
         maxRetries: 3
     },
@@ -49,14 +49,11 @@ const CalendarManager = {
         // Загружаем локальные данные
         this.loadLocalData();
         
-        // Пробуем синхронизировать с сервером
+        // Пробуем загрузить общие данные
         await this.syncFromServer();
         
         // Запускаем периодическую синхронизацию
         this.startSyncInterval();
-        
-        // Запускаем планировщик сообщений
-        this.startMessageScheduler();
         
         console.log('✅ CalendarManager: инициализация завершена');
     },
@@ -79,6 +76,14 @@ const CalendarManager = {
         } catch (error) {
             console.error('❌ Ошибка загрузки локальных данных:', error);
         }
+        
+        // Если локальных данных нет, инициализируем пустые
+        this.data = {
+            events: {},
+            vacations: {},
+            lastModified: Date.now(),
+            version: 1
+        };
         return false;
     },
 
@@ -99,34 +104,36 @@ const CalendarManager = {
             return false;
         }
 
-        this.updateSyncStatus('syncing', 'Синхронизация...');
+        this.updateSyncStatus('syncing', 'Проверка обновлений...');
 
         try {
             console.log('📡 Запрос данных с:', this.config.dataUrl);
             
-            const response = await fetch(this.config.dataUrl + '?t=' + Date.now(), {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Cache-Control': 'no-cache'
-                }
-            });
-
+            const response = await fetch(this.config.dataUrl + '?t=' + Date.now());
+            
+            console.log('📊 Статус ответа:', response.status, response.statusText);
+            
             if (!response.ok) {
+                if (response.status === 404) {
+                    console.log('📁 Файл данных не найден, используем локальные данные');
+                    this.updateSyncStatus('offline', 'Файл данных не найден');
+                    return false;
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const serverData = await response.json();
-            console.log('📦 Получены данные с сервера:', serverData);
+            console.log('📦 Получены общие данные:', serverData);
 
             if (this.validateData(serverData)) {
                 // Серверные данные имеют приоритет
                 if (serverData.lastModified > this.data.lastModified) {
                     this.data = serverData;
+                    this.saveLocalData();
                     console.log('✅ Данные обновлены с сервера');
                     this.state.isOnline = true;
                     this.state.retryCount = 0;
-                    this.updateSyncStatus('success', `Синхронизировано: ${new Date().toLocaleTimeString()}`);
+                    this.updateSyncStatus('success', `Обновлено: ${new Date().toLocaleTimeString()}`);
                     
                     // Перерисовываем календарь если он открыт
                     if (document.getElementById('calendarGrid')) {
@@ -149,7 +156,13 @@ const CalendarManager = {
             console.error('❌ Ошибка синхронизации:', error.message);
             this.state.isOnline = false;
             this.state.retryCount++;
-            this.updateSyncStatus('error', `Ошибка: ${error.message}`);
+            
+            if (error.message.includes('Failed to fetch')) {
+                this.updateSyncStatus('offline', 'Нет подключения');
+            } else {
+                this.updateSyncStatus('error', `Ошибка: ${error.message}`);
+            }
+            
             return false;
         }
     },
@@ -211,7 +224,7 @@ const CalendarManager = {
         return icons[status] || 'desktop';
     },
 
-    // === ОСНОВНЫЕ МЕТОДЫ ===
+    // === ОСНОВНЫЕ МЕТОДЫ (без изменений) ===
 
     showCalendar() {
         Navigation.showPage('calendar');
@@ -221,7 +234,6 @@ const CalendarManager = {
         this.renderCalendar();
         this.initializeCalendarHandlers();
         
-        // Обновляем статус при открытии страницы
         if (this.state.isOnline) {
             this.updateSyncStatus('success', 'Синхронизировано');
         } else {
@@ -236,17 +248,14 @@ const CalendarManager = {
         const year = this.state.currentDate.getFullYear();
         const month = this.state.currentDate.getMonth();
 
-        // Заголовок
         const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
         const titleElement = document.getElementById('calendarTitle');
         if (titleElement) {
             titleElement.textContent = `${monthNames[month]} ${year}`;
         }
 
-        // Очищаем календарь
         calendarElement.innerHTML = '';
 
-        // Заголовки дней недели
         const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         daysOfWeek.forEach(day => {
             const dayHeader = document.createElement('div');
@@ -255,20 +264,17 @@ const CalendarManager = {
             calendarElement.appendChild(dayHeader);
         });
 
-        // Дни месяца
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
         const startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
 
-        // Пустые ячейки
         for (let i = 0; i < startingDay; i++) {
             const emptyCell = document.createElement('div');
             emptyCell.className = 'calendar-day empty';
             calendarElement.appendChild(emptyCell);
         }
 
-        // Дни месяца
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dateKey = this.getDateKey(date);
@@ -282,22 +288,18 @@ const CalendarManager = {
         dayElement.className = 'calendar-day';
         dayElement.dataset.date = dateKey;
 
-        // Выходные/праздники
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
         const isHoliday = this.holidays.includes(dateKey);
         if (isWeekend || isHoliday) dayElement.classList.add('holiday');
 
-        // Номер дня
         const dayNumberElement = document.createElement('div');
         dayNumberElement.className = 'calendar-day-number';
         dayNumberElement.textContent = dayNumber;
         dayElement.appendChild(dayNumberElement);
 
-        // События
         const eventsContainer = document.createElement('div');
         eventsContainer.className = 'calendar-day-events';
 
-        // Дежурства
         if (this.data.events[dateKey]) {
             this.data.events[dateKey].forEach(event => {
                 const eventElement = document.createElement('div');
@@ -308,7 +310,6 @@ const CalendarManager = {
             });
         }
 
-        // Отпуска
         if (this.data.vacations[dateKey]) {
             const vacationContainer = document.createElement('div');
             vacationContainer.className = 'calendar-vacation-container';
@@ -326,7 +327,6 @@ const CalendarManager = {
 
         dayElement.appendChild(eventsContainer);
         
-        // Клик
         dayElement.addEventListener('click', () => {
             if (this.state.selectionMode === 'day') {
                 this.openEventModal(dateKey);
@@ -338,7 +338,6 @@ const CalendarManager = {
         return dayElement;
     },
 
-    // Обработчики
     initializeCalendarHandlers() {
         document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
         document.getElementById('calendarNext')?.addEventListener('click', () => this.nextMonth());
@@ -361,7 +360,7 @@ const CalendarManager = {
     nextMonth() { this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); this.renderCalendar(); },
     goToToday() { this.state.currentDate = new Date(); this.renderCalendar(); },
 
-    // === МОДАЛЬНОЕ ОКНО ===
+    // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
 
     openEventModal(dateKey, weekDates = null) {
         const isWeekMode = weekDates !== null;
@@ -444,7 +443,6 @@ const CalendarManager = {
     },
 
     initializeModalHandlers(modal, dateKey, weekDates) {
-        // Табы
         const tabBtns = modal.querySelectorAll('.tab-btn');
         const tabContents = modal.querySelectorAll('.tab-content');
         tabBtns.forEach(btn => {
@@ -456,13 +454,11 @@ const CalendarManager = {
             });
         });
 
-        // Закрытие
         const closeModal = () => document.body.removeChild(modal);
         modal.querySelector('.calendar-modal-close').addEventListener('click', closeModal);
         modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-        // Сохранение
         modal.querySelector('.btn-save').addEventListener('click', () => {
             const activeTab = modal.querySelector('.tab-btn.active').dataset.tab;
             const datesToSave = weekDates || [dateKey];
@@ -478,7 +474,6 @@ const CalendarManager = {
         });
     },
 
-    // Сохранение дежурства
     saveDutyEvent(datesToSave) {
         const selectedPersons = [];
         document.querySelectorAll('.duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
@@ -503,7 +498,6 @@ const CalendarManager = {
         this.saveData();
     },
 
-    // Сохранение отпуска
     saveVacationEvent(datesToSave) {
         const selectedPersons = [];
         document.querySelectorAll('#vacationTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
@@ -529,17 +523,11 @@ const CalendarManager = {
         this.saveData();
     },
 
-    // Сохранение данных
     saveData() {
         this.data.lastModified = Date.now();
         this.saveLocalData();
-        
-        // Показываем сообщение о локальном сохранении
         this.updateSyncStatus('success', 'Сохранено локально');
         console.log('💾 Данные сохранены локально');
-        
-        // В реальном приложении здесь будет отправка на сервер
-        // this.syncToServer();
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
@@ -587,18 +575,6 @@ const CalendarManager = {
         }
         
         return dates;
-    },
-
-    // === TELEGRAM ===
-
-    startMessageScheduler() {
-        setInterval(() => {
-            this.checkScheduledMessages();
-        }, 60000);
-    },
-
-    checkScheduledMessages() {
-        // Заглушка для планировщика сообщений
     }
 };
 
