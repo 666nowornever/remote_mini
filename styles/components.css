@@ -1838,3 +1838,83 @@
 .sync-status.offline {
     background: rgba(158, 158, 158, 0.8);
 }
+
+/* Стили для кнопки синхронизации */
+.calendar-sync-btn {
+    background: rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(102, 126, 234, 0.5);
+    border-radius: 8px;
+    color: white;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.calendar-sync-btn:hover {
+    background: rgba(102, 126, 234, 0.4);
+    transform: scale(1.05);
+}
+
+.calendar-sync-btn:active {
+    transform: scale(0.95);
+}
+
+.calendar-sync-btn.syncing {
+    background: rgba(255, 193, 7, 0.3);
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.calendar-sync-btn.success {
+    background: rgba(76, 175, 80, 0.3);
+    border-color: rgba(76, 175, 80, 0.5);
+}
+
+.calendar-sync-btn.error {
+    background: rgba(244, 67, 54, 0.3);
+    border-color: rgba(244, 67, 54, 0.5);
+}
+
+/* Статус синхронизации */
+.sync-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 250px;
+}
+
+.sync-status.syncing {
+    background: rgba(255, 193, 7, 0.8);
+    color: #333;
+}
+
+.sync-status.success {
+    background: rgba(76, 175, 80, 0.8);
+}
+
+.sync-status.error {
+    background: rgba(244, 67, 54, 0.8);
+}
+
+.sync-status.warning {
+    background: rgba(255, 152, 0, 0.8);
+}
+
+.sync-status.offline {
+    background: rgba(158, 158, 158, 0.8);
+}
