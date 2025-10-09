@@ -1,0 +1,46 @@
+<div class="page calendar-page">
+    <button class="back-btn" onclick="Navigation.showPage('first-line')">
+        <i class="fas fa-arrow-left"></i>
+        Назад
+    </button>
+    
+    <div class="card">
+        <div class="calendar-header">
+            <div class="calendar-title">
+                <i class="fas fa-calendar-alt"></i>
+                <span id="calendarTitle">Календарь дежурств</span>
+            </div>
+            <div class="calendar-controls">
+                <button class="calendar-nav-btn" id="calendarPrev">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button class="calendar-today-btn" id="calendarToday">Сегодня</button>
+                <button class="calendar-nav-btn" id="calendarNext">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Календарь будет сгенерирован JavaScript -->
+        </div>
+
+        <div class="calendar-legend">
+            <div class="legend-title">Дежурные:</div>
+            <div class="legend-items">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #2196F3"></div>
+                    <span>Кремнев Андрей</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #4CAF50"></div>
+                    <span>Васильев Иван</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #FF9800"></div>
+                    <span>Преображенский Дмитрий</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
