@@ -1,10 +1,33 @@
-// Менеджер календаря дежурств с ручной синхронизацией
+// Менеджер календаря дежурств с полной синхронизацией через GitHub API
 const CalendarManager = {
-    // Конфигурация
+    // === КОНФИГУРАЦИЯ GITHUB API ===
     config: {
-        dataUrl: 'data/calendar-data.json',
-        syncInterval: 30000,
+        // Настройки репозитория
+        owner: '666nowornever', // Твой GitHub username
+        repo: 'remote-mini-app', // Название репозитория
+        path: 'data/calendar-data.json', // Путь к файлу
+        branch: 'main',
+        
+        // URL для чтения данных
+        dataUrl: 'https://raw.githubusercontent.com/666nowornever/remote_mini/refs/heads/main/data/calendar-data.json',
+        
+        // Интервалы
+        syncInterval: 30000, // 30 секунд
         maxRetries: 3
+    },
+
+    // === НАСТРОЙКИ GITHUB API ===
+    // ВАЖНО: Замени эти значения на свои!
+    github: {
+        // GitHub Personal Access Token
+        
+        token: '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', 
+        
+        // GitHub API endpoints
+        apiBase: 'https://api.github.com',
+        get contentUrl() {
+            return `${this.apiBase}/repos/${CalendarManager.config.owner}/${CalendarManager.config.repo}/contents/${CalendarManager.config.path}`;
+        }
     },
 
     // Данные
@@ -37,6 +60,7 @@ const CalendarManager = {
         currentDate: new Date(),
         selectionMode: 'day',
         isOnline: false,
+        isSyncing: false,
         retryCount: 0,
         lastSync: 0
     },
@@ -48,13 +72,58 @@ const CalendarManager = {
         // Загружаем локальные данные
         this.loadLocalData();
         
-        // Пробуем загрузить общие данные
+        // Проверяем настройки GitHub
+        if (!this.validateGitHubConfig()) {
+            this.showGitHubConfigError();
+            return;
+        }
+        
+        // Пробуем синхронизировать с сервером
         await this.syncFromServer();
         
         // Запускаем периодическую синхронизацию
         this.startSyncInterval();
         
         console.log('✅ CalendarManager: инициализация завершена');
+    },
+
+    // === ПРОВЕРКА НАСТРОЕК GITHUB ===
+    validateGitHubConfig() {
+        if (!this.github.token || this.github.token === 'ghp_tvyour_actual_token_here') {
+            console.error('❌ GitHub token не настроен');
+            return false;
+        }
+        
+        if (!this.config.owner || this.config.owner === '666nowornever') {
+            console.error('❌ GitHub owner не настроен');
+            return false;
+        }
+        
+        return true;
+    },
+
+    showGitHubConfigError() {
+        console.error(`
+⚠️ GitHub API не настроен!
+
+Для работы синхронизации необходимо:
+
+1. Создать GitHub Personal Access Token:
+   - Зайди на GitHub.com → Settings → Developer settings → Personal access tokens → Tokens (classic)
+   - Нажми "Generate new token" → "Generate new token (classic)"
+   - Название: "Remote Mini App Sync"
+   - Срок: "No expiration"
+   - Права: выбери "repo" (полный доступ к репозиториям)
+   - Скопируй токен
+
+2. Обнови настройки в calendar-manager.js:
+   - Замени 'ghp_tvyour_actual_token_here' на свой токен
+   - Убедись что owner и repo указаны правильно
+
+Пока синхронизация отключена. Данные сохраняются только локально.
+        `);
+        
+        this.updateSyncStatus('error', 'GitHub не настроен');
     },
 
     // === СИНХРОНИЗАЦИЯ ===
@@ -68,7 +137,6 @@ const CalendarManager = {
                 if (this.validateData(localData)) {
                     this.data = localData;
                     console.log('📅 Локальные данные загружены');
-                    this.updateSyncStatus('offline', 'Локальные данные');
                     return true;
                 }
             }
@@ -96,42 +164,42 @@ const CalendarManager = {
         }
     },
 
-    // Синхронизация с сервером
+    // Синхронизация с сервером (чтение)
     async syncFromServer() {
+        if (this.state.isSyncing) return false;
         if (this.state.retryCount >= this.config.maxRetries) {
             console.log('🔄 Превышено количество попыток синхронизации');
             return false;
         }
 
-        this.updateSyncStatus('syncing', 'Проверка обновлений...');
+        this.state.isSyncing = true;
+        this.updateSyncStatus('syncing', 'Синхронизация...');
 
         try {
-            console.log('📡 Запрос данных с:', this.config.dataUrl);
+            console.log('📡 Запрос данных с GitHub...');
             
-            const response = await fetch(this.config.dataUrl + '?t=' + Date.now() + '&r=' + Math.random());
-            
-            console.log('📊 Статус ответа:', response.status, response.statusText);
+            const response = await fetch(this.config.dataUrl + '?t=' + Date.now());
             
             if (!response.ok) {
                 if (response.status === 404) {
-                    console.log('📁 Файл данных не найден, используем локальные данные');
-                    this.updateSyncStatus('offline', 'Файл данных не найден');
+                    console.log('📁 Файл данных не найден на GitHub');
+                    this.updateSyncStatus('warning', 'Файл не найден на GitHub');
                     return false;
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
 
             const serverData = await response.json();
-            console.log('📦 Получены общие данные:', serverData);
+            console.log('📦 Получены данные с GitHub:', serverData);
 
             if (this.validateData(serverData)) {
-                // Всегда используем серверные данные для синхронизации
+                // Всегда используем данные с сервера (они более актуальные)
                 const hadChanges = JSON.stringify(this.data) !== JSON.stringify(serverData);
                 
                 this.data = serverData;
                 this.saveLocalData();
                 
-                console.log('✅ Данные синхронизированы с сервером');
+                console.log('✅ Данные синхронизированы с GitHub');
                 this.state.isOnline = true;
                 this.state.retryCount = 0;
                 this.state.lastSync = Date.now();
@@ -143,16 +211,16 @@ const CalendarManager = {
                         this.renderCalendar();
                     }
                 } else {
-                    this.updateSyncStatus('success', 'Данные актуальны');
+                    this.updateSyncStatus('success', 'Синхронизировано');
                 }
                 
                 return true;
             } else {
-                throw new Error('Невалидные данные с сервера');
+                throw new Error('Невалидные данные с GitHub');
             }
 
         } catch (error) {
-            console.error('❌ Ошибка синхронизации:', error.message);
+            console.error('❌ Ошибка синхронизации с GitHub:', error.message);
             this.state.isOnline = false;
             this.state.retryCount++;
             
@@ -163,6 +231,100 @@ const CalendarManager = {
             }
             
             return false;
+        } finally {
+            this.state.isSyncing = false;
+        }
+    },
+
+    // Синхронизация на сервер (запись)
+    async syncToServer() {
+        if (this.state.isSyncing) {
+            console.log('🔄 Уже выполняется синхронизация...');
+            return false;
+        }
+
+        this.state.isSyncing = true;
+        this.updateSyncStatus('syncing', 'Отправка на GitHub...');
+
+        try {
+            console.log('📤 Отправка данных на GitHub...');
+            
+            // Сначала получаем текущий файл чтобы узнать sha
+            const currentFile = await this.getCurrentFile();
+            
+            // Подготавливаем данные для отправки
+            this.data.lastModified = Date.now();
+            const content = JSON.stringify(this.data, null, 2);
+            const contentEncoded = btoa(unescape(encodeURIComponent(content)));
+            
+            // Отправляем на GitHub
+            const response = await fetch(this.github.contentUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${this.github.token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/vnd.github.v3+json'
+                },
+                body: JSON.stringify({
+                    message: `Calendar update: ${new Date().toLocaleString()}`,
+                    content: contentEncoded,
+                    sha: currentFile?.sha || null,
+                    branch: this.config.branch
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`GitHub API: ${response.status} - ${errorData.message || response.statusText}`);
+            }
+
+            const result = await response.json();
+            console.log('✅ Данные успешно отправлены на GitHub:', result);
+            
+            this.state.isOnline = true;
+            this.state.retryCount = 0;
+            this.state.lastSync = Date.now();
+            this.updateSyncStatus('success', `Сохранено: ${new Date().toLocaleTimeString()}`);
+            
+            return true;
+
+        } catch (error) {
+            console.error('❌ Ошибка отправки на GitHub:', error.message);
+            
+            // Сохраняем локально даже при ошибке
+            this.saveLocalData();
+            
+            if (error.message.includes('401') || error.message.includes('403')) {
+                this.updateSyncStatus('error', 'Ошибка авторизации GitHub');
+            } else if (error.message.includes('404')) {
+                this.updateSyncStatus('error', 'Репозиторий не найден');
+            } else {
+                this.updateSyncStatus('warning', 'Сохранено локально (ошибка GitHub)');
+            }
+            
+            return false;
+        } finally {
+            this.state.isSyncing = false;
+        }
+    },
+
+    // Получение информации о текущем файле
+    async getCurrentFile() {
+        try {
+            const response = await fetch(this.github.contentUrl, {
+                headers: {
+                    'Authorization': `token ${this.github.token}`,
+                    'Accept': 'application/vnd.github.v3+json'
+                }
+            });
+            
+            if (response.ok) {
+                return await response.json();
+            }
+            return null;
+        } catch (error) {
+            console.log('📁 Файл не найден или ошибка доступа');
+            return null;
         }
     },
 
@@ -185,43 +347,21 @@ const CalendarManager = {
 
     // Ручная синхронизация
     async manualSync() {
-        this.updateSyncStatus('syncing', 'Синхронизация...');
-        const success = await this.syncFromServer();
+        if (this.state.isSyncing) {
+            console.log('🔄 Синхронизация уже выполняется...');
+            return false;
+        }
+
+        // Сначала загружаем свежие данные, потом отправляем наши
+        const readSuccess = await this.syncFromServer();
         
-        if (success) {
-            if (document.getElementById('calendarGrid')) {
-                this.renderCalendar();
-            }
-            // Показываем успех на 2 секунды
-            setTimeout(() => {
-                if (this.state.isOnline) {
-                    this.updateSyncStatus('success', 'Синхронизировано');
-                }
-            }, 2000);
+        if (readSuccess) {
+            // Если загрузка успешна, отправляем обратно (чтобы сохранить возможные локальные изменения)
+            const writeSuccess = await this.syncToServer();
+            return writeSuccess;
         }
         
-        return success;
-    },
-
-    // Экспорт данных для ручного обновления файла
-    exportData() {
-        const dataStr = JSON.stringify(this.data, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        
-        // Создаем ссылку для скачивания
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(dataBlob);
-        link.download = 'calendar-data.json';
-        link.click();
-        
-        // Показываем инструкцию
-        DialogService.showMessage(
-            'Экспорт данных',
-            `Данные экспортированы!\n\nЧтобы синхронизировать с другими пользователями:\n\n1. 📁 Замени файл data/calendar-data.json в репозитории\n2. 🔄 Сделай commit и push на GitHub\n3. 📱 Другие пользователи увидят изменения после обновления страницы\n\nФайл: calendar-data.json`,
-            'success'
-        );
-        
-        this.updateSyncStatus('success', 'Данные экспортированы');
+        return false;
     },
 
     // Обновление статуса
@@ -234,16 +374,26 @@ const CalendarManager = {
             <i class="fas fa-${this.getSyncIcon(status)}"></i>
             ${message}
         `;
+
+        // Автоматически скрываем детали успешного статуса через 3 секунды
+        if (status === 'success' && message.includes(':')) {
+            setTimeout(() => {
+                if (statusElement.className.includes('success')) {
+                    this.updateSyncStatus('success', 'Синхронизировано');
+                }
+            }, 3000);
+        }
     },
 
     getSyncIcon(status) {
         const icons = {
             syncing: 'sync-alt fa-spin',
             success: 'cloud-check',
-            error: 'cloud-exclamation',
-            offline: 'desktop'
+            error: 'exclamation-triangle',
+            warning: 'exclamation-circle',
+            offline: 'wifi-slash'
         };
-        return icons[status] || 'desktop';
+        return icons[status] || 'cloud';
     },
 
     // === ОСНОВНЫЕ МЕТОДЫ ===
@@ -366,7 +516,6 @@ const CalendarManager = {
         document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
         document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
         document.getElementById('manualSyncBtn')?.addEventListener('click', () => this.manualSync());
-        document.getElementById('exportDataBtn')?.addEventListener('click', () => this.exportData());
     },
 
     toggleSelectionMode() {
@@ -379,20 +528,9 @@ const CalendarManager = {
         }
     },
 
-    previousMonth() { 
-        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
-        this.renderCalendar(); 
-    },
-    
-    nextMonth() { 
-        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
-        this.renderCalendar(); 
-    },
-    
-    goToToday() { 
-        this.state.currentDate = new Date(); 
-        this.renderCalendar(); 
-    },
+    previousMonth() { this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); this.renderCalendar(); },
+    nextMonth() { this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); this.renderCalendar(); },
+    goToToday() { this.state.currentDate = new Date(); this.renderCalendar(); },
 
     // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
 
@@ -589,14 +727,23 @@ const CalendarManager = {
             this.scheduleTelegramMessage(eventDateTime, eventMessage);
         });
 
-        DialogService.showMessage('Событие запланировано', 'Сообщение будет отправлено в указанное время', 'success');
+        this.updateSyncStatus('success', 'Событие запланировано');
     },
 
-    saveData() {
+    // Сохранение данных с синхронизацией
+    async saveData() {
+        // Сохраняем локально
         this.data.lastModified = Date.now();
         this.saveLocalData();
-        this.updateSyncStatus('success', 'Сохранено локально');
-        console.log('💾 Данные сохранены локально');
+        
+        // Пытаемся синхронизировать с GitHub
+        const syncSuccess = await this.syncToServer();
+        
+        if (syncSuccess) {
+            console.log('✅ Данные сохранены и синхронизированы');
+        } else {
+            console.log('💾 Данные сохранены локально (ошибка синхронизации)');
+        }
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
@@ -646,8 +793,6 @@ const CalendarManager = {
         return dates;
     },
 
-    // === TELEGRAM ИНТЕГРАЦИЯ ===
-
     scheduleTelegramMessage(eventDateTime, message) {
         const eventTimestamp = new Date(eventDateTime).getTime();
         const now = Date.now();
@@ -666,29 +811,6 @@ const CalendarManager = {
         
         localStorage.setItem('scheduledTelegramMessages', JSON.stringify(scheduledMessages));
         console.log(`⏰ Запланировано сообщение на ${eventDateTime}`);
-    },
-
-    startMessageScheduler() {
-        setInterval(() => {
-            this.checkScheduledMessages();
-        }, 60000);
-    },
-
-    checkScheduledMessages() {
-        const scheduledMessages = JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
-        const now = Date.now();
-        const messagesToSend = scheduledMessages.filter(msg => msg.timestamp <= now);
-        
-        messagesToSend.forEach(msg => {
-            this.sendToTelegramChat(msg.message);
-        });
-        
-        const remainingMessages = scheduledMessages.filter(msg => msg.timestamp > now);
-        localStorage.setItem('scheduledTelegramMessages', JSON.stringify(remainingMessages));
-    },
-
-    sendToTelegramChat(message) {
-        console.log('🔔 Сообщение для Telegram:', message);
     }
 };
 
