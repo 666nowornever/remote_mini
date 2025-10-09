@@ -2,10 +2,9 @@
 const CalendarManager = {
     // Конфигурация
     config: {
-        // === ВАЖНО: ЗАМЕНИ ЭТОТ URL НА СВОЙ ===
-        dataUrl: 'https://raw.githubusercontent.com/666nowornever/team-calendar-data/main/calendar-data.json',
+        // Используем локальный файл для начала
+        dataUrl: 'data/calendar-data.json',
         syncInterval: 30000, // 30 секунд
-        retryInterval: 5000  // 5 секунд при ошибке
     },
 
     // Данные
@@ -26,20 +25,19 @@ const CalendarManager = {
     // Праздничные дни России 2024
     holidays: [
         '2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06', '2024-01-07', '2024-01-08',
-        '2024-02-23', '2024-02-24', '2024-02-25', // День защитника Отечества + выходные
-        '2024-03-08', '2024-03-09', '2024-03-10', // Международный женский день + выходные
-        '2024-04-28', '2024-04-29', '2024-04-30', '2024-05-01', '2024-05-02', '2024-05-03', '2024-05-09', '2024-05-10', // Майские праздники
-        '2024-06-11', '2024-06-12', '2024-06-13', // День России
-        '2024-11-02', '2024-11-03', '2024-11-04' // День народного единства
+        '2024-02-23', '2024-02-24', '2024-02-25',
+        '2024-03-08', '2024-03-09', '2024-03-10',
+        '2024-04-28', '2024-04-29', '2024-04-30', '2024-05-01', '2024-05-02', '2024-05-03', '2024-05-09', '2024-05-10',
+        '2024-06-11', '2024-06-12', '2024-06-13',
+        '2024-11-02', '2024-11-03', '2024-11-04'
     ],
 
     // Состояние
     state: {
         currentDate: new Date(),
-        selectionMode: 'day', // 'day' или 'week'
+        selectionMode: 'day',
         isSyncing: false,
-        lastSyncAttempt: 0,
-        syncError: null
+        syncEnabled: false // Сначала отключаем синхронизацию
     },
 
     // Инициализация
@@ -49,11 +47,13 @@ const CalendarManager = {
         // Загружаем локальные данные
         this.loadLocalData();
         
-        // Пытаемся синхронизировать с сервером
-        await this.syncFromServer();
-        
-        // Запускаем периодическую синхронизацию
-        this.startSyncInterval();
+        // Пробуем загрузить данные из файла (не блокируем инициализацию при ошибке)
+        this.tryLoadFromFile().then(success => {
+            if (success) {
+                this.state.syncEnabled = true;
+                this.startSyncInterval();
+            }
+        });
         
         // Запускаем планировщик сообщений
         this.startMessageScheduler();
@@ -61,7 +61,25 @@ const CalendarManager = {
         console.log('✅ CalendarManager: инициализация завершена');
     },
 
-    // === СИНХРОНИЗАЦИЯ ===
+    // Попытка загрузки из файла
+    async tryLoadFromFile() {
+        try {
+            const response = await fetch(this.config.dataUrl);
+            if (response.ok) {
+                const fileData = await response.json();
+                if (this.validateData(fileData)) {
+                    this.mergeData(fileData);
+                    console.log('✅ Данные загружены из файла');
+                    this.updateSyncStatus('success', 'Данные загружены');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.log('📁 Файл данных недоступен, используем локальные данные');
+            this.updateSyncStatus('offline', 'Локальные данные');
+        }
+        return false;
+    },
 
     // Загрузка локальных данных
     loadLocalData() {
@@ -69,6 +87,7 @@ const CalendarManager = {
             const saved = localStorage.getItem('calendarData');
             if (saved) {
                 const localData = JSON.parse(saved);
+                // Объединяем с текущими данными
                 this.data = { ...this.data, ...localData };
                 console.log('📅 Локальные данные загружены');
             }
@@ -77,58 +96,19 @@ const CalendarManager = {
         }
     },
 
-    // Сохранение данных (локально)
-    saveLocalData() {
+    // Сохранение данных
+    saveData() {
         try {
+            // Сохраняем локально
             localStorage.setItem('calendarData', JSON.stringify(this.data));
-            console.log('💾 Данные сохранены локально');
-        } catch (error) {
-            console.error('❌ Ошибка сохранения локальных данных:', error);
-        }
-    },
-
-    // Синхронизация с сервером
-    async syncFromServer() {
-        if (this.state.isSyncing) return false;
-        
-        this.state.isSyncing = true;
-        this.state.lastSyncAttempt = Date.now();
-        this.updateSyncStatus('syncing', 'Синхронизация...');
-
-        try {
-            const response = await fetch(`${this.config.dataUrl}?t=${Date.now()}`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Cache-Control': 'no-cache'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-
-            const serverData = await response.json();
+            this.data.lastModified = Date.now();
             
-            // Проверяем валидность данных
-            if (this.validateData(serverData)) {
-                // Объединяем данные (серверные имеют приоритет)
-                this.mergeData(serverData);
-                this.state.syncError = null;
-                this.updateSyncStatus('success', `Синхронизировано: ${new Date().toLocaleTimeString()}`);
-                console.log('✅ Данные синхронизированы с сервером');
-                return true;
-            } else {
-                throw new Error('Невалидные данные с сервера');
-            }
-
+            console.log('💾 Данные сохранены локально');
+            this.updateSyncStatus('success', 'Сохранено: ' + new Date().toLocaleTimeString());
+            
         } catch (error) {
-            this.state.syncError = error.message;
-            this.updateSyncStatus('error', 'Ошибка синхронизации');
-            console.log('📡 Не удалось синхронизировать с сервером:', error.message);
-            return false;
-        } finally {
-            this.state.isSyncing = false;
+            console.error('❌ Ошибка сохранения данных:', error);
+            this.updateSyncStatus('error', 'Ошибка сохранения');
         }
     },
 
@@ -138,35 +118,34 @@ const CalendarManager = {
                typeof data === 'object' &&
                typeof data.events === 'object' &&
                typeof data.vacations === 'object' &&
-               typeof data.lastModified === 'number' &&
-               typeof data.version === 'number';
+               typeof data.lastModified === 'number';
     },
 
     // Объединение данных
-    mergeData(serverData) {
-        // Для событий и отпусков: серверные данные имеют приоритет
-        if (serverData.lastModified > this.data.lastModified) {
-            this.data.events = { ...this.data.events, ...serverData.events };
-            this.data.vacations = { ...this.data.vacations, ...serverData.vacations };
-            this.data.lastModified = serverData.lastModified;
+    mergeData(newData) {
+        // Используем новые данные только если они новее
+        if (newData.lastModified > this.data.lastModified) {
+            this.data.events = { ...this.data.events, ...newData.events };
+            this.data.vacations = { ...this.data.vacations, ...newData.vacations };
+            this.data.lastModified = newData.lastModified;
         }
-        
-        // Сохраняем локально
-        this.saveLocalData();
     },
 
-    // Периодическая синхронизация
+    // Периодическая проверка файла
     startSyncInterval() {
+        if (!this.state.syncEnabled) return;
+        
         setInterval(async () => {
-            await this.syncFromServer();
+            await this.tryLoadFromFile();
         }, this.config.syncInterval);
     },
 
     // Ручная синхронизация
     async manualSync() {
-        const success = await this.syncFromServer();
+        this.updateSyncStatus('syncing', 'Синхронизация...');
+        const success = await this.tryLoadFromFile();
         if (success) {
-            this.renderCalendar(); // Перерисовываем календарь
+            this.renderCalendar();
         }
         return success;
     },
@@ -186,11 +165,11 @@ const CalendarManager = {
     getSyncIcon(status) {
         const icons = {
             syncing: 'sync-alt fa-spin',
-            success: 'cloud-check',
-            error: 'cloud-exclamation',
-            offline: 'cloud'
+            success: 'check-circle',
+            error: 'exclamation-circle',
+            offline: 'desktop'
         };
-        return icons[status] || 'cloud';
+        return icons[status] || 'desktop';
     },
 
     // === ОСНОВНЫЕ МЕТОДЫ ===
@@ -204,7 +183,13 @@ const CalendarManager = {
     loadCalendarPage() {
         this.renderCalendar();
         this.initializeCalendarHandlers();
-        this.updateSyncStatus('success', `Синхронизировано: ${new Date(this.data.lastModified).toLocaleTimeString()}`);
+        
+        // Обновляем статус
+        if (this.state.syncEnabled) {
+            this.updateSyncStatus('success', 'Синхронизировано');
+        } else {
+            this.updateSyncStatus('offline', 'Локальные данные');
+        }
     },
 
     // Рендер календаря
@@ -335,29 +320,6 @@ const CalendarManager = {
         return container;
     },
 
-    // Обработка выбора недели
-    handleWeekSelection(selectedDate) {
-        const weekDates = this.getWeekDates(selectedDate);
-        const dateKeys = weekDates.map(date => this.getDateKey(date));
-        this.openEventModal(dateKeys[0], dateKeys);
-    },
-
-    // Получение всех дат недели
-    getWeekDates(date) {
-        const dates = [];
-        const dayOfWeek = date.getDay();
-        const startDate = new Date(date);
-        startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        
-        for (let i = 0; i < 7; i++) {
-            const currentDate = new Date(startDate);
-            currentDate.setDate(startDate.getDate() + i);
-            dates.push(currentDate);
-        }
-        
-        return dates;
-    },
-
     // Инициализация обработчиков
     initializeCalendarHandlers() {
         // Кнопки навигации
@@ -395,7 +357,7 @@ const CalendarManager = {
         this.renderCalendar();
     },
 
-    // === МОДАЛЬНОЕ ОКНО ===
+    // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
 
     // Открытие модального окна
     openEventModal(dateKey, weekDates = null) {
@@ -602,7 +564,7 @@ const CalendarManager = {
             }
         });
 
-        this.updateData();
+        this.saveData();
     },
 
     // Сохранение отпуска
@@ -628,7 +590,7 @@ const CalendarManager = {
             }
         });
 
-        this.updateData();
+        this.saveData();
     },
 
     // Сохранение события чата
@@ -645,15 +607,6 @@ const CalendarManager = {
             const eventDateTime = `${date}T${eventTime}:00`;
             this.scheduleTelegramMessage(eventDateTime, eventMessage);
         });
-    },
-
-    // Обновление данных
-    updateData() {
-        this.data.lastModified = Date.now();
-        this.saveLocalData();
-        
-        // В реальном приложении здесь будет отправка на сервер
-        console.log('📝 Данные обновлены');
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
@@ -680,6 +633,29 @@ const CalendarManager = {
 
     parseDateKey(dateKey) {
         return new Date(dateKey + 'T00:00:00');
+    },
+
+    // Обработка выбора недели
+    handleWeekSelection(selectedDate) {
+        const weekDates = this.getWeekDates(selectedDate);
+        const dateKeys = weekDates.map(date => this.getDateKey(date));
+        this.openEventModal(dateKeys[0], dateKeys);
+    },
+
+    // Получение всех дат недели
+    getWeekDates(date) {
+        const dates = [];
+        const dayOfWeek = date.getDay();
+        const startDate = new Date(date);
+        startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        
+        for (let i = 0; i < 7; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
+            dates.push(currentDate);
+        }
+        
+        return dates;
     },
 
     // === TELEGRAM ИНТЕГРАЦИЯ ===
