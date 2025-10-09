@@ -46,7 +46,7 @@ const CalendarManager = {
     // === НАСТРОЙКИ GITHUB API ===
 github: {
     // Твой GitHub Personal Access Token
-    token: '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', // ← ВСТАВЬ СВОЙ ТОКЕН ЗДЕСЬ
+    token: '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', // ← ВСТАВЬ СВОЙ ТОКЕН ЗДЕСЬ
     
     // GitHub API endpoints
     apiBase: 'https://api.github.com',
@@ -923,4 +923,5 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof CalendarManager !== 'undefined' && CalendarManager.init) {
         CalendarManager.init();
     }
+
 });
