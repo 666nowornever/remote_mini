@@ -2208,28 +2208,6 @@
     background: linear-gradient(135deg, #5a6fd8 0%, #6a42a0 100%);
 }
 
-/* Кнопка синхронизации */
-.calendar-sync-btn-main {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
-    border: none;
-    border-radius: 10px;
-    color: white;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
-    flex-shrink: 0;
-}
-
-.calendar-sync-btn-main:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
-    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
-}
 
 /* Основная сетка календаря */
 .calendar-grid-main {
@@ -2377,21 +2355,7 @@
     color: #ff6b6b;
 }
 
-/* Состояния кнопки синхронизации */
-.calendar-sync-btn-main.syncing {
-    background: linear-gradient(135deg, #ffc107 0%, #ff9800 100%);
-    box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
-}
 
-.calendar-sync-btn-main.error {
-    background: linear-gradient(135deg, #f44336 0%, #e53935 100%);
-    box-shadow: 0 4px 12px rgba(244, 67, 54, 0.3);
-}
-
-.calendar-sync-btn-main.offline {
-    background: linear-gradient(135deg, #9e9e9e 0%, #757575 100%);
-    box-shadow: 0 4px 12px rgba(158, 158, 158, 0.3);
-}
 
 /* Адаптивность */
 @media (max-width: 480px) {
