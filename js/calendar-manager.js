@@ -487,102 +487,124 @@ const CalendarManager = {
         }
     },
 
-    renderCalendar() {
-        const calendarElement = document.getElementById('calendarGrid');
-        if (!calendarElement) return;
+    // Обновленный рендер календаря для новой структуры
+renderCalendar: function() {
+    const calendarElement = document.getElementById('calendarGrid');
+    if (!calendarElement) return;
 
-        const year = this.state.currentDate.getFullYear();
-        const month = this.state.currentDate.getMonth();
+    const year = this.state.currentDate.getFullYear();
+    const month = this.state.currentDate.getMonth();
 
-        const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-        const titleElement = document.getElementById('calendarTitle');
-        if (titleElement) {
-            titleElement.textContent = `${monthNames[month]} ${year}`;
-        }
+    const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+    const titleElement = document.getElementById('calendarTitle');
+    if (titleElement) {
+        titleElement.textContent = `${monthNames[month]} ${year}`;
+    }
 
-        calendarElement.innerHTML = '';
+    calendarElement.innerHTML = '';
 
-        const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-        daysOfWeek.forEach(day => {
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'calendar-day-header';
-            dayHeader.textContent = day;
-            calendarElement.appendChild(dayHeader);
+    // Заголовки дней недели
+    const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    daysOfWeek.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day-header';
+        dayHeader.textContent = day;
+        calendarElement.appendChild(dayHeader);
+    });
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const daysInMonth = lastDay.getDate();
+    const startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+
+    // Пустые ячейки для дней предыдущего месяца
+    for (let i = 0; i < startingDay; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day-main empty other-month';
+        calendarElement.appendChild(emptyCell);
+    }
+
+    // Дни текущего месяца
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const dateKey = this.getDateKey(date);
+        const dayElement = this.createMainDayElement(date, dateKey, day, isCurrentMonth && day === today.getDate());
+        calendarElement.appendChild(dayElement);
+    }
+
+    // Пустые ячейки для дней следующего месяца
+    const totalCells = 42; // 6 строк × 7 дней
+    const remainingCells = totalCells - (startingDay + daysInMonth);
+    for (let i = 0; i < remainingCells; i++) {
+        const emptyCell = document.createElement('div');
+        emptyCell.className = 'calendar-day-main empty other-month';
+        calendarElement.appendChild(emptyCell);
+    }
+},
+
+// Создание элемента дня для новой структуры
+createMainDayElement: function(date, dateKey, dayNumber, isToday) {
+    const dayElement = document.createElement('div');
+    dayElement.className = 'calendar-day-main';
+    if (isToday) {
+        dayElement.classList.add('today');
+    }
+    dayElement.dataset.date = dateKey;
+
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const isHoliday = this.holidays.includes(dateKey);
+    if (isWeekend || isHoliday) dayElement.classList.add('holiday');
+
+    const dayNumberElement = document.createElement('div');
+    dayNumberElement.className = 'calendar-day-number-main';
+    dayNumberElement.textContent = dayNumber;
+    dayElement.appendChild(dayNumberElement);
+
+    const eventsContainer = document.createElement('div');
+    eventsContainer.className = 'calendar-day-events-main';
+
+    // Дежурства
+    if (this.data.events[dateKey]) {
+        this.data.events[dateKey].forEach(event => {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'calendar-event-main';
+            eventElement.style.backgroundColor = event.color;
+            eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
+            eventsContainer.appendChild(eventElement);
         });
+    }
 
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const daysInMonth = lastDay.getDate();
-        const startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-
-        for (let i = 0; i < startingDay; i++) {
-            const emptyCell = document.createElement('div');
-            emptyCell.className = 'calendar-day empty';
-            calendarElement.appendChild(emptyCell);
-        }
-
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(year, month, day);
-            const dateKey = this.getDateKey(date);
-            const dayElement = this.createDayElement(date, dateKey, day);
-            calendarElement.appendChild(dayElement);
-        }
-    },
-
-    createDayElement(date, dateKey, dayNumber) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'calendar-day';
-        dayElement.dataset.date = dateKey;
-
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        const isHoliday = this.holidays.includes(dateKey);
-        if (isWeekend || isHoliday) dayElement.classList.add('holiday');
-
-        const dayNumberElement = document.createElement('div');
-        dayNumberElement.className = 'calendar-day-number';
-        dayNumberElement.textContent = dayNumber;
-        dayElement.appendChild(dayNumberElement);
-
-        const eventsContainer = document.createElement('div');
-        eventsContainer.className = 'calendar-day-events';
-
-        if (this.data.events[dateKey]) {
-            this.data.events[dateKey].forEach(event => {
-                const eventElement = document.createElement('div');
-                eventElement.className = 'calendar-event';
-                eventElement.style.backgroundColor = event.color;
-                eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
-                eventsContainer.appendChild(eventElement);
-            });
-        }
-
-        if (this.data.vacations[dateKey]) {
-            const vacationContainer = document.createElement('div');
-            vacationContainer.className = 'calendar-vacation-container';
-            
-            this.data.vacations[dateKey].forEach(vacation => {
-                const vacationElement = document.createElement('div');
-                vacationElement.className = 'calendar-vacation';
-                vacationElement.style.backgroundColor = vacation.color;
-                vacationElement.title = `Отпуск: ${vacation.person}`;
-                vacationContainer.appendChild(vacationElement);
-            });
-            
-            eventsContainer.appendChild(vacationContainer);
-        }
-
-        dayElement.appendChild(eventsContainer);
+    // Отпуска
+    if (this.data.vacations[dateKey]) {
+        const vacationContainer = document.createElement('div');
+        vacationContainer.className = 'calendar-vacation-container';
         
-        dayElement.addEventListener('click', () => {
-            if (this.state.selectionMode === 'day') {
-                this.openEventModal(dateKey);
-            } else {
-                this.handleWeekSelection(date);
-            }
+        this.data.vacations[dateKey].forEach(vacation => {
+            const vacationElement = document.createElement('div');
+            vacationElement.className = 'calendar-vacation-main';
+            vacationElement.style.backgroundColor = vacation.color;
+            vacationElement.title = `Отпуск: ${vacation.person}`;
+            vacationContainer.appendChild(vacationElement);
         });
+        
+        eventsContainer.appendChild(vacationContainer);
+    }
 
-        return dayElement;
-    },
+    dayElement.appendChild(eventsContainer);
+    
+    dayElement.addEventListener('click', () => {
+        if (this.state.selectionMode === 'day') {
+            this.openEventModal(dateKey);
+        } else {
+            this.handleWeekSelection(date);
+        }
+    });
+
+    return dayElement;
+},
 
     initializeCalendarHandlers() {
         document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
