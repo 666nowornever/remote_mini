@@ -616,81 +616,84 @@ const CalendarManager = {
         }
     },
 
-    // Создание элемента дня для новой структуры
-    createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'calendar-day-main';
-        
-        if (isToday) {
-            dayElement.classList.add('today');
-        }
-        if (isOtherMonth) {
-            dayElement.classList.add('other-month');
-        }
+   // Создание элемента дня для новой структуры
+createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
+    const dayElement = document.createElement('div');
+    dayElement.className = 'calendar-day-main';
+    
+    if (isToday) {
+        dayElement.classList.add('today');
+    }
+    if (isOtherMonth) {
+        dayElement.classList.add('other-month');
+    }
 
-        dayElement.dataset.date = dateKey;
+    // ИСПРАВЛЕНИЕ: Сохраняем корректный dateKey
+    const correctDateKey = this.getDateKey(date);
+    dayElement.dataset.date = correctDateKey;
 
-        const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-        const isHoliday = this.holidays.includes(dateKey);
-        if (isWeekend || isHoliday) dayElement.classList.add('holiday');
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const isHoliday = this.holidays.includes(correctDateKey);
+    if (isWeekend || isHoliday) dayElement.classList.add('holiday');
 
-        const dayNumberElement = document.createElement('div');
-        dayNumberElement.className = 'calendar-day-number-main';
-        dayNumberElement.textContent = dayNumber;
-        dayElement.appendChild(dayNumberElement);
+    const dayNumberElement = document.createElement('div');
+    dayNumberElement.className = 'calendar-day-number-main';
+    dayNumberElement.textContent = dayNumber;
+    dayElement.appendChild(dayNumberElement);
 
-        const eventsContainer = document.createElement('div');
-        eventsContainer.className = 'calendar-day-events-main';
+    const eventsContainer = document.createElement('div');
+    eventsContainer.className = 'calendar-day-events-main';
 
-        // Дежурства
-        if (this.data.events[dateKey]) {
-            this.data.events[dateKey].forEach(event => {
-                const eventElement = document.createElement('div');
-                eventElement.className = 'calendar-event-main';
-                eventElement.style.backgroundColor = event.color;
-                eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
-                eventsContainer.appendChild(eventElement);
-            });
-        }
-
-        // Отпуска
-        if (this.data.vacations[dateKey]) {
-            const vacationContainer = document.createElement('div');
-            vacationContainer.className = 'calendar-vacation-container';
-            
-            this.data.vacations[dateKey].forEach(vacation => {
-                const vacationElement = document.createElement('div');
-                vacationElement.className = 'calendar-vacation-main';
-                vacationElement.style.backgroundColor = vacation.color;
-                vacationElement.title = `Отпуск: ${vacation.person}`;
-                vacationContainer.appendChild(vacationElement);
-            });
-            
-            eventsContainer.appendChild(vacationContainer);
-        }
-
-        // Дни рождения - показываем эмодзи 🎉
-        const birthdays = this.getBirthdaysForDate(dateKey);
-        if (birthdays.length > 0) {
-            const birthdayElement = document.createElement('div');
-            birthdayElement.className = 'calendar-birthday-emoji';
-            birthdayElement.textContent = '🎉';
-            birthdayElement.title = `Дни рождения: ${birthdays.map(b => b.name).join(', ')}`;
-            eventsContainer.appendChild(birthdayElement);
-        }
-
-        dayElement.appendChild(eventsContainer);
-
-        dayElement.addEventListener('click', () => {
-            if (this.state.selectionMode === 'day') {
-                this.openEventModal(dateKey);
-            } else {
-                this.handleWeekSelection(date);
-            }
+    // Дежурства (используем корректный dateKey)
+    if (this.data.events[correctDateKey]) {
+        this.data.events[correctDateKey].forEach(event => {
+            const eventElement = document.createElement('div');
+            eventElement.className = 'calendar-event-main';
+            eventElement.style.backgroundColor = event.color;
+            eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
+            eventsContainer.appendChild(eventElement);
         });
+    }
 
-        return dayElement;
-    },
+    // Отпуска (используем корректный dateKey)
+    if (this.data.vacations[correctDateKey]) {
+        const vacationContainer = document.createElement('div');
+        vacationContainer.className = 'calendar-vacation-container';
+        
+        this.data.vacations[correctDateKey].forEach(vacation => {
+            const vacationElement = document.createElement('div');
+            vacationElement.className = 'calendar-vacation-main';
+            vacationElement.style.backgroundColor = vacation.color;
+            vacationElement.title = `Отпуск: ${vacation.person}`;
+            vacationContainer.appendChild(vacationElement);
+        });
+        
+        eventsContainer.appendChild(vacationContainer);
+    }
+
+    // Дни рождения (используем корректный dateKey)
+    const birthdays = this.getBirthdaysForDate(correctDateKey);
+    if (birthdays.length > 0) {
+        const birthdayElement = document.createElement('div');
+        birthdayElement.className = 'calendar-birthday-emoji';
+        birthdayElement.textContent = '🎉';
+        birthdayElement.title = `Дни рождения: ${birthdays.map(b => b.name).join(', ')}`;
+        eventsContainer.appendChild(birthdayElement);
+    }
+
+    dayElement.appendChild(eventsContainer);
+
+    dayElement.addEventListener('click', () => {
+        if (this.state.selectionMode === 'day') {
+            // ИСПРАВЛЕНИЕ: передаем корректный dateKey
+            this.openEventModal(correctDateKey);
+        } else {
+            this.handleWeekSelection(date);
+        }
+    });
+
+    return dayElement;
+},
 
     // Рендер блока с днями рождения в текущем месяце
     renderBirthdaysThisMonth() {
@@ -768,25 +771,44 @@ const CalendarManager = {
     },
 
     // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
-    openEventModal(dateKey, weekDates = null) {
-        const isWeekMode = weekDates !== null;
-        const date = this.parseDateKey(dateKey);
-        
-        let dateString;
-        if (isWeekMode) {
-            const firstDate = this.parseDateKey(weekDates[0]);
-            const lastDate = this.parseDateKey(weekDates[6]);
-            // ИСПРАВЛЕНИЕ: используем локальное форматирование без времени
-            dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
-        } else {
-            // ИСПРАВЛЕНИЕ: используем правильную дату и форматирование
-            dateString = date.toLocaleDateString('ru-RU');
-        }
+openEventModal(dateKey, weekDates = null) {
+    const isWeekMode = weekDates !== null;
+    
+    let dateString;
+    let actualDateKey = dateKey;
+    
+    if (isWeekMode) {
+        // Для недельного режима
+        const firstDate = this.parseDateKeyCorrect(weekDates[0]);
+        const lastDate = this.parseDateKeyCorrect(weekDates[6]);
+        dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
+    } else {
+        // ИСПРАВЛЕНИЕ: создаем дату напрямую из dateKey без преобразований
+        const date = this.parseDateKeyCorrect(dateKey);
+        dateString = date.toLocaleDateString('ru-RU');
+        actualDateKey = this.getDateKey(date); // Пересоздаем корректный dateKey
+    }
 
-        const modal = this.createModal(dateString, dateKey, weekDates);
-        document.body.appendChild(modal);
-        this.initializeModalHandlers(modal, dateKey, weekDates);
-    },
+    const modal = this.createModal(dateString, actualDateKey, weekDates);
+    document.body.appendChild(modal);
+    this.initializeModalHandlers(modal, actualDateKey, weekDates);
+},
+
+// НОВЫЙ МЕТОД: Корректный парсинг dateKey без проблем с часовым поясом
+parseDateKeyCorrect(dateKey) {
+    // Разбиваем dateKey на компоненты и создаем дату в локальном времени
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return new Date(year, month - 1, day);
+},
+
+// ОБНОВЛЕННЫЙ МЕТОД: Создание dateKey из даты
+getDateKey(date) {
+    // Создаем строку в формате YYYY-MM-DD без времени
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+},
 
     createModal(dateString, dateKey, weekDates) {
         const modal = document.createElement('div');
@@ -982,26 +1004,25 @@ const CalendarManager = {
     },
 
     createDateTime(dateString, timeString) {
-        try {
-            // ИСПРАВЛЕНИЕ: создаем дату в локальном времени
-            const [year, month, day] = dateString.split('-').map(Number);
-            const date = new Date(year, month - 1, day);
-            
-            if (isNaN(date.getTime())) {
-                return null;
-            }
-
-            const [hours, minutes] = timeString.split(':').map(Number);
-            if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-                return null;
-            }
-
-            date.setHours(hours, minutes, 0, 0);
-            return date.getTime();
-        } catch (error) {
+    try {
+        // ИСПРАВЛЕНИЕ: используем наш корректный парсер
+        const date = this.parseDateKeyCorrect(dateString);
+        
+        if (isNaN(date.getTime())) {
             return null;
         }
-    },
+
+        const [hours, minutes] = timeString.split(':').map(Number);
+        if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            return null;
+        }
+
+        date.setHours(hours, minutes, 0, 0);
+        return date.getTime();
+    } catch (error) {
+        return null;
+    }
+},
 
     scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
         const now = Date.now();
@@ -1047,54 +1068,58 @@ const CalendarManager = {
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-    isPersonOnDuty(dateKey, personId) {
-        return this.data.events[dateKey]?.some(event => event.id === personId);
-    },
+isPersonOnDuty(dateKey, personId) {
+    return this.data.events[dateKey]?.some(event => event.id === personId);
+},
 
-    isPersonOnVacation(dateKey, personId) {
-        return this.data.vacations[dateKey]?.some(vacation => vacation.id === personId);
-    },
+isPersonOnVacation(dateKey, personId) {
+    return this.data.vacations[dateKey]?.some(vacation => vacation.id === personId);
+},
 
-    getEventComment(dateKey) {
-        return this.data.events[dateKey]?.[0]?.comment || '';
-    },
+getEventComment(dateKey) {
+    return this.data.events[dateKey]?.[0]?.comment || '';
+},
 
-    getVacationComment(dateKey) {
-        return this.data.vacations[dateKey]?.[0]?.comment || '';
-    },
+getVacationComment(dateKey) {
+    return this.data.vacations[dateKey]?.[0]?.comment || '';
+},
 
-    getDateKey(date) {
-        return date.toISOString().split('T')[0];
-    },
+// ОБНОВЛЕННЫЙ МЕТОД: Создание dateKey из даты
+getDateKey(date) {
+    // Создаем строку в формате YYYY-MM-DD без времени
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+},
 
-    parseDateKey(dateKey) {
-        // ИСПРАВЛЕНИЕ: создаем дату без времени для избежания смещения часового пояса
-        const [year, month, day] = dateKey.split('-').map(Number);
-        // Создаем дату в UTC чтобы избежать проблем с часовыми поясами
-        const date = new Date(Date.UTC(year, month - 1, day));
-        return date;
-    },
+// НОВЫЙ МЕТОД: Корректный парсинг dateKey без проблем с часовым поясом
+parseDateKeyCorrect(dateKey) {
+    // Разбиваем dateKey на компоненты и создаем дату в локальном времени
+    const [year, month, day] = dateKey.split('-').map(Number);
+    return new Date(year, month - 1, day);
+},
 
-    handleWeekSelection(selectedDate) {
-        const weekDates = this.getWeekDates(selectedDate);
-        const dateKeys = weekDates.map(date => this.getDateKey(date));
-        this.openEventModal(dateKeys[0], dateKeys);
-    },
+handleWeekSelection(selectedDate) {
+    const weekDates = this.getWeekDates(selectedDate);
+    const dateKeys = weekDates.map(date => this.getDateKey(date));
+    this.openEventModal(dateKeys[0], dateKeys);
+},
 
-    getWeekDates(date) {
-        const dates = [];
-        const dayOfWeek = date.getDay();
-        const startDate = new Date(date);
-        startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+getWeekDates(date) {
+    const dates = [];
+    const dayOfWeek = date.getDay();
+    const startDate = new Date(date);
+    startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-        for (let i = 0; i < 7; i++) {
-            const currentDate = new Date(startDate);
-            currentDate.setDate(startDate.getDate() + i);
-            dates.push(currentDate);
-        }
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        dates.push(currentDate);
+    }
 
-        return dates;
-    },
+    return dates;
+},
 
     // Показать запланированные сообщения и дни рождения
     showScheduledView() {
