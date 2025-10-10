@@ -1,8 +1,13 @@
-// Менеджер календаря дежурств с локальным хранением
+// Менеджер календаря дежурств с real-time синхронизацией
 const CalendarManager = {
-    // === КОНФИГУРАЦИЯ ===
-    config: {
-        syncInterval: 30000, // 30 секунд
+    // === КОНФИГУРАЦИЯ СИНХРОНИЗАЦИИ ===
+    syncConfig: {
+        // URL вашего сервера на Render.com (ЗАМЕНИТЕ НА СВОЙ ПОСЛЕ ДЕПЛОЯ)
+        wsUrl: 'wss://remote-api-calendar.onrender.com/ws',
+        apiUrl: 'https://remote-api-calendar.onrender.com/api',
+        reconnectInterval: 3000,
+        maxReconnectAttempts: 5,
+        syncInterval: 10000 // HTTP синхронизация каждые 10 сек
     },
 
     // Данные
@@ -36,8 +41,15 @@ const CalendarManager = {
         selectionMode: 'day',
         isOnline: false,
         isSyncing: false,
+        retryCount: 0,
         lastSync: 0
     },
+
+    // WebSocket
+    ws: null,
+    reconnectAttempts: 0,
+    isConnected: false,
+    httpSyncInterval: null,
 
     // === ИНИЦИАЛИЗАЦИЯ ===
     async init() {
@@ -46,13 +58,313 @@ const CalendarManager = {
         // Загружаем локальные данные
         this.loadLocalData();
         
-        // Запускаем периодическую синхронизацию (для будущего использования)
-        this.startSyncInterval();
+        // Инициализируем real-time синхронизацию
+        this.initRealtimeSync();
         
         console.log('✅ CalendarManager: инициализация завершена');
     },
 
-    // === ЛОКАЛЬНОЕ ХРАНЕНИЕ ===
+    // === REAL-TIME СИНХРОНИЗАЦИЯ ===
+
+    // Инициализация WebSocket соединения
+    initRealtimeSync() {
+        try {
+            console.log('🔗 Подключение к WebSocket...');
+            this.ws = new WebSocket(this.syncConfig.wsUrl);
+            
+            this.ws.onopen = () => {
+                console.log('✅ WebSocket connected');
+                this.isConnected = true;
+                this.reconnectAttempts = 0;
+                this.state.isOnline = true;
+                this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
+                this.showConnectionStatus('connected');
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    this.handleWebSocketMessage(message);
+                } catch (error) {
+                    console.error('❌ Error parsing WebSocket message:', error);
+                }
+            };
+
+            this.ws.onclose = (event) => {
+                console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+                this.isConnected = false;
+                this.state.isOnline = false;
+                this.showConnectionStatus('disconnected');
+                this.handleReconnection();
+            };
+
+            this.ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', error);
+                this.isConnected = false;
+                this.state.isOnline = false;
+                this.showConnectionStatus('error');
+            };
+
+        } catch (error) {
+            console.error('❌ Error initializing WebSocket:', error);
+            this.fallbackToHTTPSync();
+        }
+    },
+
+    // Обработка сообщений WebSocket
+    handleWebSocketMessage(message) {
+        console.log('📨 WebSocket message:', message.type);
+
+        switch (message.type) {
+            case 'INIT_DATA':
+                // Первоначальные данные при подключении
+                if (this.validateData(message.data)) {
+                    this.handleRemoteUpdate(message.data, 'server');
+                }
+                break;
+
+            case 'DATA_UPDATE':
+                // Обновление данных от другого клиента
+                if (this.validateData(message.data)) {
+                    this.handleRemoteUpdate(message.data, 'client');
+                }
+                break;
+
+            case 'UPDATE_CONFIRMED':
+                // Подтверждение нашего обновления
+                this.data.lastModified = message.lastModified;
+                this.saveLocalData();
+                console.log('✅ Изменения подтверждены сервером');
+                this.updateSyncStatus('success', 'Сохранено');
+                break;
+
+            case 'HEARTBEAT':
+                console.log('💓 Heartbeat, clients:', message.clients);
+                break;
+
+            case 'PONG':
+                break;
+
+            case 'ERROR':
+                console.error('❌ Server error:', message.message);
+                this.updateSyncStatus('error', message.message);
+                break;
+        }
+    },
+
+    // Обработка удаленного обновления
+    handleRemoteUpdate(remoteData, source) {
+        const localTimestamp = this.data.lastModified || 0;
+        const remoteTimestamp = remoteData.lastModified || 0;
+
+        // Если удаленные данные новее
+        if (remoteTimestamp > localTimestamp) {
+            const hadChanges = JSON.stringify(this.data) !== JSON.stringify(remoteData);
+            
+            this.data = remoteData;
+            this.saveLocalData();
+            
+            if (hadChanges) {
+                console.log(`🔄 Данные обновлены от ${source}`);
+                this.updateSyncStatus('success', `Обновлено: ${new Date().toLocaleTimeString()}`);
+                
+                // Перерисовываем календарь если он открыт
+                if (document.getElementById('calendarGrid')) {
+                    this.renderCalendar();
+                }
+                
+                // Показываем уведомление о изменении от другого пользователя
+                if (source === 'client') {
+                    this.showChangeNotification();
+                }
+            }
+        } else {
+            console.log('📊 Локальные данные актуальнее');
+        }
+    },
+
+    // Отправка обновления на сервер через WebSocket
+    sendUpdateToServer() {
+        if (this.ws && this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'DATA_UPDATE',
+                data: this.data,
+                timestamp: Date.now()
+            }));
+            console.log('📤 Sent update via WebSocket');
+            return true;
+        }
+        return false;
+    },
+
+    // Переподключение при разрыве соединения
+    handleReconnection() {
+        if (this.reconnectAttempts < this.syncConfig.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`🔄 Попытка переподключения ${this.reconnectAttempts}/${this.syncConfig.maxReconnectAttempts}`);
+            
+            this.updateSyncStatus('syncing', 'Переподключение...');
+            this.showConnectionStatus('reconnecting');
+            
+            setTimeout(() => {
+                this.initRealtimeSync();
+            }, this.syncConfig.reconnectInterval);
+        } else {
+            console.log('❌ Превышено количество попыток переподключения');
+            this.fallbackToHTTPSync();
+        }
+    },
+
+    // Fallback на HTTP синхронизацию
+    fallbackToHTTPSync() {
+        console.log('🔄 Переход на HTTP синхронизацию');
+        this.updateSyncStatus('warning', 'Режим HTTP синхронизации');
+        this.showConnectionStatus('http');
+        this.startHTTPSyncInterval();
+    },
+
+    // HTTP синхронизация - получение данных
+    async syncViaHTTP() {
+        try {
+            console.log('📡 HTTP sync request...');
+            const response = await fetch(`${this.syncConfig.apiUrl}/calendar?t=${Date.now()}`);
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && this.validateData(result.data)) {
+                    this.handleRemoteUpdate(result.data, 'http');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('❌ HTTP sync error:', error);
+        }
+        return false;
+    },
+
+    // HTTP синхронизация - отправка данных
+    async sendUpdateViaHTTP() {
+        try {
+            console.log('📤 HTTP update request...');
+            const response = await fetch(`${this.syncConfig.apiUrl}/calendar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.data)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    this.data.lastModified = result.lastModified;
+                    this.saveLocalData();
+                    console.log('✅ HTTP update successful');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('❌ HTTP update error:', error);
+        }
+        return false;
+    },
+
+    // Запуск периодической HTTP синхронизации
+    startHTTPSyncInterval() {
+        // Останавливаем предыдущий интервал
+        if (this.httpSyncInterval) {
+            clearInterval(this.httpSyncInterval);
+        }
+        
+        // Синхронизируем сразу
+        this.syncViaHTTP();
+        
+        // Запускаем периодическую синхронизацию
+        this.httpSyncInterval = setInterval(async () => {
+            await this.syncViaHTTP();
+        }, this.syncConfig.syncInterval);
+    },
+
+    // Показать статус соединения
+    showConnectionStatus(status) {
+        // Создаем или находим элемент статуса
+        let statusElement = document.getElementById('connectionStatus');
+        if (!statusElement) {
+            statusElement = document.createElement('div');
+            statusElement.id = 'connectionStatus';
+            statusElement.style.cssText = `
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                padding: 5px 10px;
+                border-radius: 15px;
+                font-size: 12px;
+                z-index: 1000;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                font-weight: 500;
+            `;
+            document.body.appendChild(statusElement);
+        }
+
+        const statusConfig = {
+            connected: { text: '🟢 Online', color: '#4CAF50' },
+            disconnected: { text: '🔴 Offline', color: '#f44336' },
+            reconnecting: { text: '🟡 Reconnecting...', color: '#ff9800' },
+            error: { text: '🔴 Error', color: '#f44336' },
+            http: { text: '🟠 HTTP Mode', color: '#ff9800' }
+        };
+
+        const config = statusConfig[status] || statusConfig.disconnected;
+        statusElement.textContent = config.text;
+        statusElement.style.background = config.color;
+    },
+
+    // Показать уведомление об изменении
+    showChangeNotification() {
+        if (document.getElementById('calendarGrid')) {
+            // Удаляем предыдущее уведомление
+            const existingNotification = document.getElementById('changeNotification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.id = 'changeNotification';
+            notification.innerHTML = `
+                <i class="fas fa-sync"></i>
+                Календарь обновлен другим пользователем
+            `;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 12px 18px;
+                border-radius: 8px;
+                z-index: 10000;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 500;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.2);
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+    },
+
+    // === СИНХРОНИЗАЦИЯ ДАННЫХ ===
 
     // Загрузка локальных данных
     loadLocalData() {
@@ -63,7 +375,6 @@ const CalendarManager = {
                 if (this.validateData(localData)) {
                     this.data = localData;
                     console.log('📅 Локальные данные загружены');
-                    this.updateSyncStatus('success', 'Локальные данные');
                     return true;
                 }
             }
@@ -78,8 +389,6 @@ const CalendarManager = {
             lastModified: Date.now(),
             version: 1
         };
-        
-        this.updateSyncStatus('success', 'Новый календарь');
         return false;
     },
 
@@ -103,19 +412,60 @@ const CalendarManager = {
                typeof data.version === 'number';
     },
 
-    // Периодическая синхронизация (заглушка для будущего)
-    startSyncInterval() {
-        setInterval(async () => {
-            // В будущем здесь будет синхронизация
-            console.log('🔄 Проверка обновлений...');
-        }, this.config.syncInterval);
+    // Обновленный метод saveData
+    async saveData() {
+        // Сохраняем локально
+        this.data.lastModified = Date.now();
+        this.saveLocalData();
+        
+        // Пытаемся отправить через WebSocket
+        let syncSuccess = this.sendUpdateToServer();
+        
+        // Если WebSocket не доступен, используем HTTP
+        if (!syncSuccess) {
+            syncSuccess = await this.sendUpdateViaHTTP();
+        }
+        
+        if (syncSuccess) {
+            console.log('✅ Данные сохранены и синхронизированы');
+            this.updateSyncStatus('success', 'Сохранено');
+        } else {
+            console.log('💾 Данные сохранены локально (ошибка синхронизации)');
+            this.updateSyncStatus('warning', 'Сохранено локально');
+        }
     },
 
-    // Ручная синхронизация (заглушка)
+    // Ручная синхронизация
     async manualSync() {
-        this.updateSyncStatus('success', 'Локальные данные');
-        console.log('💾 Используются локальные данные');
-        return true;
+        if (this.state.isSyncing) {
+            console.log('🔄 Синхронизация уже выполняется...');
+            return false;
+        }
+
+        this.state.isSyncing = true;
+        this.updateSyncStatus('syncing', 'Ручная синхронизация...');
+
+        try {
+            let success = false;
+            
+            if (this.isConnected) {
+                // Пробуем WebSocket синхронизацию
+                success = await this.syncViaHTTP(); // HTTP для получения данных
+            } else {
+                // Только HTTP синхронизация
+                success = await this.syncViaHTTP();
+            }
+
+            if (success) {
+                this.updateSyncStatus('success', 'Синхронизировано');
+            } else {
+                this.updateSyncStatus('error', 'Ошибка синхронизации');
+            }
+
+            return success;
+        } finally {
+            this.state.isSyncing = false;
+        }
     },
 
     // Обновление статуса синхронизации
@@ -138,15 +488,12 @@ const CalendarManager = {
         const syncBtn = document.getElementById('manualSyncBtn');
         if (!syncBtn) return;
 
-        // Удаляем предыдущие классы статуса
         syncBtn.classList.remove('syncing', 'success', 'error', 'warning', 'offline');
         
-        // Добавляем текущий статус
         if (status !== 'success') {
             syncBtn.classList.add(status);
         }
 
-        // Обновляем иконку
         const icon = syncBtn.querySelector('i');
         if (icon) {
             icon.className = `fas fa-${this.getSyncIcon(status)}`;
@@ -156,7 +503,7 @@ const CalendarManager = {
     getSyncIcon(status) {
         const icons = {
             syncing: 'sync-alt fa-spin',
-            success: 'check-circle',
+            success: 'cloud-check',
             error: 'exclamation-triangle',
             warning: 'exclamation-circle',
             offline: 'wifi-slash'
@@ -172,7 +519,14 @@ const CalendarManager = {
     loadCalendarPage() {
         this.renderCalendar();
         this.initializeCalendarHandlers();
-        this.updateSyncStatus('success', 'Локальные данные');
+        
+        // Показываем статус соединения
+        if (this.isConnected) {
+            this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
+        } else {
+            this.updateSyncStatus(this.state.isOnline ? 'success' : 'offline', 
+                               this.state.isOnline ? 'Синхронизировано' : 'Локальные данные');
+        }
     },
 
     renderCalendar() {
@@ -500,14 +854,6 @@ const CalendarManager = {
         });
 
         this.updateSyncStatus('success', 'Событие запланировано');
-    },
-
-    // Сохранение данных
-    async saveData() {
-        this.data.lastModified = Date.now();
-        this.saveLocalData();
-        console.log('✅ Данные сохранены локально');
-        this.updateSyncStatus('success', 'Сохранено');
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
