@@ -2404,12 +2404,14 @@
     background: rgba(255, 255, 255, 0.02);
     border: 1px solid rgba(255, 255, 255, 0.05);
     cursor: default;
+    opacity: 0.3
 }
 
 .calendar-day-main.other-month:hover {
     background: rgba(255, 255, 255, 0.02);
     transform: none;
     box-shadow: none;
+    opacity: 0.3
 }
 
 .calendar-day-main.other-month .calendar-day-number-main {
