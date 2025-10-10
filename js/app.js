@@ -77,7 +77,15 @@ function initializeManagers() {
         CalendarManager.init();
         console.log('✅ CalendarManager инициализирован');
     }
+    if (typeof TelegramService !== 'undefined' && TelegramService.init) {
+        TelegramService.init();
+        console.log('✅ TelegramService инициализирован');
+    }
     
+    if (typeof MessageScheduler !== 'undefined' && MessageScheduler.init) {
+        MessageScheduler.init();
+        console.log('✅ MessageScheduler инициализирован');
+    }
     console.log('✅ Все менеджеры инициализированы');
 }
 

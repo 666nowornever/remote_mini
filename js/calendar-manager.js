@@ -903,25 +903,61 @@ createMainDayElement: function(date, dateKey, dayNumber, isToday) {
         return dates;
     },
 
-    scheduleTelegramMessage(eventDateTime, message) {
-        const eventTimestamp = new Date(eventDateTime).getTime();
-        const now = Date.now();
-        
-        if (eventTimestamp <= now) {
-            alert('Указанное время уже прошло');
-            return;
-        }
-
-        const scheduledMessages = JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
-        scheduledMessages.push({
-            timestamp: eventTimestamp,
-            message: message,
-            datetime: eventDateTime
-        });
-        
-        localStorage.setItem('scheduledTelegramMessages', JSON.stringify(scheduledMessages));
-        console.log(`⏰ Запланировано сообщение на ${eventDateTime}`);
+    // В CalendarManager замените этот метод:
+scheduleTelegramMessage(eventDateTime, message, chatId = null) {
+    const eventTimestamp = new Date(eventDateTime).getTime();
+    const now = Date.now();
+    
+    if (eventTimestamp <= now) {
+        DialogService.showMessage(
+            '❌ Ошибка', 
+            'Указанное время уже прошло. Выберите будущее время.',
+            'error'
+        );
+        return null;
     }
+
+    if (!message || message.trim().length === 0) {
+        DialogService.showMessage(
+            '❌ Ошибка', 
+            'Введите текст сообщения для отправки.',
+            'error'
+        );
+        return null;
+    }
+
+    try {
+        // Планируем сообщение через scheduler
+        const messageId = MessageScheduler.scheduleMessage(
+            eventTimestamp, 
+            message.trim(), 
+            chatId,
+            {
+                type: 'calendar_event',
+                dateTime: eventDateTime,
+                source: 'calendar'
+            }
+        );
+
+        DialogService.showMessage(
+            '✅ Успех', 
+            `Сообщение запланировано на ${new Date(eventDateTime).toLocaleString('ru-RU')}`,
+            'success'
+        );
+
+        console.log(`⏰ Сообщение запланировано: ${messageId}`);
+        return messageId;
+
+    } catch (error) {
+        console.error('❌ Ошибка планирования сообщения:', error);
+        DialogService.showMessage(
+            '❌ Ошибка', 
+            'Не удалось запланировать сообщение. Попробуйте снова.',
+            'error'
+        );
+        return null;
+    }
+}
 };
 
 // Инициализация
