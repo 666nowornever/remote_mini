@@ -551,6 +551,10 @@ createMainDayElement: function(date, dateKey, dayNumber, isToday) {
     if (isToday) {
         dayElement.classList.add('today');
     }
+
+     if (isOtherMonth) {
+        dayElement.classList.add('other-month'); 
+    }
     dayElement.dataset.date = dateKey;
 
     const isWeekend = date.getDay() === 0 || date.getDay() === 6;
