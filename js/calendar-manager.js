@@ -111,7 +111,7 @@ const CalendarManager = {
             name: 'Чупеткин Иван', 
             date: '2025-02-09', 
             type: 'notification',
-            message: '📅 Сегодня день рождения у Чупеткина' 
+            message: '📅 Сегодня день рождения у Чупеткина И.' 
         }
     ],
 
@@ -218,8 +218,6 @@ const CalendarManager = {
                     birthdayType: birthday.type
                 }
             );
-            
-            console.log(`🎂 Запланировано ${birthday.type === 'congratulation' ? 'поздравление' : 'уведомление'} для ${birthday.name} на ${new Date(timestamp).toLocaleDateString('ru-RU')}`);
         }
     },
 
@@ -248,7 +246,6 @@ const CalendarManager = {
                 this.reconnectAttempts = 0;
                 this.state.isOnline = true;
                 this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
-                this.showConnectionStatus('connected');
             };
 
             this.ws.onmessage = (event) => {
@@ -264,7 +261,6 @@ const CalendarManager = {
                 console.log('🔌 WebSocket disconnected:', event.code, event.reason);
                 this.isConnected = false;
                 this.state.isOnline = false;
-                this.showConnectionStatus('disconnected');
                 this.handleReconnection();
             };
 
@@ -272,7 +268,6 @@ const CalendarManager = {
                 console.error('❌ WebSocket error:', error);
                 this.isConnected = false;
                 this.state.isOnline = false;
-                this.showConnectionStatus('error');
             };
 
         } catch (error) {
@@ -283,8 +278,6 @@ const CalendarManager = {
 
     // Обработка сообщений WebSocket
     handleWebSocketMessage(message) {
-        console.log('📨 WebSocket message:', message.type);
-
         switch (message.type) {
             case 'INIT_DATA':
                 if (this.validateData(message.data)) {
@@ -301,14 +294,7 @@ const CalendarManager = {
             case 'UPDATE_CONFIRMED':
                 this.data.lastModified = message.lastModified;
                 this.saveLocalData();
-                console.log('✅ Изменения подтверждены сервером');
                 this.updateSyncStatus('success', 'Сохранено');
-                break;
-
-            case 'HEARTBEAT':
-                break;
-
-            case 'PONG':
                 break;
 
             case 'ERROR':
@@ -330,7 +316,6 @@ const CalendarManager = {
             this.saveLocalData();
             
             if (hadChanges) {
-                console.log(`🔄 Данные обновлены от ${source}`);
                 this.updateSyncStatus('success', `Обновлено: ${new Date().toLocaleTimeString()}`);
                 
                 if (document.getElementById('calendarGrid')) {
@@ -348,7 +333,6 @@ const CalendarManager = {
                 data: this.data,
                 timestamp: Date.now()
             }));
-            console.log('📤 Sent update via WebSocket');
             return true;
         }
         return false;
@@ -358,32 +342,26 @@ const CalendarManager = {
     handleReconnection() {
         if (this.reconnectAttempts < this.syncConfig.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            console.log(`🔄 Попытка переподключения ${this.reconnectAttempts}/${this.syncConfig.maxReconnectAttempts}`);
             
             this.updateSyncStatus('syncing', 'Переподключение...');
-            this.showConnectionStatus('reconnecting');
             
             setTimeout(() => {
                 this.initRealtimeSync();
             }, this.syncConfig.reconnectInterval);
         } else {
-            console.log('❌ Превышено количество попыток переподключения');
             this.fallbackToHTTPSync();
         }
     },
 
     // Fallback на HTTP синхронизацию
     fallbackToHTTPSync() {
-        console.log('🔄 Переход на HTTP синхронизацию');
         this.updateSyncStatus('warning', 'Режим HTTP синхронизации');
-        this.showConnectionStatus('http');
         this.startHTTPSyncInterval();
     },
 
     // HTTP синхронизация - получение данных
     async syncViaHTTP() {
         try {
-            console.log('📡 HTTP sync request...');
             const response = await fetch(`${this.syncConfig.apiUrl}/calendar?t=${Date.now()}`);
             
             if (response.ok) {
@@ -402,7 +380,6 @@ const CalendarManager = {
     // HTTP синхронизация - отправка данных
     async sendUpdateViaHTTP() {
         try {
-            console.log('📤 HTTP update request...');
             const response = await fetch(`${this.syncConfig.apiUrl}/calendar`, {
                 method: 'POST',
                 headers: {
@@ -416,7 +393,6 @@ const CalendarManager = {
                 if (result.success) {
                     this.data.lastModified = result.lastModified;
                     this.saveLocalData();
-                    console.log('✅ HTTP update successful');
                     return true;
                 }
             }
@@ -439,40 +415,6 @@ const CalendarManager = {
         }, this.syncConfig.syncInterval);
     },
 
-    // Показать статус соединения
-    showConnectionStatus(status) {
-        let statusElement = document.getElementById('connectionStatus');
-        if (!statusElement) {
-            statusElement = document.createElement('div');
-            statusElement.id = 'connectionStatus';
-            statusElement.style.cssText = `
-                position: fixed;
-                top: 10px;
-                left: 10px;
-                padding: 5px 10px;
-                border-radius: 15px;
-                font-size: 12px;
-                z-index: 1000;
-                background: rgba(0,0,0,0.8);
-                color: white;
-                font-weight: 500;
-            `;
-            document.body.appendChild(statusElement);
-        }
-
-        const statusConfig = {
-            connected: { text: '🟢 Online', color: '#4CAF50' },
-            disconnected: { text: '🔴 Offline', color: '#f44336' },
-            reconnecting: { text: '🟡 Reconnecting...', color: '#ff9800' },
-            error: { text: '🔴 Error', color: '#f44336' },
-            http: { text: '🟠 HTTP Mode', color: '#ff9800' }
-        };
-
-        const config = statusConfig[status] || statusConfig.disconnected;
-        statusElement.textContent = config.text;
-        statusElement.style.background = config.color;
-    },
-
     // === СИНХРОНИЗАЦИЯ ДАННЫХ ===
 
     // Загрузка локальных данных
@@ -483,7 +425,6 @@ const CalendarManager = {
                 const localData = JSON.parse(saved);
                 if (this.validateData(localData)) {
                     this.data = localData;
-                    console.log('📅 Локальные данные загружены');
                     return true;
                 }
             }
@@ -504,7 +445,6 @@ const CalendarManager = {
     saveLocalData() {
         try {
             localStorage.setItem('calendarData', JSON.stringify(this.data));
-            console.log('💾 Данные сохранены локально');
         } catch (error) {
             console.error('❌ Ошибка сохранения локальных данных:', error);
         }
@@ -532,10 +472,8 @@ const CalendarManager = {
         }
         
         if (syncSuccess) {
-            console.log('✅ Данные сохранены и синхронизированы');
             this.updateSyncStatus('success', 'Сохранено');
         } else {
-            console.log('💾 Данные сохранены локально (ошибка синхронизации)');
             this.updateSyncStatus('warning', 'Сохранено локально');
         }
     },
@@ -629,7 +567,7 @@ const CalendarManager = {
         }
     },
 
-    renderCalendar: function() {
+    renderCalendar() {
         const calendarElement = document.getElementById('calendarGrid');
         if (!calendarElement) return;
 
@@ -684,11 +622,14 @@ const CalendarManager = {
     },
 
     // Создание элемента дня для новой структуры
-    createMainDayElement: function(date, dateKey, dayNumber, isToday) {
+    createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day-main';
         if (isToday) {
             dayElement.classList.add('today');
+        }
+        if (isOtherMonth) {
+            dayElement.classList.add('other-month');
         }
         dayElement.dataset.date = dateKey;
 
@@ -731,20 +672,14 @@ const CalendarManager = {
             eventsContainer.appendChild(vacationContainer);
         }
 
-        // Дни рождения
+        // Дни рождения - показываем эмодзи 🎉
         const birthdays = this.getBirthdaysForDate(dateKey);
         if (birthdays.length > 0) {
-            const birthdayContainer = document.createElement('div');
-            birthdayContainer.className = 'calendar-birthday-container';
-            
-            birthdays.forEach(birthday => {
-                const birthdayElement = document.createElement('div');
-                birthdayElement.className = `calendar-birthday-main ${birthday.type}`;
-                birthdayElement.title = `День рождения: ${birthday.name} (${birthday.type === 'congratulation' ? 'Поздравление' : 'Уведомление'})`;
-                birthdayContainer.appendChild(birthdayElement);
-            });
-            
-            eventsContainer.appendChild(birthdayContainer);
+            const birthdayElement = document.createElement('div');
+            birthdayElement.className = 'calendar-birthday-emoji';
+            birthdayElement.textContent = '🎉';
+            birthdayElement.title = `Дни рождения: ${birthdays.map(b => b.name).join(', ')}`;
+            eventsContainer.appendChild(birthdayElement);
         }
 
         dayElement.appendChild(eventsContainer);
@@ -1006,14 +941,12 @@ const CalendarManager = {
             const date = new Date(dateString + 'T00:00:00');
             
             if (isNaN(date.getTime())) {
-                console.error('❌ Неверный формат даты:', dateString);
                 return null;
             }
 
             const [hours, minutes] = timeString.split(':').map(Number);
             
             if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-                console.error('❌ Неверный формат времени:', timeString);
                 return null;
             }
 
@@ -1022,7 +955,6 @@ const CalendarManager = {
             return date.getTime();
 
         } catch (error) {
-            console.error('❌ Ошибка создания даты:', error);
             return null;
         }
     },
@@ -1063,7 +995,6 @@ const CalendarManager = {
             return messageId;
 
         } catch (error) {
-            console.error('❌ Ошибка планирования сообщения:', error);
             DialogService.showMessage(
                 '❌ Ошибка', 
                 'Не удалось запланировать сообщение. Попробуйте снова.',
