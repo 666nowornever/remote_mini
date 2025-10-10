@@ -3,18 +3,16 @@
         <i class="fas fa-arrow-left"></i>
         Назад
     </button>
-    
+
     <div class="card">
         <!-- ОСНОВНОЙ ЗАГОЛОВОК С НАВИГАЦИЕЙ -->
         <div class="calendar-main-header">
             <button class="calendar-nav-main" id="calendarPrev" title="Предыдущий месяц">
                 <i class="fas fa-chevron-left"></i>
             </button>
-            
             <div class="calendar-title-main">
                 <span id="calendarTitle">Октябрь 2025</span>
             </div>
-            
             <button class="calendar-nav-main" id="calendarNext" title="Следующий месяц">
                 <i class="fas fa-chevron-right"></i>
             </button>
@@ -52,14 +50,17 @@
                     <div class="legend-color-main vacation-color-main"></div>
                     <span>Отпуск</span>
                 </div>
-                <div class="legend-item-main">
-                    <div class="legend-color-main birthday-congratulation"></div>
-                    <span>ДР (поздравление)</span>
-                </div>
-                <div class="legend-item-main">
-                    <div class="legend-color-main birthday-notification"></div>
-                    <span>ДР (уведомление)</span>
-                </div>
+            </div>
+        </div>
+
+        <!-- Блок с днями рождения в текущем месяце -->
+        <div class="birthdays-this-month">
+            <div class="birthdays-title">
+                <i class="fas fa-birthday-cake"></i>
+                Дни рождения в этом месяце
+            </div>
+            <div id="birthdaysThisMonth">
+                <!-- Дни рождения будут загружены здесь -->
             </div>
         </div>
     </div>

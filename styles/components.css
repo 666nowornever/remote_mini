@@ -2722,3 +2722,58 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.8);
 }
+/* Блок с днями рождения в текущем месяце */
+.birthdays-this-month {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 15px;
+}
+
+.birthdays-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.birthdays-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.birthday-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.birthday-date {
+    font-weight: 500;
+    font-size: 14px;
+}
+
+.birthday-name {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.no-birthdays {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.no-birthdays i {
+    font-size: 24px;
+    margin-bottom: 8px;
+    display: block;
+}

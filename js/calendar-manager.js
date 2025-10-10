@@ -27,91 +27,90 @@ const CalendarManager = {
     // Дни рождения (хранятся в коде)
     birthdays: [
         // Поздравление в чат в 07:30
-        { 
-            id: 1, 
-            name: 'Васильев Иван', 
-            date: '2025-01-09', 
+        {
+            id: 1,
+            name: 'Васильев Иван',
+            date: '2025-01-09',
             type: 'congratulation',
-            message: '🎉 Поздравляем @drmw1kr с днем рождения! 🎂' 
+            message: '🎉 Поздравляем @drmw1kr с днем рождения! 🎂'
         },
-        { 
-            id: 2, 
-            name: 'Преображенский Дмитрий', 
-            date: '2025-02-13', 
+        {
+            id: 2,
+            name: 'Преображенский Дмитрий',
+            date: '2025-02-13',
             type: 'congratulation',
-            message: '🎉 Поздравляем @DPreobrazhensky с днем рождения! 🎂' 
+            message: '🎉 Поздравляем @DPreobrazhensky с днем рождения! 🎂'
         },
-        { 
-            id: 3, 
-            name: 'Кремнев Андрей', 
-            date: '2025-09-03', 
+        {
+            id: 3,
+            name: 'Кремнев Андрей',
+            date: '2025-09-03',
             type: 'congratulation',
-            message: '🎉 Поздравляем @i666nowornever с днем рождения! 🎂' 
+            message: '🎉 Поздравляем @i666nowornever с днем рождения! 🎂'
         },
-        { 
-            id: 4, 
-            name: 'Солохин Вячеслав', 
-            date: '2025-11-07', 
+        {
+            id: 4,
+            name: 'Солохин Вячеслав',
+            date: '2025-11-07',
             type: 'congratulation',
-            message: '🎉 Поздравляем @agent_instigator с днем рождения! 🎂' 
+            message: '🎉 Поздравляем @agent_instigator с днем рождения! 🎂'
         },
-        { 
-            id: 5, 
-            name: 'Тихонов Никита', 
-            date: '2025-12-25', 
+        {
+            id: 5,
+            name: 'Тихонов Никита',
+            date: '2025-12-25',
             type: 'congratulation',
-            message: '🎉 Поздравляем @darkwellx с днем рождения! 🎂' 
+            message: '🎉 Поздравляем @darkwellx с днем рождения! 🎂'
         },
-        
         // Просто уведомление в 10:00
-        { 
-            id: 6, 
-            name: 'Дяблов Алексей', 
-            date: '2025-01-06', 
+        {
+            id: 6,
+            name: 'Дяблов Алексей',
+            date: '2025-01-06',
             type: 'notification',
-            message: '📅 Сегодня день рождения у Дяблова А.' 
+            message: '📅 Сегодня день рождения у Дяблова А.'
         },
-        { 
-            id: 7, 
-            name: 'Винковский Алексей', 
-            date: '2025-01-28', 
+        {
+            id: 7,
+            name: 'Винковский Алексей',
+            date: '2025-01-28',
             type: 'notification',
-            message: '📅 Сегодня день рождения у Винковского А.' 
+            message: '📅 Сегодня день рождения у Винковского А.'
         },
-        { 
-            id: 8, 
-            name: 'Сиворин Михаил', 
-            date: '2025-02-09', 
+        {
+            id: 8,
+            name: 'Сиворин Михаил',
+            date: '2025-02-09',
             type: 'notification',
-            message: '📅 Сегодня день рождения у Сиворина М.' 
+            message: '📅 Сегодня день рождения у Сиворина М.'
         },
-        { 
-            id: 9, 
-            name: 'Кунаев Николай', 
-            date: '2025-05-24', 
+        {
+            id: 9,
+            name: 'Кунаев Николай',
+            date: '2025-05-24',
             type: 'notification',
-            message: '📅 Сегодня день рождения у Кунаева Н.' 
+            message: '📅 Сегодня день рождения у Кунаева Н.'
         },
-        { 
-            id: 8, 
-            name: 'Нуриахметов Вадим', 
-            date: '2025-07-09', 
+        {
+            id: 10,
+            name: 'Нуриахметов Вадим',
+            date: '2025-07-09',
             type: 'notification',
-            message: '📅 Сегодня день рождения у Нуриахметова В.' 
+            message: '📅 Сегодня день рождения у Нуриахметова В.'
         },
-        { 
-            id: 9, 
-            name: 'Волков Дмитрий', 
-            date: '2025-02-09', 
+        {
+            id: 11,
+            name: 'Волков Дмитрий',
+            date: '2025-02-09',
             type: 'notification',
-            message: '📅 Сегодня день рождения у Волкова Д.' 
+            message: '📅 Сегодня день рождения у Волкова Д.'
         },
-        { 
-            id: 10, 
-            name: 'Чупеткин Иван', 
-            date: '2025-02-09', 
+        {
+            id: 12,
+            name: 'Чупеткин Иван',
+            date: '2025-02-09',
             type: 'notification',
-            message: '📅 Сегодня день рождения у Чупеткина И.' 
+            message: '📅 Сегодня день рождения у Чупеткина И.'
         }
     ],
 
@@ -152,25 +151,19 @@ const CalendarManager = {
     // === ИНИЦИАЛИЗАЦИЯ ===
     async init() {
         console.log('🔄 CalendarManager: инициализация...');
-        
         // Загружаем локальные данные
         this.loadLocalData();
-        
         // Инициализируем real-time синхронизацию
         this.initRealtimeSync();
-        
         // Планируем дни рождения
         this.scheduleBirthdays();
-        
         console.log('✅ CalendarManager: инициализация завершена');
     },
 
     // === ДНИ РОЖДЕНИЯ ===
-
     // Планирование дней рождения
     scheduleBirthdays() {
         console.log('🎂 Планирование дней рождения...');
-        
         const now = new Date();
         const currentYear = now.getFullYear();
         
@@ -178,19 +171,18 @@ const CalendarManager = {
             // Создаем дату дня рождения в текущем году
             const birthDate = new Date(birthday.date);
             const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
-            
+
             // Если день рождения уже прошел в этом году, планируем на следующий год
             if (birthdayThisYear < now) {
                 birthdayThisYear.setFullYear(currentYear + 1);
             }
-            
+
             // Устанавливаем время отправки
             const sendTime = birthday.type === 'congratulation' ? '07:30' : '10:00';
             const [hours, minutes] = sendTime.split(':').map(Number);
-            
             const sendDateTime = new Date(birthdayThisYear);
             sendDateTime.setHours(hours, minutes, 0, 0);
-            
+
             // Планируем сообщение
             this.scheduleBirthdayMessage(birthday, sendDateTime.getTime());
         });
@@ -200,12 +192,12 @@ const CalendarManager = {
     scheduleBirthdayMessage(birthday, timestamp) {
         // Проверяем, не запланировано ли уже это сообщение
         const existingMessages = MessageScheduler.getAllMessages();
-        const alreadyScheduled = existingMessages.some(msg => 
-            msg.eventData?.type === 'birthday' && 
+        const alreadyScheduled = existingMessages.some(msg =>
+            msg.eventData?.type === 'birthday' &&
             msg.eventData?.birthdayId === birthday.id &&
             new Date(msg.timestamp).getFullYear() === new Date(timestamp).getFullYear()
         );
-        
+
         if (!alreadyScheduled) {
             MessageScheduler.scheduleMessage(
                 timestamp,
@@ -226,14 +218,30 @@ const CalendarManager = {
         return this.birthdays.filter(birthday => {
             const birthDate = new Date(birthday.date);
             const checkDate = new Date(dateKey);
-            
-            return birthDate.getMonth() === checkDate.getMonth() && 
+            return birthDate.getMonth() === checkDate.getMonth() &&
                    birthDate.getDate() === checkDate.getDate();
         });
     },
 
-    // === REAL-TIME СИНХРОНИЗАЦИЯ ===
+    // Получить дни рождения в текущем месяце
+    getBirthdaysForCurrentMonth() {
+        const currentMonth = this.state.currentDate.getMonth();
+        const currentYear = this.state.currentDate.getFullYear();
+        
+        return this.birthdays.filter(birthday => {
+            const birthDate = new Date(birthday.date);
+            // Создаем дату в текущем году для сравнения
+            const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+            return birthdayThisYear.getMonth() === currentMonth;
+        }).sort((a, b) => {
+            // Сортируем по дате
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return (dateA.getMonth() * 100 + dateA.getDate()) - (dateB.getMonth() * 100 + dateB.getDate());
+        });
+    },
 
+    // === REAL-TIME СИНХРОНИЗАЦИЯ ===
     // Инициализация WebSocket соединения
     initRealtimeSync() {
         try {
@@ -284,19 +292,16 @@ const CalendarManager = {
                     this.handleRemoteUpdate(message.data, 'server');
                 }
                 break;
-
             case 'DATA_UPDATE':
                 if (this.validateData(message.data)) {
                     this.handleRemoteUpdate(message.data, 'client');
                 }
                 break;
-
             case 'UPDATE_CONFIRMED':
                 this.data.lastModified = message.lastModified;
                 this.saveLocalData();
                 this.updateSyncStatus('success', 'Сохранено');
                 break;
-
             case 'ERROR':
                 console.error('❌ Server error:', message.message);
                 this.updateSyncStatus('error', message.message);
@@ -311,13 +316,11 @@ const CalendarManager = {
 
         if (remoteTimestamp > localTimestamp) {
             const hadChanges = JSON.stringify(this.data) !== JSON.stringify(remoteData);
-            
             this.data = remoteData;
             this.saveLocalData();
-            
+
             if (hadChanges) {
                 this.updateSyncStatus('success', `Обновлено: ${new Date().toLocaleTimeString()}`);
-                
                 if (document.getElementById('calendarGrid')) {
                     this.renderCalendar();
                 }
@@ -342,7 +345,6 @@ const CalendarManager = {
     handleReconnection() {
         if (this.reconnectAttempts < this.syncConfig.maxReconnectAttempts) {
             this.reconnectAttempts++;
-            
             this.updateSyncStatus('syncing', 'Переподключение...');
             
             setTimeout(() => {
@@ -363,7 +365,6 @@ const CalendarManager = {
     async syncViaHTTP() {
         try {
             const response = await fetch(`${this.syncConfig.apiUrl}/calendar?t=${Date.now()}`);
-            
             if (response.ok) {
                 const result = await response.json();
                 if (result.success && this.validateData(result.data)) {
@@ -407,16 +408,14 @@ const CalendarManager = {
         if (this.httpSyncInterval) {
             clearInterval(this.httpSyncInterval);
         }
-        
+
         this.syncViaHTTP();
-        
         this.httpSyncInterval = setInterval(async () => {
             await this.syncViaHTTP();
         }, this.syncConfig.syncInterval);
     },
 
     // === СИНХРОНИЗАЦИЯ ДАННЫХ ===
-
     // Загрузка локальных данных
     loadLocalData() {
         try {
@@ -431,7 +430,7 @@ const CalendarManager = {
         } catch (error) {
             console.error('❌ Ошибка загрузки локальных данных:', error);
         }
-        
+
         this.data = {
             events: {},
             vacations: {},
@@ -452,25 +451,24 @@ const CalendarManager = {
 
     // Валидация данных
     validateData(data) {
-        return data && 
-               typeof data === 'object' &&
-               typeof data.events === 'object' &&
-               typeof data.vacations === 'object' &&
-               typeof data.lastModified === 'number' &&
-               typeof data.version === 'number';
+        return data &&
+            typeof data === 'object' &&
+            typeof data.events === 'object' &&
+            typeof data.vacations === 'object' &&
+            typeof data.lastModified === 'number' &&
+            typeof data.version === 'number';
     },
 
     // Обновленный метод saveData
     async saveData() {
         this.data.lastModified = Date.now();
         this.saveLocalData();
-        
+
         let syncSuccess = this.sendUpdateToServer();
-        
         if (!syncSuccess) {
             syncSuccess = await this.sendUpdateViaHTTP();
         }
-        
+
         if (syncSuccess) {
             this.updateSyncStatus('success', 'Сохранено');
         } else {
@@ -489,7 +487,6 @@ const CalendarManager = {
 
         try {
             let success = false;
-            
             if (this.isConnected) {
                 success = await this.syncViaHTTP();
             } else {
@@ -501,7 +498,6 @@ const CalendarManager = {
             } else {
                 this.updateSyncStatus('error', 'Ошибка синхронизации');
             }
-
             return success;
         } finally {
             this.state.isSyncing = false;
@@ -528,7 +524,6 @@ const CalendarManager = {
         if (!syncBtn) return;
 
         syncBtn.classList.remove('syncing', 'success', 'error', 'warning', 'offline');
-        
         if (status !== 'success') {
             syncBtn.classList.add(status);
         }
@@ -558,141 +553,81 @@ const CalendarManager = {
     loadCalendarPage() {
         this.renderCalendar();
         this.initializeCalendarHandlers();
-        
+        this.renderBirthdaysThisMonth();
+
         if (this.isConnected) {
             this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
         } else {
-            this.updateSyncStatus(this.state.isOnline ? 'success' : 'offline', 
-                               this.state.isOnline ? 'Синхронизировано' : 'Локальные данные');
+            this.updateSyncStatus(this.state.isOnline ? 'success' : 'offline',
+                this.state.isOnline ? 'Синхронизировано' : 'Локальные данные');
         }
     },
 
-    r// === ОСНОВНЫЕ МЕТОДЫ КАЛЕНДАРЯ ===
+    renderCalendar() {
+        const calendarElement = document.getElementById('calendarGrid');
+        if (!calendarElement) return;
 
-renderCalendar() {
-    const calendarElement = document.getElementById('calendarGrid');
-    if (!calendarElement) return;
+        const year = this.state.currentDate.getFullYear();
+        const month = this.state.currentDate.getMonth();
+        const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-    const year = this.state.currentDate.getFullYear();
-    const month = this.state.currentDate.getMonth();
-    const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
+        const titleElement = document.getElementById('calendarTitle');
+        if (titleElement) {
+            titleElement.textContent = `${monthNames[month]} ${year}`;
+        }
 
-    const titleElement = document.getElementById('calendarTitle');
-    if (titleElement) {
-        titleElement.textContent = `${monthNames[month]} ${year}`;
-    }
+        calendarElement.innerHTML = '';
 
-    calendarElement.innerHTML = '';
-
-    // Заголовки дней недели
-    const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-    daysOfWeek.forEach(day => {
-        const dayHeader = document.createElement('div');
-        dayHeader.className = 'calendar-day-header';
-        dayHeader.textContent = day;
-        calendarElement.appendChild(dayHeader);
-    });
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
-
-    const endDate = new Date(lastDay);
-    endDate.setDate(endDate.getDate() + (7 - lastDay.getDay()) - (lastDay.getDay() === 0 ? 0 : 1));
-
-    const today = new Date();
-    let currentDate = new Date(startDate);
-
-    for (let i = 0; i < 35; i++) {
-        const dateKey = this.getDateKey(currentDate);
-        const isCurrentMonth = currentDate.getMonth() === month;
-        const isToday = currentDate.toDateString() === today.toDateString();
-
-        const dayElement = this.createMainDayElement(
-            new Date(currentDate),
-            dateKey,
-            currentDate.getDate(),
-            isToday,
-            !isCurrentMonth
-        );
-        calendarElement.appendChild(dayElement);
-        currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    // Добавляем блок с днями рождения месяца
-    this.renderMonthBirthdays(year, month);
-},
-
-// Рендер дней рождения в текущем месяце
-renderMonthBirthdays(year, month) {
-    const legendElement = document.querySelector('.calendar-legend-main');
-    if (!legendElement) return;
-
-    // Убираем старые элементы ДР из легенды
-    const legendItems = legendElement.querySelector('.legend-items-main');
-    if (legendItems) {
-        const birthdayItems = legendItems.querySelectorAll('.legend-item-main:has(.birthday-congratulation), .legend-item-main:has(.birthday-notification)');
-        birthdayItems.forEach(item => item.remove());
-    }
-
-    // Добавляем блок с днями рождения месяца
-    let birthdaysContainer = document.getElementById('monthBirthdays');
-    if (!birthdaysContainer) {
-        birthdaysContainer = document.createElement('div');
-        birthdaysContainer.id = 'monthBirthdays';
-        birthdaysContainer.className = 'month-birthdays';
-        legendElement.parentNode.insertBefore(birthdaysContainer, legendElement.nextSibling);
-    }
-
-    // Получаем дни рождения текущего месяца
-    const monthBirthdays = this.getBirthdaysForMonth(year, month);
-    
-    if (monthBirthdays.length > 0) {
-        let birthdaysHTML = '<div class="month-birthdays-title">🎂 Дни рождения в этом месяце:</div>';
-        birthdaysHTML += '<div class="month-birthdays-list">';
-        
-        monthBirthdays.forEach(birthday => {
-            const birthDate = new Date(birthday.date);
-            birthdaysHTML += `
-                <div class="birthday-item">
-                    <span class="birthday-date">${birthDate.getDate()} ${this.getMonthName(birthDate.getMonth())}</span>
-                    <span class="birthday-name">${birthday.name}</span>
-                </div>
-            `;
+        // Заголовки дней недели
+        const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+        daysOfWeek.forEach(day => {
+            const dayHeader = document.createElement('div');
+            dayHeader.className = 'calendar-day-header';
+            dayHeader.textContent = day;
+            calendarElement.appendChild(dayHeader);
         });
-        
-        birthdaysHTML += '</div>';
-        birthdaysContainer.innerHTML = birthdaysHTML;
-    } else {
-        birthdaysContainer.innerHTML = '<div class="month-birthdays-title">🎂 В этом месяце дней рождений нет</div>';
-    }
-},
 
-// Получить дни рождения для конкретного месяца
-getBirthdaysForMonth(year, month) {
-    return this.birthdays.filter(birthday => {
-        const birthDate = new Date(birthday.date);
-        return birthDate.getMonth() === month;
-    });
-},
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
 
-// Получить название месяца
-getMonthName(monthIndex) {
-    const monthNames = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
-    return monthNames[monthIndex];
-},
+        const endDate = new Date(lastDay);
+        endDate.setDate(endDate.getDate() + (7 - lastDay.getDay()) - (lastDay.getDay() === 0 ? 0 : 1));
+
+        const today = new Date();
+        let currentDate = new Date(startDate);
+
+        for (let i = 0; i < 35; i++) {
+            const dateKey = this.getDateKey(currentDate);
+            const isCurrentMonth = currentDate.getMonth() === month;
+            const isToday = currentDate.toDateString() === today.toDateString();
+
+            const dayElement = this.createMainDayElement(
+                new Date(currentDate),
+                dateKey,
+                currentDate.getDate(),
+                isToday,
+                !isCurrentMonth
+            );
+
+            calendarElement.appendChild(dayElement);
+            currentDate.setDate(currentDate.getDate() + 1);
+        }
+    },
 
     // Создание элемента дня для новой структуры
     createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day-main';
+        
         if (isToday) {
             dayElement.classList.add('today');
         }
         if (isOtherMonth) {
             dayElement.classList.add('other-month');
         }
+
         dayElement.dataset.date = dateKey;
 
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
@@ -745,7 +680,7 @@ getMonthName(monthIndex) {
         }
 
         dayElement.appendChild(eventsContainer);
-        
+
         dayElement.addEventListener('click', () => {
             if (this.state.selectionMode === 'day') {
                 this.openEventModal(dateKey);
@@ -755,6 +690,44 @@ getMonthName(monthIndex) {
         });
 
         return dayElement;
+    },
+
+    // Рендер блока с днями рождения в текущем месяце
+    renderBirthdaysThisMonth() {
+        const birthdaysContainer = document.getElementById('birthdaysThisMonth');
+        if (!birthdaysContainer) return;
+
+        const birthdays = this.getBirthdaysForCurrentMonth();
+        
+        if (birthdays.length === 0) {
+            birthdaysContainer.innerHTML = `
+                <div class="no-birthdays">
+                    <i class="fas fa-birthday-cake"></i>
+                    <p>В этом месяце дней рождения нет</p>
+                </div>
+            `;
+            return;
+        }
+
+        let birthdaysHTML = '<div class="birthdays-list">';
+        
+        birthdays.forEach(birthday => {
+            const birthDate = new Date(birthday.date);
+            const formattedDate = birthDate.toLocaleDateString('ru-RU', { 
+                day: 'numeric', 
+                month: 'long' 
+            });
+            
+            birthdaysHTML += `
+                <div class="birthday-item">
+                    <div class="birthday-date">${formattedDate}</div>
+                    <div class="birthday-name">${birthday.name}</div>
+                </div>
+            `;
+        });
+        
+        birthdaysHTML += '</div>';
+        birthdaysContainer.innerHTML = birthdaysHTML;
     },
 
     initializeCalendarHandlers() {
@@ -768,53 +741,56 @@ getMonthName(monthIndex) {
     toggleSelectionMode() {
         this.state.selectionMode = this.state.selectionMode === 'day' ? 'week' : 'day';
         const modeBtn = document.getElementById('selectionModeBtn');
+        
         if (modeBtn) {
-            modeBtn.innerHTML = this.state.selectionMode === 'day' ? 
-                '<i class="fas fa-calendar-day"></i> Режим: День' : 
+            modeBtn.innerHTML = this.state.selectionMode === 'day' ?
+                '<i class="fas fa-calendar-day"></i> Режим: День' :
                 '<i class="fas fa-calendar-week"></i> Режим: Неделя';
         }
     },
 
-    previousMonth() { 
-        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
-        this.renderCalendar(); 
+    previousMonth() {
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1);
+        this.renderCalendar();
+        this.renderBirthdaysThisMonth();
     },
-    
-    nextMonth() { 
-        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
-        this.renderCalendar(); 
+
+    nextMonth() {
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1);
+        this.renderCalendar();
+        this.renderBirthdaysThisMonth();
     },
-    
-    goToToday() { 
-        this.state.currentDate = new Date(); 
-        this.renderCalendar(); 
+
+    goToToday() {
+        this.state.currentDate = new Date();
+        this.renderCalendar();
+        this.renderBirthdaysThisMonth();
     },
 
     // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
+    openEventModal(dateKey, weekDates = null) {
+        const isWeekMode = weekDates !== null;
+        const date = this.parseDateKey(dateKey);
+        
+        let dateString;
+        if (isWeekMode) {
+            const firstDate = this.parseDateKey(weekDates[0]);
+            const lastDate = this.parseDateKey(weekDates[6]);
+            dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
+        } else {
+            // ИСПРАВЛЕНИЕ: используем правильную дату вместо предыдущей
+            dateString = date.toLocaleDateString('ru-RU');
+        }
 
-openEventModal(dateKey, weekDates = null) {
-    const isWeekMode = weekDates !== null;
-    
-    // ИСПРАВЛЕНИЕ: используем правильную дату
-    const date = new Date(dateKey + 'T00:00:00'); // Фиксим проблему с часовым поясом
-    
-    let dateString;
-    if (isWeekMode) {
-        const firstDate = new Date(weekDates[0] + 'T00:00:00');
-        const lastDate = new Date(weekDates[6] + 'T00:00:00');
-        dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
-    } else {
-        dateString = date.toLocaleDateString('ru-RU');
-    }
-
-    const modal = this.createModal(dateString, dateKey, weekDates);
-    document.body.appendChild(modal);
-    this.initializeModalHandlers(modal, dateKey, weekDates);
-},
+        const modal = this.createModal(dateString, dateKey, weekDates);
+        document.body.appendChild(modal);
+        this.initializeModalHandlers(modal, dateKey, weekDates);
+    },
 
     createModal(dateString, dateKey, weekDates) {
         const modal = document.createElement('div');
         modal.className = 'calendar-modal-overlay';
+        
         modal.innerHTML = `
             <div class="calendar-modal">
                 <div class="calendar-modal-header">
@@ -835,8 +811,8 @@ openEventModal(dateKey, weekDates = null) {
                                     <div class="person-color" style="background-color: ${person.color}"></div>
                                     <div class="person-name">${person.name}</div>
                                     <div class="person-checkbox">
-                                        <input type="checkbox" id="person-${person.id}" 
-                                               ${this.isPersonOnDuty(dateKey, person.id) ? 'checked' : ''}>
+                                        <input type="checkbox" id="person-${person.id}"
+                                            ${this.isPersonOnDuty(dateKey, person.id) ? 'checked' : ''}>
                                     </div>
                                 </div>
                             `).join('')}
@@ -854,8 +830,8 @@ openEventModal(dateKey, weekDates = null) {
                                     <div class="person-color" style="background-color: ${person.color}"></div>
                                     <div class="person-name">${person.name}</div>
                                     <div class="person-checkbox">
-                                        <input type="checkbox" id="vacation-person-${person.id}" 
-                                               ${this.isPersonOnVacation(dateKey, person.id) ? 'checked' : ''}>
+                                        <input type="checkbox" id="vacation-person-${person.id}"
+                                            ${this.isPersonOnVacation(dateKey, person.id) ? 'checked' : ''}>
                                     </div>
                                 </div>
                             `).join('')}
@@ -887,22 +863,26 @@ openEventModal(dateKey, weekDates = null) {
                 </div>
             </div>
         `;
+
         return modal;
     },
 
     initializeModalHandlers(modal, dateKey, weekDates) {
         const tabBtns = modal.querySelectorAll('.tab-btn');
         const tabContents = modal.querySelectorAll('.tab-content');
+
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 tabBtns.forEach(b => b.classList.remove('active'));
                 tabContents.forEach(c => c.classList.add('hidden'));
+                
                 btn.classList.add('active');
                 modal.querySelector(`#${btn.dataset.tab}Tab`).classList.remove('hidden');
             });
         });
 
         const closeModal = () => document.body.removeChild(modal);
+        
         modal.querySelector('.calendar-modal-close').addEventListener('click', closeModal);
         modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
@@ -989,7 +969,6 @@ openEventModal(dateKey, weekDates = null) {
 
         datesToSave.forEach(date => {
             const eventDateTime = this.createDateTime(date, eventTime);
-            
             if (!eventDateTime) {
                 DialogService.showMessage('❌ Ошибка', 'Неверный формат даты или времени', 'error');
                 return;
@@ -1004,21 +983,17 @@ openEventModal(dateKey, weekDates = null) {
     createDateTime(dateString, timeString) {
         try {
             const date = new Date(dateString + 'T00:00:00');
-            
             if (isNaN(date.getTime())) {
                 return null;
             }
 
             const [hours, minutes] = timeString.split(':').map(Number);
-            
             if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
                 return null;
             }
 
             date.setHours(hours, minutes, 0, 0);
-            
             return date.getTime();
-
         } catch (error) {
             return null;
         }
@@ -1026,10 +1001,9 @@ openEventModal(dateKey, weekDates = null) {
 
     scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
         const now = Date.now();
-        
         if (eventTimestamp <= now) {
             DialogService.showMessage(
-                '❌ Ошибка', 
+                '❌ Ошибка',
                 'Указанное время уже прошло. Выберите будущее время.',
                 'error'
             );
@@ -1038,7 +1012,7 @@ openEventModal(dateKey, weekDates = null) {
 
         if (!message || message.trim().length === 0) {
             DialogService.showMessage(
-                '❌ Ошибка', 
+                '❌ Ошибка',
                 'Введите текст сообщения для отправки.',
                 'error'
             );
@@ -1047,8 +1021,8 @@ openEventModal(dateKey, weekDates = null) {
 
         try {
             const messageId = MessageScheduler.scheduleMessage(
-                eventTimestamp, 
-                message.trim(), 
+                eventTimestamp,
+                message.trim(),
                 chatId,
                 {
                     type: 'calendar_event',
@@ -1058,10 +1032,9 @@ openEventModal(dateKey, weekDates = null) {
             );
 
             return messageId;
-
         } catch (error) {
             DialogService.showMessage(
-                '❌ Ошибка', 
+                '❌ Ошибка',
                 'Не удалось запланировать сообщение. Попробуйте снова.',
                 'error'
             );
@@ -1107,13 +1080,13 @@ openEventModal(dateKey, weekDates = null) {
         const dayOfWeek = date.getDay();
         const startDate = new Date(date);
         startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        
+
         for (let i = 0; i < 7; i++) {
             const currentDate = new Date(startDate);
             currentDate.setDate(startDate.getDate() + i);
             dates.push(currentDate);
         }
-        
+
         return dates;
     },
 
