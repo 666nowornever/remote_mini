@@ -5,36 +5,31 @@
     </button>
     
     <div class="card">
-        <div class="calendar-header">
-            <!-- Кнопка режима по центру -->
-            <div class="calendar-mode-center">
-                <button class="calendar-mode-btn" id="selectionModeBtn" title="Переключить режим выбора">
-                    <i class="fas fa-calendar-day"></i> Режим: День
-                </button>
-            </div>
-            <div class="calendar-controls">
-                <button class="calendar-nav-btn" id="calendarPrev" title="Предыдущий месяц">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <button class="calendar-today-btn" id="calendarToday">Сегодня</button>
-                <button class="calendar-nav-btn" id="calendarNext" title="Следующий месяц">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-            </div>
+        <!-- Упрощенные кнопки управления -->
+        <div class="calendar-controls-simple">
+            <button class="calendar-nav-btn" id="calendarPrev" title="Предыдущий месяц">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="calendar-mode-btn" id="selectionModeBtn">
+                <i class="fas fa-calendar-day"></i> Режим: День
+            </button>
+            <button class="calendar-nav-btn" id="calendarNext" title="Следующий месяц">
+                <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
 
-        <!-- Центрированная дата -->
+        <!-- Заголовок месяца -->
         <div class="calendar-title-center">
-            <i class="fas fa-calendar-alt"></i>
             <span id="calendarTitle">Октябрь 2025</span>
         </div>
 
+        <!-- Сетка календаря -->
         <div class="calendar-grid" id="calendarGrid">
             <!-- Календарь будет сгенерирован JavaScript -->
         </div>
 
+        <!-- Легенда внизу -->
         <div class="calendar-legend">
-            <div class="legend-title">Обозначения:</div>
             <div class="legend-items">
                 <div class="legend-item">
                     <div class="legend-color" style="background-color: #2196F3"></div>

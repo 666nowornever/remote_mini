@@ -2011,3 +2011,448 @@
         font-size: 14px;
     }
 }
+/* ===== УПРАВЛЕНИЕ КАЛЕНДАРЕМ ===== */
+
+/* Контейнер для кнопок управления */
+.calendar-controls-simple {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 10px;
+}
+
+/* Кнопки навигации по месяцам */
+.calendar-nav-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.calendar-nav-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.calendar-nav-btn:active {
+    transform: translateY(0);
+}
+
+/* Кнопка режима (день/неделя) */
+.calendar-mode-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.calendar-mode-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a42a0 100%);
+}
+
+.calendar-mode-btn:active {
+    transform: translateY(0);
+}
+
+/* ===== ЗАГОЛОВОК МЕСЯЦА ===== */
+
+.calendar-title-center {
+    font-size: 22px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 20px;
+    color: white;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* ===== СЕТКА КАЛЕНДАРЯ ===== */
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 0;
+}
+
+/* Заголовки дней недели */
+.calendar-day-header {
+    text-align: center;
+    font-weight: 600;
+    padding: 12px 8px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
+
+/* Ячейка дня */
+.calendar-day {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 10px 8px;
+    min-height: 80px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+
+.calendar-day:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+/* Дни из других месяцев */
+.calendar-day.other-month {
+    opacity: 0.3;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.calendar-day.other-month .calendar-day-number {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.calendar-day.other-month:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Номер дня */
+.calendar-day-number {
+    font-weight: 600;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+/* Контейнер для событий */
+.calendar-day-events {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+/* Дежурства - цветные полоски */
+.calendar-event {
+    height: 8px;
+    border-radius: 4px;
+    background: #667eea;
+    min-width: 100%;
+}
+
+/* Контейнер для отпусков */
+.calendar-vacation-container {
+    display: flex;
+    gap: 2px;
+    margin-top: auto;
+    padding-top: 2px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Отпуска - красные полоски */
+.calendar-vacation {
+    height: 6px;
+    border-radius: 3px;
+    background: #ff6b6b;
+    flex: 1;
+    min-width: 0;
+}
+
+/* ===== ЛЕГЕНДА ===== */
+
+.calendar-legend {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 20px;
+}
+
+.legend-items {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.vacation-color {
+    background: #ff6b6b !important;
+    border-radius: 3px;
+}
+
+/* ===== МОДАЛЬНОЕ ОКНО КАЛЕНДАРЯ ===== */
+
+.calendar-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.calendar-modal {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    padding: 0;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    color: #333;
+    animation: dialogAppear 0.3s ease-out;
+}
+
+.calendar-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.calendar-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+.calendar-modal-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.calendar-modal-content {
+    padding: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Вкладки модального окна */
+.modal-tabs {
+    display: flex;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    font-weight: 500;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-btn:hover {
+    background: #f5f5f5;
+}
+
+.tab-content {
+    transition: all 0.3s ease;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+/* Список дежурных */
+.duty-persons-list {
+    margin-bottom: 20px;
+}
+
+.duty-person-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.duty-person-item:hover {
+    background: #f5f5f5;
+}
+
+.person-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.person-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.person-checkbox input {
+    width: 18px;
+    height: 18px;
+}
+
+/* Поля комментариев */
+.comment-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #333;
+}
+
+.comment-section textarea {
+    width: 100%;
+    min-height: 80px;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    resize: vertical;
+    font-family: inherit;
+    font-size: 14px;
+}
+
+/* Кнопки модального окна */
+.calendar-modal-actions {
+    padding: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    border-top: 1px solid #e0e0e0;
+}
+
+.calendar-modal-actions .btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.btn-save {
+    background: #667eea;
+    color: white;
+}
+
+.btn-cancel:hover {
+    background: #e0e0e0;
+}
+
+.btn-save:hover {
+    background: #5a6fd8;
+}
+
+/* Анимация появления модального окна */
+@keyframes dialogAppear {
+    from { 
+        opacity: 0; 
+        transform: scale(0.8) translateY(-20px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: scale(1) translateY(0); 
+    }
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+
+@media (max-width: 480px) {
+    .calendar-controls-simple {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .calendar-mode-btn {
+        order: -1;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .calendar-title-center {
+        font-size: 18px;
+        padding: 12px;
+    }
+    
+    .calendar-day {
+        min-height: 70px;
+        padding: 8px 6px;
+    }
+    
+    .calendar-day-header {
+        padding: 10px 6px;
+        font-size: 13px;
+    }
+    
+    .legend-items {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .calendar-modal {
+        width: 95%;
+        margin: 10px;
+    }
+}

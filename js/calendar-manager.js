@@ -232,9 +232,52 @@ const CalendarManager = {
         return dayElement;
     },
 
-    initializeCalendarHandlers() {
-        // Убраны все кнопки управления кроме модального окна
-    },
+    // В разделе методов добавляем:
+
+// === ОБРАБОТЧИКИ УПРАВЛЕНИЯ ===
+initializeCalendarHandlers() {
+    // Кнопки навигации по месяцам
+    document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
+    document.getElementById('calendarNext')?.addEventListener('click', () => this.nextMonth());
+    
+    // Кнопка смены режима
+    document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
+},
+
+// Переключение режима (день/неделя)
+toggleSelectionMode() {
+    this.state.selectionMode = this.state.selectionMode === 'day' ? 'week' : 'day';
+    
+    // Обновляем текст кнопки
+    const modeBtn = document.getElementById('selectionModeBtn');
+    if (modeBtn) {
+        const icon = this.state.selectionMode === 'day' ? 'fa-calendar-day' : 'fa-calendar-week';
+        const text = this.state.selectionMode === 'day' ? 'Режим: День' : 'Режим: Неделя';
+        
+        modeBtn.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
+    }
+    
+    console.log(`📅 Режим изменен на: ${this.state.selectionMode}`);
+},
+
+// Навигация по месяцам
+previousMonth() { 
+    this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
+    this.renderCalendar(); 
+    console.log('📅 Переход к предыдущему месяцу');
+},
+
+nextMonth() { 
+    this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
+    this.renderCalendar(); 
+    console.log('📅 Переход к следующему месяцу');
+},
+
+goToToday() { 
+    this.state.currentDate = new Date(); 
+    this.renderCalendar(); 
+    console.log('📅 Переход к текущему месяцу');
+},
 
     // === МОДАЛЬНОЕ ОКНО ===
     openEventModal(dateKey, weekDates = null) {
