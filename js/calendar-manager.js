@@ -525,8 +525,8 @@ const CalendarManager = {
     const today = new Date();
     let currentDate = new Date(startDate);
 
-    // Заполняем все 42 ячейки (6 недель)
-    for (let i = 0; i < 42; i++) {
+    // Заполняем все 35 ячейки (5 недель)
+    for (let i = 0; i < 35; i++) {
         const dateKey = this.getDateKey(currentDate);
         const isCurrentMonth = currentDate.getMonth() === month;
         const isToday = currentDate.toDateString() === today.toDateString();
