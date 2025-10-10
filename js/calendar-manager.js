@@ -979,64 +979,62 @@ openEventModal(dateKey, weekDates = null) {
         }
     },
 
-    // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-    isPersonOnDuty(dateKey, personId) {
-        return this.data.events[dateKey]?.some(event => event.id === personId);
-    },
+   // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
+isPersonOnDuty(dateKey, personId) {
+    return this.data.events[dateKey]?.some(event => event.id === personId);
+},
 
-    isPersonOnVacation(dateKey, personId) {
-        return this.data.vacations[dateKey]?.some(vacation => vacation.id === personId);
-    },
+isPersonOnVacation(dateKey, personId) {
+    return this.data.vacations[dateKey]?.some(vacation => vacation.id === personId);
+},
 
-    getEventComment(dateKey) {
-        return this.data.events[dateKey]?.[0]?.comment || '';
-    },
+getEventComment(dateKey) {
+    return this.data.events[dateKey]?.[0]?.comment || '';
+},
 
-    getVacationComment(dateKey) {
-        return this.data.vacations[dateKey]?.[0]?.comment || '';
-    },
+getVacationComment(dateKey) {
+    return this.data.vacations[dateKey]?.[0]?.comment || '';
+},
 
-    getDateKey(date) {
-        return date.toISOString().split('T')[0];
-    },
+getDateKey(date) {
+    // Гарантируем корректный формат даты
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+},
 
-    parseDateKey(dateKey) {
-    // Исправляем проблему часового пояса
-    // Добавляем время и указываем, что дата в локальном часовом поясе
+parseDateKey(dateKey) {
+    // Надежный парсинг даты с учетом часового пояса
     const [year, month, day] = dateKey.split('-').map(Number);
     
-    // Создаем дату в локальном часовом поясе
-    const date = new Date(year, month - 1, day, 12, 0, 0); // Устанавливаем полдень чтобы избежать смещения
-    
-    console.log('🔧 Парсинг даты:', {
-        input: dateKey,
-        output: date.toISOString(),
-        local: date.toLocaleDateString('ru-RU')
-    });
+    // Создаем дату с явным указанием локального времени
+    // Используем полдень чтобы избежать проблем с переходом на летнее время
+    const date = new Date(year, month - 1, day, 12, 0, 0);
     
     return date;
 },
 
-    handleWeekSelection(selectedDate) {
-        const weekDates = this.getWeekDates(selectedDate);
-        const dateKeys = weekDates.map(date => this.getDateKey(date));
-        this.openEventModal(dateKeys[0], dateKeys);
-    },
+handleWeekSelection(selectedDate) {
+    const weekDates = this.getWeekDates(selectedDate);
+    const dateKeys = weekDates.map(date => this.getDateKey(date));
+    this.openEventModal(dateKeys[0], dateKeys);
+},
 
-    getWeekDates(date) {
-        const dates = [];
-        const dayOfWeek = date.getDay();
-        const startDate = new Date(date);
-        startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-        
-        for (let i = 0; i < 7; i++) {
-            const currentDate = new Date(startDate);
-            currentDate.setDate(startDate.getDate() + i);
-            dates.push(currentDate);
-        }
-        
-        return dates;
+getWeekDates(date) {
+    const dates = [];
+    const dayOfWeek = date.getDay();
+    const startDate = new Date(date);
+    startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    
+    for (let i = 0; i < 7; i++) {
+        const currentDate = new Date(startDate);
+        currentDate.setDate(startDate.getDate() + i);
+        dates.push(currentDate);
     }
+    
+    return dates;
+}
 };
 
 // Инициализация
