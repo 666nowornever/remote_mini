@@ -25,12 +25,15 @@
 
         <!-- Строка управления под основным заголовком -->
         <div class="calendar-controls-under-header">
-            <button class="calendar-mode-btn-main" id="selectionModeBtn">
-                <i class="fas fa-calendar-day"></i>
-                Режим: День
-            </button>
-            
-        </div>
+    <button class="calendar-mode-btn-main" id="selectionModeBtn">
+        <i class="fas fa-calendar-day"></i>
+        Режим: День
+    </button>
+    <button class="calendar-sync-btn-main" onclick="ScheduledMessagesManager.showScheduledMessages()">
+        <i class="fas fa-list"></i>
+        Запланированные
+    </button>
+</div>
 
         <!-- Сетка календаря -->
         <div class="calendar-grid-main" id="calendarGrid">
@@ -59,15 +62,5 @@
             </div>
         </div>
         
-        <div class="calendar-controls-under-header">
-                 <button class="calendar-mode-btn-main" id="selectionModeBtn">
-                     <i class="fas fa-calendar-day"></i>
-                                Режим: День
-                </button>
-                <button class="calendar-sync-btn-main" onclick="ScheduledMessagesManager.showScheduledMessages()">
-                <i class="fas fa-list"></i>
-                            Запланированные
-                </button>
-        </div>
     </div>
 </div>
