@@ -2399,3 +2399,25 @@
         gap: 6px;
     }
 }
+/* Стили для дней других месяцев */
+.calendar-day-main.other-month {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    cursor: default;
+}
+
+.calendar-day-main.other-month:hover {
+    background: rgba(255, 255, 255, 0.02);
+    transform: none;
+    box-shadow: none;
+}
+
+.calendar-day-main.other-month .calendar-day-number-main {
+    color: rgba(255, 255, 255, 0.3);
+    opacity: 0.5;
+}
+
+/* Отключаем события для дней других месяцев */
+.calendar-day-main.other-month .calendar-day-events-main {
+    display: none;
+}
