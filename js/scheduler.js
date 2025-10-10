@@ -22,7 +22,7 @@ const MessageScheduler = {
             this.checkScheduledMessages();
         }, this.checkInterval);
 
-        console.log('⏰ Планировщик сообщений запущен');
+        console.log('⏰ Планировщик сообщений запущен (проверка каждые 30 секунд)');
     },
 
     // Остановка планировщика
@@ -94,6 +94,7 @@ const MessageScheduler = {
     async sendScheduledMessage(scheduledMessage) {
         try {
             console.log(`🚀 Отправка запланированного сообщения: ${scheduledMessage.id}`);
+            console.log(`📝 Текст: ${scheduledMessage.message.substring(0, 50)}...`);
             
             // Обновляем статус
             this.updateMessageStatus(scheduledMessage.id, 'sending');
@@ -113,13 +114,13 @@ const MessageScheduler = {
                 // Показываем уведомление пользователю
                 this.showNotification('✅ Сообщение отправлено в рабочий чат');
             } else {
-                throw new Error(result.error);
+                throw new Error(result.error || 'Неизвестная ошибка отправки');
             }
 
         } catch (error) {
             console.error(`❌ Ошибка отправки запланированного сообщения: ${scheduledMessage.id}`, error);
             this.updateMessageStatus(scheduledMessage.id, 'error', error.message);
-            this.showNotification('❌ Ошибка отправки сообщения');
+            this.showNotification(`❌ Ошибка отправки: ${error.message}`);
         }
     },
 
@@ -179,7 +180,9 @@ const MessageScheduler = {
             document.body.appendChild(notification);
             
             setTimeout(() => {
-                document.body.removeChild(notification);
+                if (notification.parentNode) {
+                    document.body.removeChild(notification);
+                }
             }, 3000);
         }
     },
@@ -204,7 +207,13 @@ const MessageScheduler = {
         const filteredMessages = messages.filter(msg => msg.id !== messageId);
         this.saveScheduledMessages(filteredMessages);
         
-        return messages.length !== filteredMessages.length;
+        const success = messages.length !== filteredMessages.length;
+        
+        if (success) {
+            console.log(`🗑️ Сообщение ${messageId} отменено`);
+        }
+        
+        return success;
     },
 
     // Очистка старых сообщений
@@ -230,6 +239,22 @@ const MessageScheduler = {
     // Получить сообщения по статусу
     getMessagesByStatus(status) {
         return this.getAllMessages().filter(msg => msg.status === status);
+    },
+
+    // Отправить тестовое сообщение
+    async sendTestMessageNow() {
+        console.log('🧪 Отправка тестового сообщения...');
+        
+        const testMessage = "Это тестовое сообщение для проверки работы планировщика и Telegram бота.";
+        
+        const result = await TelegramService.sendFormattedMessage(
+            null,
+            'Тест планировщика',
+            testMessage,
+            'info'
+        );
+        
+        return result;
     }
 };
 

@@ -67,25 +67,34 @@ function initializeManagers() {
         console.log('✅ CashServerManager инициализирован');
     }
 
-     // Инициализируем ServicesManager если он есть
+    // Инициализируем ServicesManager если он есть
     if (typeof ServicesManager !== 'undefined' && ServicesManager.init) {
         ServicesManager.init();
         console.log('✅ ServicesManager инициализирован');
     }
+    
     // Инициализируем CalendarManager если он есть
     if (typeof CalendarManager !== 'undefined' && CalendarManager.init) {
         CalendarManager.init();
         console.log('✅ CalendarManager инициализирован');
     }
+    
+    // Новые сервисы для Telegram
     if (typeof TelegramService !== 'undefined' && TelegramService.init) {
-        TelegramService.init();
-        console.log('✅ TelegramService инициализирован');
+        const telegramReady = TelegramService.init();
+        console.log('✅ TelegramService инициализирован', telegramReady ? 'и готов к работе' : 'с ошибками');
     }
     
     if (typeof MessageScheduler !== 'undefined' && MessageScheduler.init) {
         MessageScheduler.init();
         console.log('✅ MessageScheduler инициализирован');
     }
+    
+    if (typeof ScheduledMessagesManager !== 'undefined' && ScheduledMessagesManager.init) {
+        ScheduledMessagesManager.init();
+        console.log('✅ ScheduledMessagesManager инициализирован');
+    }
+    
     console.log('✅ Все менеджеры инициализированы');
 }
 
