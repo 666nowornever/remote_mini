@@ -1,4 +1,6 @@
-/* Button Grid */
+/* ===== ОСНОВНЫЕ КОМПОНЕНТЫ ===== */
+
+/* Сетка кнопок - используется на главной странице и страницах выбора */
 .button-grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -6,7 +8,7 @@
     margin-bottom: 20px;
 }
 
-/* Buttons */
+/* Основной стиль кнопок - используется для всех интерактивных элементов */
 .btn {
     background: rgba(255, 255, 255, 0.15);
     backdrop-filter: blur(10px);
@@ -20,7 +22,6 @@
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     font-size: 18px;
     font-weight: 600;
-    text-decoration: none;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -44,7 +45,7 @@
     display: block;
 }
 
-/* Special Button Styles */
+/* Специальные стили кнопок - для конкретных действий */
 .btn-ping {
     background: rgba(33, 150, 243, 0.3) !important;
     border: 1px solid rgba(33, 150, 243, 0.5) !important;
@@ -63,7 +64,7 @@
     background: rgba(244, 67, 54, 0.4) !important;
 }
 
-/* Back Button */
+/* Кнопка Назад - используется на всех страницах кроме главной */
 .back-btn {
     background: rgba(255, 255, 255, 0.1);
     border: none;
@@ -83,13 +84,16 @@
     background: rgba(255, 255, 255, 0.2);
 }
 
-/* Server Lists */
+/* ===== СПИСКИ ЭЛЕМЕНТОВ ===== */
+
+/* Контейнер списков - используется для серверов, касс, устройств */
 .servers-list {
     display: flex;
     flex-direction: column;
     gap: 12px;
 }
 
+/* Элемент списка - базовый стиль для всех карточек в списках */
 .server-item {
     background: rgba(255, 255, 255, 0.1);
     border-radius: 15px;
@@ -109,6 +113,7 @@
     transform: translateX(5px);
 }
 
+/* Заголовок элемента списка */
 .server-name {
     font-weight: 500;
     font-size: 16px;
@@ -122,140 +127,8 @@
     opacity: 0.8;
 }
 
-.server-status {
-    font-size: 12px;
-    padding: 6px 12px;
-    border-radius: 20px;
-    background: rgba(76, 175, 80, 0.3);
-    border: 1px solid rgba(76, 175, 80, 0.5);
-    font-weight: 600;
-}
+/* ===== СТРАНИЦА ОШИБКИ ДОСТУПА ===== */
 
-.server-status.offline {
-    background: rgba(244, 67, 54, 0.3);
-    border: 1px solid rgba(244, 67, 54, 0.5);
-}
-
-.server-status.warning {
-    background: rgba(255, 193, 7, 0.3);
-    border: 1px solid rgba(255, 193, 7, 0.5);
-}
-
-/* Navigation Arrow */
-.server-arrow {
-    opacity: 0.6;
-    font-size: 14px;
-}
-
-/* Cash Registers Specific Styles */
-.cash-item .server-name {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.cash-item .server-name i {
-    font-size: 16px;
-    opacity: 0.8;
-}
-
-.cash-separator {
-    margin: 15px 0;
-    text-align: center;
-}
-
-.separator-line {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    margin: 0 20px;
-}
-
-/* Cash Details Styles */
-.cash-info {
-    text-align: center;
-    margin-bottom: 20px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-}
-
-.cash-ip {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    font-family: 'Courier New', monospace;
-}
-
-.cash-status {
-    font-size: 14px;
-    opacity: 0.9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.cash-status.online {
-    color: #4CAF50;
-}
-
-.cash-status.offline {
-    color: #f44336;
-}
-
-/* Action Log */
-.action-log {
-    margin-top: 20px;
-    max-height: 200px;
-    overflow-y: auto;
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 10px;
-    padding: 10px;
-    font-size: 12px;
-    font-family: 'Courier New', monospace;
-}
-
-.action-log::-webkit-scrollbar {
-    width: 6px;
-}
-
-.action-log::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-
-.action-log::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-}
-
-.log-entry {
-    margin-bottom: 5px;
-    padding: 5px;
-    border-radius: 5px;
-}
-
-.log-success {
-    background: rgba(76, 175, 80, 0.2);
-    color: #4CAF50;
-}
-
-.log-error {
-    background: rgba(244, 67, 54, 0.2);
-    color: #f44336;
-}
-
-.log-info {
-    background: rgba(33, 150, 243, 0.2);
-    color: #2196F3;
-}
-
-.log-time {
-    opacity: 0.7;
-    font-size: 10px;
-}
-
-/* Access Denied Styles */
 .access-denied {
     text-align: center;
     padding: 50px 20px;
@@ -292,106 +165,8 @@
     text-align: left;
 }
 
-/* Page Specific Styles */
-.main-page .btn {
-    min-height: 100px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
+/* ===== ИНДИКАТОР ЗАГРУЗКИ ===== */
 
-.first-line-page .btn {
-    min-height: 90px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-}
-
-.cash-servers-page .servers-list {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-.cash-servers-page .servers-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.cash-servers-page .servers-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-
-.cash-servers-page .servers-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-}
-
-.cash-registers-page .servers-list {
-    max-height: 60vh;
-    overflow-y: auto;
-    padding-right: 5px;
-}
-
-.cash-registers-page .servers-list::-webkit-scrollbar {
-    width: 6px;
-}
-
-.cash-registers-page .servers-list::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-}
-
-.cash-registers-page .servers-list::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.3);
-    border-radius: 3px;
-}
-
-/* Centered restaurant items */
-.restaurants-page .server-item {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 20px;
-    min-height: 80px;
-}
-
-.restaurants-page .server-name {
-    flex-direction: column;
-    gap: 8px;
-    text-align: center;
-}
-
-.restaurants-page .server-name i {
-    font-size: 20px;
-    margin-bottom: 5px;
-}
-
-.restaurants-page .server-arrow {
-    display: none; /* Убираем стрелки в ресторанах */
-}
-
-/* Centered cash registers */
-.cash-registers-page .server-item {
-    justify-content: center;
-    text-align: center;
-}
-
-.cash-registers-page .server-name {
-    justify-content: center;
-    font-family: 'Courier New', monospace;
-    font-size: 16px;
-}
-
-.cash-registers-page .server-arrow {
-    display: none; /* Убираем стрелки в кассах */
-}
-
-/* Loading Spinner */
 .spinner {
     border: 4px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
@@ -407,73 +182,8 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Status Icons */
-.status-icon {
-    margin-right: 8px;
-}
+/* ===== ОСНОВНОЙ ЗАГОЛОВОК ===== */
 
-.status-online {
-    color: #4CAF50;
-}
-
-.status-offline {
-    color: #f44336;
-}
-
-.status-warning {
-    color: #ff9800;
-}
-
-/* Responsive Design */
-@media (max-width: 480px) {
-    body {
-        padding: 15px;
-    }
-    
-    .container {
-        max-width: 100%;
-    }
-    
-    .btn {
-        padding: 15px;
-        font-size: 16px;
-    }
-    
-    .btn i {
-        font-size: 20px;
-        margin-bottom: 8px;
-    }
-    
-    .server-item {
-        padding: 12px;
-    }
-    
-    .server-name {
-        font-size: 14px;
-    }
-    
-    .cash-ip {
-        font-size: 20px;
-    }
-}
-/* Bot Footer */
-.bot-footer {
-    text-align: center;
-    margin-top: 30px;
-    padding: 15px;
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.bot-footer i {
-    font-size: 16px;
-}
-
-/* Header adjustments */
 .header {
     text-align: center;
     margin-bottom: 30px;
@@ -492,686 +202,22 @@
     font-size: 14px;
 }
 
-/* Button Grid adjustments */
-.button-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 15px;
-    margin-bottom: 20px;
-}
+/* ===== ФУТЕР БОТА ===== */
 
-/* Buttons */
-.btn {
-    background: rgba(255, 255, 255, 0.15);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 15px;
-    padding: 20px;
-    color: white;
+.bot-footer {
     text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    font-size: 18px;
-    font-weight: 600;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    min-height: 100px;
-}
-
-.btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-    background: rgba(255, 255, 255, 0.2);
-}
-
-.btn:active {
-    transform: translateY(0);
-}
-
-.btn i {
-    font-size: 24px;
-    margin-bottom: 10px;
-    display: block;
-}
-
-/* Back Button */
-.back-btn {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 10px;
-    cursor: pointer;
-    margin-bottom: 15px;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.3s ease;
-    font-size: 14px;
-}
-
-.back-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-}
-
-/* First Line page specific */
-.first-line-page .btn {
-    min-height: 90px;
-}
-
-/* Main page specific */
-.main-page .btn {
-    min-height: 100px;
-}
-
-/* Стили для активной/неактивной кнопки ERP */
-#erp-toggle-btn {
-    cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-}
-
-#erp-toggle-btn:hover {
-    background: rgba(255, 255, 255, 0.2);
-    transform: translateX(5px);
-}
-
-#erp-toggle-btn:active {
-    transform: translateX(2px);
-}
-
-#erp-toggle-btn.loading {
-    opacity: 0.6;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-#erp-toggle-btn.loading::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    right: 15px;
-    width: 16px;
-    height: 16px;
-    border: 2px solid transparent;
-    border-top: 2px solid #fff;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    transform: translateY(-50%);
-}
-
-/* Анимация пульсации для привлечения внимания */
-@keyframes pulse {
-    0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
-    70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
-}
-
-#erp-toggle-btn.pulse {
-    animation: pulse 2s infinite;
-}
-/* Loading Overlay */
-.loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-    backdrop-filter: blur(10px);
-}
-
-.loading-content {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    border-radius: 20px;
-    padding: 30px;
-    text-align: center;
-    color: #333;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    border: 2px solid #667eea;
-    animation: dialogAppear 0.3s ease-out;
-}
-
-.loading-content .spinner {
-    border: 4px solid rgba(102, 126, 234, 0.3);
-    border-radius: 50%;
-    border-top: 4px solid #667eea;
-    width: 40px;
-    height: 40px;
-    animation: spin 1s linear infinite;
-    margin: 0 auto 20px;
-}
-
-.loading-content div {
-    font-size: 16px;
-    font-weight: 500;
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-/* Device Specific Styles */
-.device-info {
-    text-align: center;
-    margin-bottom: 20px;
+    margin-top: 30px;
     padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-}
-
-.device-id {
-    font-size: 24px;
-    font-weight: 600;
-    margin-bottom: 5px;
-    font-family: 'Courier New', monospace;
-}
-
-.device-name {
-    font-size: 16px;
-    opacity: 0.8;
-    margin-bottom: 10px;
-}
-
-.device-status {
+    color: rgba(255, 255, 255, 0.6);
     font-size: 14px;
-    opacity: 0.9;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
 }
 
-.device-status.online {
-    color: #4CAF50;
-}
-
-.device-status.offline {
-    color: #f44336;
-}
-
-/* Device Separators */
-.device-separator {
-    margin: 15px 0;
-    text-align: center;
-}
-
-/* Manager PCs specific */
-.manager-pcs-page .server-item .server-name i {
-    color: #2196F3;
-}
-
-/* Music PCs specific */
-.music-pcs-page .server-item .server-name i {
-    color: #9C27B0;
-}
-
-/* Centered Device Names */
-.device-name-centered {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    width: 100%;
-    text-align: center;
-}
-
-.device-address {
-    font-family: 'Courier New', monospace;
-    font-size: 18px;
-    font-weight: 600;
-    text-align: center;
-}
-
-/* Remove icons from device lists */
-.manager-pcs-page .server-item .server-name i,
-.music-pcs-page .server-item .server-name i {
-    display: none;
-}
-
-/* Center all content in device lists */
-.manager-pcs-page .server-item,
-.music-pcs-page .server-item {
-    justify-content: center;
-    text-align: center;
-    padding: 20px 15px;
-}
-
-/* Device Details specific styles */
-.device-info {
-    text-align: center;
-    margin-bottom: 20px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-}
-
-.device-id {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 15px;
-    font-family: 'Courier New', monospace;
-    color: white;
-}
-
-.device-status {
+.bot-footer i {
     font-size: 16px;
-    opacity: 0.9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.device-status.online {
-    color: #4CAF50;
-}
-
-.device-status.offline {
-    color: #f44336;
-}
-
-/* Button grid adjustments for device details */
-.device-details-page .button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin: 25px 0;
-}
-
-.device-details-page .btn {
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-/* Remove separators from device lists */
-.device-separator {
-    margin: 10px 0;
-    text-align: center;
-}
-
-.separator-line {
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-    margin: 0 20px;
-}
-
-/* Printer Specific Styles */
-.printer-name-centered {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    width: 100%;
-    text-align: center;
-}
-
-.printer-address {
-    font-family: 'Courier New', monospace;
-    font-size: 18px;
-    font-weight: 600;
-    text-align: center;
-}
-
-/* Department Styles */
-.department-item {
-    justify-content: center;
-    text-align: center;
-    padding: 20px 15px;
-}
-
-.department-name {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.department-name i {
-    font-size: 20px;
-    margin-bottom: 5px;
-}
-
-/* Printer Details Styles */
-.printer-info {
-    text-align: center;
-    margin-bottom: 20px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-}
-
-.printer-name {
-    font-size: 20px;
-    font-weight: 600;
-    margin-bottom: 10px;
-    color: white;
-}
-
-.printer-ip {
-    font-size: 24px;
-    font-weight: 700;
-    margin-bottom: 15px;
-    font-family: 'Courier New', monospace;
-    color: white;
-}
-
-.printer-status {
-    font-size: 16px;
-    opacity: 0.9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 10px;
-}
-
-.printer-status.online {
-    color: #4CAF50;
-}
-
-.printer-status.offline {
-    color: #f44336;
-}
-
-/* Remove separators from printer lists */
-.printer-separator {
-    margin: 10px 0;
-    text-align: center;
-}
-
-/* Button grid adjustments for printer details */
-.printer-details-page .button-grid {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    gap: 15px;
-    margin: 25px 0;
-}
-
-.printer-details-page .btn {
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 600;
-    width: auto;
-    min-width: 120px;
-}
-
-/* Department Icons Colors */
-.department-item:nth-child(1) .department-name i { color: #FF6B6B; } /* Пицца */
-.department-item:nth-child(2) .department-name i { color: #FFD93D; } /* Кондитерский */
-.department-item:nth-child(3) .department-name i { color: #4FC3F7; } /* Холодный */
-.department-item:nth-child(4) .department-name i { color: #FF8A65; } /* Горячий */
-.department-item:nth-child(5) .department-name i { color: #BA68C8; } /* Бар */
-
-/* Cash Server Specific Styles */
-.cash-server-name-centered {
-    display: flex !important;
-    justify-content: center !important;
-    align-items: center !important;
-    width: 100%;
-    text-align: center;
-}
-
-.server-address {
-    font-family: 'Courier New', monospace;
-    font-size: 16px;
-    font-weight: 600;
-    text-align: center;
-}
-
-/* Service Management Styles */
-.service-item {
-    justify-content: center;
-    text-align: center;
-    padding: 20px 15px;
-}
-
-.service-name {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.service-name i {
-    font-size: 20px;
-    margin-bottom: 5px;
-}
-
-/* Service Status Styles */
-.services-status-container {
-    margin-top: 20px;
-}
-
-.service-status-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    margin-bottom: 10px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.service-status-name {
-    font-weight: 600;
-    font-size: 16px;
-}
-
-.service-status-value {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 14px;
-}
-
-.loading-status {
-    text-align: center;
-    padding: 20px;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-/* Service Management Buttons */
-.service-management-page .button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin: 25px 0;
-}
-
-.service-management-page .btn {
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-.btn-restart { background: rgba(255, 193, 7, 0.3) !important; border: 1px solid rgba(255, 193, 7, 0.5) !important; }
-.btn-start { background: rgba(76, 175, 80, 0.3) !important; border: 1px solid rgba(76, 175, 80, 0.5) !important; }
-.btn-stop { background: rgba(244, 67, 54, 0.3) !important; border: 1px solid rgba(244, 67, 54, 0.5) !important; }
-.btn-status { background: rgba(33, 150, 243, 0.3) !important; border: 1px solid rgba(33, 150, 243, 0.5) !important; }
-.btn-services { background: rgba(156, 39, 176, 0.3) !important; border: 1px solid rgba(156, 39, 176, 0.5) !important; }
-
-/* Server Management Buttons */
-.cash-server-management-page .button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin: 25px 0;
-}
-
-.cash-server-management-page .btn {
-    min-height: 90px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-/* Service Icons Colors */
-.service-item:nth-child(1) .service-name i { color: #2196F3; } /* MidServ */
-.service-item:nth-child(2) .service-name i { color: #4CAF50; } /* WinPrint */
-.service-item:nth-child(3) .service-name i { color: #FF9800; } /* Farcards EGAIS */
-.service-item:nth-child(4) .service-name i { color: #9C27B0; } /* FarCards */
-.service-item:nth-child(5) .service-name i { color: #00BCD4; } /* QRpay */
-/* Центрирование состояния службы */
-.service-info {
-    text-align: center;
-    margin-bottom: 20px;
-    padding: 20px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
-.service-status {
-    font-size: 16px;
-    opacity: 0.9;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 0;
-}
-
-/* Services Page Styles */
-.services-page .server-item {
-    justify-content: center;
-    text-align: center;
-    padding: 25px 15px;
-}
-
-.services-page .service-name {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.services-page .service-name i {
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-
-/* Service Icons Colors for Global Services */
-.services-page .service-item:nth-child(1) .service-name i { color: #2196F3; } /* RkDexch */
-.services-page .service-item:nth-child(2) .service-name i { color: #4CAF50; } /* CRM */
-
-/* Global Service Management Buttons */
-.service-management-global-page .button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin: 25px 0;
-}
-
-.service-management-global-page .btn {
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 600;
-}
-
-/* CRM Services Page Styles */
-.crm-services-page .server-item {
-    justify-content: center;
-    text-align: center;
-    padding: 25px 15px;
-}
-
-.crm-services-page .service-name {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.crm-services-page .service-name i {
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-
-/* Service Icons Colors for CRM Services */
-.crm-services-page .service-item:nth-child(1) .service-name i { color: #2196F3; } /* AuthService */
-.crm-services-page .service-item:nth-child(2) .service-name i { color: #4CAF50; } /* Monitor_r_keeper */
-
-/* Services Page Styles (общие) */
-.services-page .server-item {
-    justify-content: center;
-    text-align: center;
-    padding: 25px 15px;
-}
-
-.services-page .service-name {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    font-size: 18px;
-    font-weight: 600;
-}
-
-.services-page .service-name i {
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-
-/* Service Icons Colors for Global Services */
-.services-page .service-item:nth-child(1) .service-name i { color: #FF9800; } /* RkDexch */
-.services-page .service-item:nth-child(2) .service-name i { color: #9C27B0; } /* CRM */
-
-/* Global Service Management Buttons */
-.service-management-global-page .button-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin: 25px 0;
-}
-
-.service-management-global-page .btn {
-    min-height: 80px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-size: 16px;
-    font-weight: 600;
 }
 
 /* ===== КАЛЕНДАРЬ ===== */
@@ -1519,6 +565,32 @@
 /* ===== АДАПТИВНОСТЬ ===== */
 
 @media (max-width: 480px) {
+    body {
+        padding: 15px;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+    
+    .btn {
+        padding: 15px;
+        font-size: 16px;
+    }
+    
+    .btn i {
+        font-size: 20px;
+        margin-bottom: 8px;
+    }
+    
+    .server-item {
+        padding: 12px;
+    }
+    
+    .server-name {
+        font-size: 14px;
+    }
+    
     .calendar-title-center {
         font-size: 18px;
         padding: 12px;
