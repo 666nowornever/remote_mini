@@ -4,7 +4,7 @@ const TelegramService = {
     config: {
         botToken: '8327060232:AAHctUprj0nLxO1dY0LZXf88Nyl059PV1UQ',
         apiUrl: 'https://api.telegram.org/bot',
-        defaultChatId: '1002380747129'
+        defaultChatId: '-1002380747129'
     },
 
     // Инициализация
