@@ -659,23 +659,33 @@ const CalendarManager = {
     },
 
     // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
-    openEventModal(dateKey, weekDates = null) {
-        const isWeekMode = weekDates !== null;
+openEventModal(dateKey, weekDates = null) {
+    const isWeekMode = weekDates !== null;
+    
+    let dateString;
+    if (isWeekMode) {
+        // Для недельного режима
+        const firstDate = this.parseDateKey(weekDates[0]);
+        const lastDate = this.parseDateKey(weekDates[6]);
+        dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
+    } else {
+        // Для дневного режима - исправляем отображение даты
         const date = this.parseDateKey(dateKey);
+        dateString = date.toLocaleDateString('ru-RU');
         
-        let dateString;
-        if (isWeekMode) {
-            const firstDate = this.parseDateKey(weekDates[0]);
-            const lastDate = this.parseDateKey(weekDates[6]);
-            dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
-        } else {
-            dateString = date.toLocaleDateString('ru-RU');
-        }
+        // Отладочная информация
+        console.log('📅 Открытие модального окна:', {
+            dateKey: dateKey,
+            parsedDate: date.toISOString(),
+            localDate: date.toLocaleDateString('ru-RU'),
+            localTime: date.toLocaleTimeString('ru-RU')
+        });
+    }
 
-        const modal = this.createModal(dateString, dateKey, weekDates);
-        document.body.appendChild(modal);
-        this.initializeModalHandlers(modal, dateKey, weekDates);
-    },
+    const modal = this.createModal(dateString, dateKey, weekDates);
+    document.body.appendChild(modal);
+    this.initializeModalHandlers(modal, dateKey, weekDates);
+},
 
     createModal(dateString, dateKey, weekDates) {
         const modal = document.createElement('div');
@@ -991,8 +1001,21 @@ const CalendarManager = {
     },
 
     parseDateKey(dateKey) {
-        return new Date(dateKey + 'T00:00:00');
-    },
+    // Исправляем проблему часового пояса
+    // Добавляем время и указываем, что дата в локальном часовом поясе
+    const [year, month, day] = dateKey.split('-').map(Number);
+    
+    // Создаем дату в локальном часовом поясе
+    const date = new Date(year, month - 1, day, 12, 0, 0); // Устанавливаем полдень чтобы избежать смещения
+    
+    console.log('🔧 Парсинг даты:', {
+        input: dateKey,
+        output: date.toISOString(),
+        local: date.toLocaleDateString('ru-RU')
+    });
+    
+    return date;
+},
 
     handleWeekSelection(selectedDate) {
         const weekDates = this.getWeekDates(selectedDate);
