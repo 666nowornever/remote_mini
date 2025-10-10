@@ -6,10 +6,11 @@
     
     <div class="card">
         <div class="calendar-header">
-            <!-- Центрированная дата -->
-            <div class="calendar-title-center">
-                <i class="fas fa-calendar-alt"></i>
-                <span id="calendarTitle">Октябрь 2025</span>
+            <!-- Кнопка режима по центру -->
+            <div class="calendar-mode-center">
+                <button class="calendar-mode-btn" id="selectionModeBtn" title="Переключить режим выбора">
+                    <i class="fas fa-calendar-day"></i> Режим: День
+                </button>
             </div>
             <div class="calendar-controls">
                 <button class="calendar-nav-btn" id="calendarPrev" title="Предыдущий месяц">
@@ -19,15 +20,13 @@
                 <button class="calendar-nav-btn" id="calendarNext" title="Следующий месяц">
                     <i class="fas fa-chevron-right"></i>
                 </button>
-                <!-- Фиолетовая кнопка режима -->
-                <button class="calendar-mode-btn" id="selectionModeBtn" title="Переключить режим выбора">
-                    <i class="fas fa-calendar-day"></i> Режим: День
-                </button>
-                <!-- Кнопка загрузки/синхронизации -->
-                <button class="calendar-sync-btn" id="manualSyncBtn" title="Синхронизировать">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
             </div>
+        </div>
+
+        <!-- Центрированная дата -->
+        <div class="calendar-title-center">
+            <i class="fas fa-calendar-alt"></i>
+            <span id="calendarTitle">Октябрь 2025</span>
         </div>
 
         <div class="calendar-grid" id="calendarGrid">

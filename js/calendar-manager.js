@@ -67,49 +67,108 @@ const CalendarManager = {
     // === REAL-TIME СИНХРОНИЗАЦИЯ ===
 
     // Инициализация WebSocket соединения
-    initRealtimeSync() {
-        try {
-            console.log('🔗 Подключение к WebSocket...');
-            this.ws = new WebSocket(this.syncConfig.wsUrl);
-            
-            this.ws.onopen = () => {
-                console.log('✅ WebSocket connected');
-                this.isConnected = true;
-                this.reconnectAttempts = 0;
-                this.state.isOnline = true;
-                this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
-                this.showConnectionStatus('connected');
-            };
+initRealtimeSync() {
+    try {
+        console.log('🔗 Подключение к WebSocket...');
+        this.ws = new WebSocket(this.syncConfig.wsUrl);
+        
+        this.ws.onopen = () => {
+            console.log('✅ WebSocket connected');
+            this.isConnected = true;
+            this.reconnectAttempts = 0;
+            this.state.isOnline = true;
+            // Убрали показ статуса
+        };
 
-            this.ws.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-                    this.handleWebSocketMessage(message);
-                } catch (error) {
-                    console.error('❌ Error parsing WebSocket message:', error);
-                }
-            };
+        this.ws.onmessage = (event) => {
+            try {
+                const message = JSON.parse(event.data);
+                this.handleWebSocketMessage(message);
+            } catch (error) {
+                console.error('❌ Error parsing WebSocket message:', error);
+            }
+        };
 
-            this.ws.onclose = (event) => {
-                console.log('🔌 WebSocket disconnected:', event.code, event.reason);
-                this.isConnected = false;
-                this.state.isOnline = false;
-                this.showConnectionStatus('disconnected');
-                this.handleReconnection();
-            };
+        this.ws.onclose = (event) => {
+            console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+            this.isConnected = false;
+            this.state.isOnline = false;
+            // Убрали показ статуса
+            this.handleReconnection();
+        };
 
-            this.ws.onerror = (error) => {
-                console.error('❌ WebSocket error:', error);
-                this.isConnected = false;
-                this.state.isOnline = false;
-                this.showConnectionStatus('error');
-            };
+        this.ws.onerror = (error) => {
+            console.error('❌ WebSocket error:', error);
+            this.isConnected = false;
+            this.state.isOnline = false;
+            // Убрали показ статуса
+        };
 
-        } catch (error) {
-            console.error('❌ Error initializing WebSocket:', error);
-            this.fallbackToHTTPSync();
+    } catch (error) {
+        console.error('❌ Error initializing WebSocket:', error);
+        this.fallbackToHTTPSync();
+    }
+},
+
+// Убираем показ статуса соединения
+showConnectionStatus(status) {
+    // Больше не показываем статус соединения
+    return;
+},
+
+// Убираем уведомления об изменениях
+showChangeNotification() {
+    // Больше не показываем уведомления
+    return;
+},
+
+// Обновляем метод загрузки страницы календаря
+loadCalendarPage() {
+    this.renderCalendar();
+    this.initializeCalendarHandlers();
+    
+    // Убираем показ статуса соединения
+    console.log('📅 Календарь загружен');
+},
+
+// Обновляем обработчики (убираем кнопку синхронизации)
+initializeCalendarHandlers() {
+    document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
+    document.getElementById('calendarNext')?.addEventListener('click', () => this.nextMonth());
+    document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
+    document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
+    // Убрали обработчик manualSyncBtn
+},
+
+// Обновляем метод ручной синхронизации (если он используется)
+async manualSync() {
+    // Тихая синхронизация без визуального отклика
+    if (this.state.isSyncing) {
+        return false;
+    }
+
+    this.state.isSyncing = true;
+
+    try {
+        let success = false;
+        
+        if (this.isConnected) {
+            success = await this.syncViaHTTP();
+        } else {
+            success = await this.syncViaHTTP();
         }
-    },
+
+        return success;
+    } finally {
+        this.state.isSyncing = false;
+    }
+},
+
+// Убираем обновление статуса синхронизации
+updateSyncStatus(status, message) {
+    // Больше не обновляем статус
+    return;
+},
 
     // Обработка сообщений WebSocket
     handleWebSocketMessage(message) {
