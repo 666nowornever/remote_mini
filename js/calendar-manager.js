@@ -487,8 +487,7 @@ const CalendarManager = {
         }
     },
 
-    // Обновленный рендер календаря для новой структуры
-renderCalendar: function() {
+    renderCalendar: function() {
     const calendarElement = document.getElementById('calendarGrid');
     if (!calendarElement) return;
 
@@ -514,34 +513,34 @@ renderCalendar: function() {
 
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-
-    // Пустые ячейки для дней предыдущего месяца
-    for (let i = 0; i < startingDay; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day-main empty other-month';
-        calendarElement.appendChild(emptyCell);
-    }
-
-    // Дни текущего месяца
+    
+    // Находим первый день для отображения (может быть из предыдущего месяца)
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
+    
+    // Находим последний день для отображения (может быть из следующего месяца)
+    const endDate = new Date(lastDay);
+    endDate.setDate(endDate.getDate() + (7 - lastDay.getDay()) - (lastDay.getDay() === 0 ? 0 : 1));
+    
     const today = new Date();
-    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    let currentDate = new Date(startDate);
 
-    for (let day = 1; day <= daysInMonth; day++) {
-        const date = new Date(year, month, day);
-        const dateKey = this.getDateKey(date);
-        const dayElement = this.createMainDayElement(date, dateKey, day, isCurrentMonth && day === today.getDate());
+    // Заполняем все 42 ячейки (6 недель)
+    for (let i = 0; i < 42; i++) {
+        const dateKey = this.getDateKey(currentDate);
+        const isCurrentMonth = currentDate.getMonth() === month;
+        const isToday = currentDate.toDateString() === today.toDateString();
+        
+        const dayElement = this.createMainDayElement(
+            new Date(currentDate), 
+            dateKey, 
+            currentDate.getDate(), 
+            isToday, 
+            !isCurrentMonth
+        );
+        
         calendarElement.appendChild(dayElement);
-    }
-
-    // Пустые ячейки для дней следующего месяца
-    const totalCells = 42; // 6 строк × 7 дней
-    const remainingCells = totalCells - (startingDay + daysInMonth);
-    for (let i = 0; i < remainingCells; i++) {
-        const emptyCell = document.createElement('div');
-        emptyCell.className = 'calendar-day-main empty other-month';
-        calendarElement.appendChild(emptyCell);
+        currentDate.setDate(currentDate.getDate() + 1);
     }
 },
 
