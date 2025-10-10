@@ -2296,7 +2296,7 @@
     background: #ff6b6b;
     flex: 1;
     min-width: 0;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgb(255, 0, 0);
 }
 
 /* Основная легенда */
