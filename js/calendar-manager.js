@@ -1,5 +1,15 @@
-// Менеджер календаря дежурств - упрощенная версия
+// Менеджер календаря дежурств с real-time синхронизацией
 const CalendarManager = {
+    // === КОНФИГУРАЦИЯ СИНХРОНИЗАЦИИ ===
+    syncConfig: {
+        // URL вашего сервера на Render.com (ЗАМЕНИТЕ НА СВОЙ ПОСЛЕ ДЕПЛОЯ)
+        wsUrl: 'wss://remote-api-calendar.onrender.com/ws',
+        apiUrl: 'https://remote-api-calendar.onrender.com/api',
+        reconnectInterval: 3000,
+        maxReconnectAttempts: 5,
+        syncInterval: 10000 // HTTP синхронизация каждые 10 сек
+    },
+
     // Данные
     data: {
         events: {},
@@ -15,35 +25,348 @@ const CalendarManager = {
         { id: 3, name: 'Преображенский Дмитрий', color: '#FF9800' }
     ],
 
-    // Праздничные дни 2024
+    // Праздничные дни
     holidays: [
-        '2025-01-01', '2025-01-02', '2025-01-03', '2025-01-04', '2025-01-05', '2025-01-06', '2025-01-07', '2025-01-08',
-'2025-02-22', '2025-02-23', '2025-02-24',
-'2025-03-08', '2025-03-09', '2025-03-10',
-'2025-04-28', '2025-04-29', '2025-04-30', '2025-05-01', '2025-05-02', '2025-05-03', '2025-05-09', '2025-05-10', '2025-05-11',
-'2025-06-11', '2025-06-12', '2025-06-13', '2025-06-14',
-'2025-11-03', '2025-11-04', '2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08', '2026-01-09',
-'2026-02-21', '2026-02-22', '2026-02-23',
-'2026-03-07', '2026-03-08', '2026-03-09',
-'2026-04-30', '2026-05-01', '2026-05-02', '2026-05-03', '2026-05-04', '2026-05-09', '2026-05-10', '2026-05-11',
-'2026-06-11', '2026-06-12', '2026-06-13', '2026-06-14',
-'2026-11-03', '2026-11-04'
+        '2024-01-01', '2024-01-02', '2024-01-03', '2024-01-04', '2024-01-05', '2024-01-06', '2024-01-07', '2024-01-08',
+        '2024-02-23', '2024-02-24', '2024-02-25',
+        '2024-03-08', '2024-03-09', '2024-03-10',
+        '2024-04-28', '2024-04-29', '2024-04-30', '2024-05-01', '2024-05-02', '2024-05-03', '2024-05-09', '2024-05-10',
+        '2024-06-11', '2024-06-12', '2024-06-13',
+        '2024-11-02', '2024-11-03', '2024-11-04'
     ],
 
     // Состояние
     state: {
         currentDate: new Date(),
-        selectionMode: 'day'
+        selectionMode: 'day',
+        isOnline: false,
+        isSyncing: false,
+        retryCount: 0,
+        lastSync: 0
     },
+
+    // WebSocket
+    ws: null,
+    reconnectAttempts: 0,
+    isConnected: false,
+    httpSyncInterval: null,
 
     // === ИНИЦИАЛИЗАЦИЯ ===
     async init() {
-        console.log('📅 CalendarManager: инициализация...');
+        console.log('🔄 CalendarManager: инициализация...');
+        
+        // Загружаем локальные данные
         this.loadLocalData();
+        
+        // Инициализируем real-time синхронизацию
+        this.initRealtimeSync();
+        
         console.log('✅ CalendarManager: инициализация завершена');
     },
 
-    // === ЗАГРУЗКА И СОХРАНЕНИЕ ДАННЫХ ===
+    // === REAL-TIME СИНХРОНИЗАЦИЯ ===
+
+    // Инициализация WebSocket соединения
+    initRealtimeSync() {
+        try {
+            console.log('🔗 Подключение к WebSocket...');
+            this.ws = new WebSocket(this.syncConfig.wsUrl);
+            
+            this.ws.onopen = () => {
+                console.log('✅ WebSocket connected');
+                this.isConnected = true;
+                this.reconnectAttempts = 0;
+                this.state.isOnline = true;
+                this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
+                this.showConnectionStatus('connected');
+            };
+
+            this.ws.onmessage = (event) => {
+                try {
+                    const message = JSON.parse(event.data);
+                    this.handleWebSocketMessage(message);
+                } catch (error) {
+                    console.error('❌ Error parsing WebSocket message:', error);
+                }
+            };
+
+            this.ws.onclose = (event) => {
+                console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+                this.isConnected = false;
+                this.state.isOnline = false;
+                this.showConnectionStatus('disconnected');
+                this.handleReconnection();
+            };
+
+            this.ws.onerror = (error) => {
+                console.error('❌ WebSocket error:', error);
+                this.isConnected = false;
+                this.state.isOnline = false;
+                this.showConnectionStatus('error');
+            };
+
+        } catch (error) {
+            console.error('❌ Error initializing WebSocket:', error);
+            this.fallbackToHTTPSync();
+        }
+    },
+
+    // Обработка сообщений WebSocket
+    handleWebSocketMessage(message) {
+        console.log('📨 WebSocket message:', message.type);
+
+        switch (message.type) {
+            case 'INIT_DATA':
+                // Первоначальные данные при подключении
+                if (this.validateData(message.data)) {
+                    this.handleRemoteUpdate(message.data, 'server');
+                }
+                break;
+
+            case 'DATA_UPDATE':
+                // Обновление данных от другого клиента
+                if (this.validateData(message.data)) {
+                    this.handleRemoteUpdate(message.data, 'client');
+                }
+                break;
+
+            case 'UPDATE_CONFIRMED':
+                // Подтверждение нашего обновления
+                this.data.lastModified = message.lastModified;
+                this.saveLocalData();
+                console.log('✅ Изменения подтверждены сервером');
+                this.updateSyncStatus('success', 'Сохранено');
+                break;
+
+            case 'HEARTBEAT':
+                console.log('💓 Heartbeat, clients:', message.clients);
+                break;
+
+            case 'PONG':
+                break;
+
+            case 'ERROR':
+                console.error('❌ Server error:', message.message);
+                this.updateSyncStatus('error', message.message);
+                break;
+        }
+    },
+
+    // Обработка удаленного обновления
+    handleRemoteUpdate(remoteData, source) {
+        const localTimestamp = this.data.lastModified || 0;
+        const remoteTimestamp = remoteData.lastModified || 0;
+
+        // Если удаленные данные новее
+        if (remoteTimestamp > localTimestamp) {
+            const hadChanges = JSON.stringify(this.data) !== JSON.stringify(remoteData);
+            
+            this.data = remoteData;
+            this.saveLocalData();
+            
+            if (hadChanges) {
+                console.log(`🔄 Данные обновлены от ${source}`);
+                this.updateSyncStatus('success', `Обновлено: ${new Date().toLocaleTimeString()}`);
+                
+                // Перерисовываем календарь если он открыт
+                if (document.getElementById('calendarGrid')) {
+                    this.renderCalendar();
+                }
+                
+                // Показываем уведомление о изменении от другого пользователя
+                if (source === 'client') {
+                    this.showChangeNotification();
+                }
+            }
+        } else {
+            console.log('📊 Локальные данные актуальнее');
+        }
+    },
+
+    // Отправка обновления на сервер через WebSocket
+    sendUpdateToServer() {
+        if (this.ws && this.isConnected && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify({
+                type: 'DATA_UPDATE',
+                data: this.data,
+                timestamp: Date.now()
+            }));
+            console.log('📤 Sent update via WebSocket');
+            return true;
+        }
+        return false;
+    },
+
+    // Переподключение при разрыве соединения
+    handleReconnection() {
+        if (this.reconnectAttempts < this.syncConfig.maxReconnectAttempts) {
+            this.reconnectAttempts++;
+            console.log(`🔄 Попытка переподключения ${this.reconnectAttempts}/${this.syncConfig.maxReconnectAttempts}`);
+            
+            this.updateSyncStatus('syncing', 'Переподключение...');
+            this.showConnectionStatus('reconnecting');
+            
+            setTimeout(() => {
+                this.initRealtimeSync();
+            }, this.syncConfig.reconnectInterval);
+        } else {
+            console.log('❌ Превышено количество попыток переподключения');
+            this.fallbackToHTTPSync();
+        }
+    },
+
+    // Fallback на HTTP синхронизацию
+    fallbackToHTTPSync() {
+        console.log('🔄 Переход на HTTP синхронизацию');
+        this.updateSyncStatus('warning', 'Режим HTTP синхронизации');
+        this.showConnectionStatus('http');
+        this.startHTTPSyncInterval();
+    },
+
+    // HTTP синхронизация - получение данных
+    async syncViaHTTP() {
+        try {
+            console.log('📡 HTTP sync request...');
+            const response = await fetch(`${this.syncConfig.apiUrl}/calendar?t=${Date.now()}`);
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && this.validateData(result.data)) {
+                    this.handleRemoteUpdate(result.data, 'http');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('❌ HTTP sync error:', error);
+        }
+        return false;
+    },
+
+    // HTTP синхронизация - отправка данных
+    async sendUpdateViaHTTP() {
+        try {
+            console.log('📤 HTTP update request...');
+            const response = await fetch(`${this.syncConfig.apiUrl}/calendar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(this.data)
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    this.data.lastModified = result.lastModified;
+                    this.saveLocalData();
+                    console.log('✅ HTTP update successful');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('❌ HTTP update error:', error);
+        }
+        return false;
+    },
+
+    // Запуск периодической HTTP синхронизации
+    startHTTPSyncInterval() {
+        // Останавливаем предыдущий интервал
+        if (this.httpSyncInterval) {
+            clearInterval(this.httpSyncInterval);
+        }
+        
+        // Синхронизируем сразу
+        this.syncViaHTTP();
+        
+        // Запускаем периодическую синхронизацию
+        this.httpSyncInterval = setInterval(async () => {
+            await this.syncViaHTTP();
+        }, this.syncConfig.syncInterval);
+    },
+
+    // Показать статус соединения
+    showConnectionStatus(status) {
+        // Создаем или находим элемент статуса
+        let statusElement = document.getElementById('connectionStatus');
+        if (!statusElement) {
+            statusElement = document.createElement('div');
+            statusElement.id = 'connectionStatus';
+            statusElement.style.cssText = `
+                position: fixed;
+                top: 10px;
+                left: 10px;
+                padding: 5px 10px;
+                border-radius: 15px;
+                font-size: 12px;
+                z-index: 1000;
+                background: rgba(0,0,0,0.8);
+                color: white;
+                font-weight: 500;
+            `;
+            document.body.appendChild(statusElement);
+        }
+
+        const statusConfig = {
+            connected: { text: '🟢 Online', color: '#4CAF50' },
+            disconnected: { text: '🔴 Offline', color: '#f44336' },
+            reconnecting: { text: '🟡 Reconnecting...', color: '#ff9800' },
+            error: { text: '🔴 Error', color: '#f44336' },
+            http: { text: '🟠 HTTP Mode', color: '#ff9800' }
+        };
+
+        const config = statusConfig[status] || statusConfig.disconnected;
+        statusElement.textContent = config.text;
+        statusElement.style.background = config.color;
+    },
+
+    // Показать уведомление об изменении
+    showChangeNotification() {
+        if (document.getElementById('calendarGrid')) {
+            // Удаляем предыдущее уведомление
+            const existingNotification = document.getElementById('changeNotification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
+
+            const notification = document.createElement('div');
+            notification.id = 'changeNotification';
+            notification.innerHTML = `
+                <i class="fas fa-sync"></i>
+                Календарь обновлен другим пользователем
+            `;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 12px 18px;
+                border-radius: 8px;
+                z-index: 10000;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 500;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.2);
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 3000);
+        }
+    },
+
+    // === СИНХРОНИЗАЦИЯ ДАННЫХ ===
+
+    // Загрузка локальных данных
     loadLocalData() {
         try {
             const saved = localStorage.getItem('calendarData');
@@ -69,9 +392,9 @@ const CalendarManager = {
         return false;
     },
 
+    // Сохранение локальных данных
     saveLocalData() {
         try {
-            this.data.lastModified = Date.now();
             localStorage.setItem('calendarData', JSON.stringify(this.data));
             console.log('💾 Данные сохранены локально');
         } catch (error) {
@@ -79,12 +402,113 @@ const CalendarManager = {
         }
     },
 
+    // Валидация данных
     validateData(data) {
         return data && 
                typeof data === 'object' &&
                typeof data.events === 'object' &&
                typeof data.vacations === 'object' &&
-               typeof data.lastModified === 'number';
+               typeof data.lastModified === 'number' &&
+               typeof data.version === 'number';
+    },
+
+    // Обновленный метод saveData
+    async saveData() {
+        // Сохраняем локально
+        this.data.lastModified = Date.now();
+        this.saveLocalData();
+        
+        // Пытаемся отправить через WebSocket
+        let syncSuccess = this.sendUpdateToServer();
+        
+        // Если WebSocket не доступен, используем HTTP
+        if (!syncSuccess) {
+            syncSuccess = await this.sendUpdateViaHTTP();
+        }
+        
+        if (syncSuccess) {
+            console.log('✅ Данные сохранены и синхронизированы');
+            this.updateSyncStatus('success', 'Сохранено');
+        } else {
+            console.log('💾 Данные сохранены локально (ошибка синхронизации)');
+            this.updateSyncStatus('warning', 'Сохранено локально');
+        }
+    },
+
+    // Ручная синхронизация
+    async manualSync() {
+        if (this.state.isSyncing) {
+            console.log('🔄 Синхронизация уже выполняется...');
+            return false;
+        }
+
+        this.state.isSyncing = true;
+        this.updateSyncStatus('syncing', 'Ручная синхронизация...');
+
+        try {
+            let success = false;
+            
+            if (this.isConnected) {
+                // Пробуем WebSocket синхронизацию
+                success = await this.syncViaHTTP(); // HTTP для получения данных
+            } else {
+                // Только HTTP синхронизация
+                success = await this.syncViaHTTP();
+            }
+
+            if (success) {
+                this.updateSyncStatus('success', 'Синхронизировано');
+            } else {
+                this.updateSyncStatus('error', 'Ошибка синхронизации');
+            }
+
+            return success;
+        } finally {
+            this.state.isSyncing = false;
+        }
+    },
+
+    // Обновление статуса синхронизации
+    updateSyncStatus(status, message) {
+        const statusElement = document.getElementById('syncStatus');
+        if (!statusElement) return;
+
+        statusElement.className = `sync-status ${status}`;
+        statusElement.innerHTML = `
+            <i class="fas fa-${this.getSyncIcon(status)}"></i>
+            ${message}
+        `;
+
+        // Обновляем кнопку синхронизации
+        this.updateSyncButton(status);
+    },
+
+    // Обновление вида кнопки синхронизации
+    updateSyncButton(status) {
+        const syncBtn = document.getElementById('manualSyncBtn');
+        if (!syncBtn) return;
+
+        syncBtn.classList.remove('syncing', 'success', 'error', 'warning', 'offline');
+        
+        if (status !== 'success') {
+            syncBtn.classList.add(status);
+        }
+
+        const icon = syncBtn.querySelector('i');
+        if (icon) {
+            icon.className = `fas fa-${this.getSyncIcon(status)}`;
+        }
+    },
+
+    getSyncIcon(status) {
+        const icons = {
+            syncing: 'sync-alt fa-spin',
+            success: 'cloud-check',
+            error: 'exclamation-triangle',
+            warning: 'exclamation-circle',
+            offline: 'wifi-slash'
+        };
+        return icons[status] || 'cloud';
     },
 
     // === ОСНОВНЫЕ МЕТОДЫ КАЛЕНДАРЯ ===
@@ -95,6 +519,14 @@ const CalendarManager = {
     loadCalendarPage() {
         this.renderCalendar();
         this.initializeCalendarHandlers();
+        
+        // Показываем статус соединения
+        if (this.isConnected) {
+            this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
+        } else {
+            this.updateSyncStatus(this.state.isOnline ? 'success' : 'offline', 
+                               this.state.isOnline ? 'Синхронизировано' : 'Локальные данные');
+        }
     },
 
     renderCalendar() {
@@ -104,17 +536,14 @@ const CalendarManager = {
         const year = this.state.currentDate.getFullYear();
         const month = this.state.currentDate.getMonth();
 
-        // Обновляем заголовок
         const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
         const titleElement = document.getElementById('calendarTitle');
         if (titleElement) {
             titleElement.textContent = `${monthNames[month]} ${year}`;
         }
 
-        // Очищаем сетку
         calendarElement.innerHTML = '';
 
-        // Добавляем заголовки дней недели
         const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         daysOfWeek.forEach(day => {
             const dayHeader = document.createElement('div');
@@ -123,168 +552,114 @@ const CalendarManager = {
             calendarElement.appendChild(dayHeader);
         });
 
-        // Рассчитываем дни для отображения
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
         const daysInMonth = lastDay.getDate();
-        
-        // Получаем день недели первого дня (0 - воскресенье, 1 - понедельник)
-        const startingDay = firstDay.getDay();
-        // Преобразуем в наш формат (понедельник = 0)
-        const startingDayAdjusted = startingDay === 0 ? 6 : startingDay - 1;
+        const startingDay = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
 
-        // Добавляем дни предыдущего месяца
-        const prevMonthLastDay = new Date(year, month, 0).getDate();
-        for (let i = startingDayAdjusted - 1; i >= 0; i--) {
-            const day = prevMonthLastDay - i;
-            const date = new Date(year, month - 1, day);
-            const dateKey = this.getDateKey(date);
-            const dayElement = this.createDayElement(date, dateKey, day, true);
-            calendarElement.appendChild(dayElement);
+        for (let i = 0; i < startingDay; i++) {
+            const emptyCell = document.createElement('div');
+            emptyCell.className = 'calendar-day empty';
+            calendarElement.appendChild(emptyCell);
         }
 
-        // Добавляем дни текущего месяца
         for (let day = 1; day <= daysInMonth; day++) {
             const date = new Date(year, month, day);
             const dateKey = this.getDateKey(date);
-            const dayElement = this.createDayElement(date, dateKey, day, false);
-            calendarElement.appendChild(dayElement);
-        }
-
-        // Добавляем дни следующего месяца чтобы заполнить сетку (6 строк × 7 дней = 42 ячейки)
-        const totalCells = 42;
-        const totalDaysDisplayed = startingDayAdjusted + daysInMonth;
-        const nextMonthDays = totalCells - totalDaysDisplayed;
-        
-        for (let day = 1; day <= nextMonthDays; day++) {
-            const date = new Date(year, month + 1, day);
-            const dateKey = this.getDateKey(date);
-            const dayElement = this.createDayElement(date, dateKey, day, true);
+            const dayElement = this.createDayElement(date, dateKey, day);
             calendarElement.appendChild(dayElement);
         }
     },
 
-    createDayElement(date, dateKey, dayNumber, isOtherMonth) {
+    createDayElement(date, dateKey, dayNumber) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day';
-        if (isOtherMonth) {
-            dayElement.classList.add('other-month');
-        }
         dayElement.dataset.date = dateKey;
 
-        // Проверяем выходные и праздничные дни
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
         const isHoliday = this.holidays.includes(dateKey);
-        if (isWeekend || isHoliday) {
-            dayElement.classList.add('holiday');
-        }
+        if (isWeekend || isHoliday) dayElement.classList.add('holiday');
 
-        // Номер дня
         const dayNumberElement = document.createElement('div');
         dayNumberElement.className = 'calendar-day-number';
         dayNumberElement.textContent = dayNumber;
         dayElement.appendChild(dayNumberElement);
 
-        // Контейнер для событий
         const eventsContainer = document.createElement('div');
         eventsContainer.className = 'calendar-day-events';
 
-        // Показываем события только для текущего месяца
-        if (!isOtherMonth) {
-            // Дежурства
-            if (this.data.events[dateKey]) {
-                this.data.events[dateKey].forEach(event => {
-                    const eventElement = document.createElement('div');
-                    eventElement.className = 'calendar-event';
-                    eventElement.style.backgroundColor = event.color;
-                    eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
-                    eventsContainer.appendChild(eventElement);
-                });
-            }
+        if (this.data.events[dateKey]) {
+            this.data.events[dateKey].forEach(event => {
+                const eventElement = document.createElement('div');
+                eventElement.className = 'calendar-event';
+                eventElement.style.backgroundColor = event.color;
+                eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
+                eventsContainer.appendChild(eventElement);
+            });
+        }
 
-            // Отпуска
-            if (this.data.vacations[dateKey]) {
-                const vacationContainer = document.createElement('div');
-                vacationContainer.className = 'calendar-vacation-container';
-                
-                this.data.vacations[dateKey].forEach(vacation => {
-                    const vacationElement = document.createElement('div');
-                    vacationElement.className = 'calendar-vacation';
-                    vacationElement.style.backgroundColor = vacation.color;
-                    vacationElement.title = `Отпуск: ${vacation.person}`;
-                    vacationContainer.appendChild(vacationElement);
-                });
-                
-                eventsContainer.appendChild(vacationContainer);
-            }
+        if (this.data.vacations[dateKey]) {
+            const vacationContainer = document.createElement('div');
+            vacationContainer.className = 'calendar-vacation-container';
+            
+            this.data.vacations[dateKey].forEach(vacation => {
+                const vacationElement = document.createElement('div');
+                vacationElement.className = 'calendar-vacation';
+                vacationElement.style.backgroundColor = vacation.color;
+                vacationElement.title = `Отпуск: ${vacation.person}`;
+                vacationContainer.appendChild(vacationElement);
+            });
+            
+            eventsContainer.appendChild(vacationContainer);
         }
 
         dayElement.appendChild(eventsContainer);
         
-        // Обработчик клика только для дней текущего месяца
-        if (!isOtherMonth) {
-            dayElement.addEventListener('click', () => {
-                if (this.state.selectionMode === 'day') {
-                    this.openEventModal(dateKey);
-                } else {
-                    this.handleWeekSelection(date);
-                }
-            });
-        } else {
-            dayElement.style.cursor = 'default';
-        }
+        dayElement.addEventListener('click', () => {
+            if (this.state.selectionMode === 'day') {
+                this.openEventModal(dateKey);
+            } else {
+                this.handleWeekSelection(date);
+            }
+        });
 
         return dayElement;
     },
 
-    // В разделе методов добавляем:
+    initializeCalendarHandlers() {
+        document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
+        document.getElementById('calendarNext')?.addEventListener('click', () => this.nextMonth());
+        document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
+        document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
+        document.getElementById('manualSyncBtn')?.addEventListener('click', () => this.manualSync());
+    },
 
-// === ОБРАБОТЧИКИ УПРАВЛЕНИЯ ===
-initializeCalendarHandlers() {
-    // Кнопки навигации по месяцам
-    document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
-    document.getElementById('calendarNext')?.addEventListener('click', () => this.nextMonth());
+    toggleSelectionMode() {
+        this.state.selectionMode = this.state.selectionMode === 'day' ? 'week' : 'day';
+        const modeBtn = document.getElementById('selectionModeBtn');
+        if (modeBtn) {
+            modeBtn.innerHTML = this.state.selectionMode === 'day' ? 
+                '<i class="fas fa-calendar-day"></i> Режим: День' : 
+                '<i class="fas fa-calendar-week"></i> Режим: Неделя';
+        }
+    },
+
+    previousMonth() { 
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
+        this.renderCalendar(); 
+    },
     
-    // Кнопка смены режима
-    document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
-},
-
-// Переключение режима (день/неделя)
-toggleSelectionMode() {
-    this.state.selectionMode = this.state.selectionMode === 'day' ? 'week' : 'day';
+    nextMonth() { 
+        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
+        this.renderCalendar(); 
+    },
     
-    // Обновляем текст кнопки
-    const modeBtn = document.getElementById('selectionModeBtn');
-    if (modeBtn) {
-        const icon = this.state.selectionMode === 'day' ? 'fa-calendar-day' : 'fa-calendar-week';
-        const text = this.state.selectionMode === 'day' ? 'Режим: День' : 'Режим: Неделя';
-        
-        modeBtn.innerHTML = `<i class="fas ${icon}"></i> ${text}`;
-    }
-    
-    console.log(`📅 Режим изменен на: ${this.state.selectionMode}`);
-},
+    goToToday() { 
+        this.state.currentDate = new Date(); 
+        this.renderCalendar(); 
+    },
 
-// Навигация по месяцам
-previousMonth() { 
-    this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
-    this.renderCalendar(); 
-    console.log('📅 Переход к предыдущему месяцу');
-},
-
-nextMonth() { 
-    this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
-    this.renderCalendar(); 
-    console.log('📅 Переход к следующему месяцу');
-},
-
-goToToday() { 
-    this.state.currentDate = new Date(); 
-    this.renderCalendar(); 
-    console.log('📅 Переход к текущему месяцу');
-},
-
-    // === МОДАЛЬНОЕ ОКНО ===
+    // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
     openEventModal(dateKey, weekDates = null) {
         const isWeekMode = weekDates !== null;
         const date = this.parseDateKey(dateKey);
@@ -316,6 +691,7 @@ goToToday() {
                     <div class="modal-tabs">
                         <button class="tab-btn active" data-tab="duty">Дежурство</button>
                         <button class="tab-btn" data-tab="vacation">Отпуск</button>
+                        <button class="tab-btn" data-tab="event">Событие</button>
                     </div>
                     
                     <div class="tab-content" id="dutyTab">
@@ -355,6 +731,21 @@ goToToday() {
                             <textarea id="vacationComment" placeholder="Добавьте комментарий...">${this.getVacationComment(dateKey) || ''}</textarea>
                         </div>
                     </div>
+                    
+                    <div class="tab-content hidden" id="eventTab">
+                        <div class="event-time-section">
+                            <label for="eventTime">Время отправки уведомления:</label>
+                            <input type="time" id="eventTime" value="09:00">
+                        </div>
+                        <div class="comment-section">
+                            <label for="eventMessage">Сообщение для чата:</label>
+                            <textarea id="eventMessage" placeholder="Введите сообщение для отправки в рабочий чат..."></textarea>
+                        </div>
+                        <div class="notification-info">
+                            <i class="fas fa-info-circle"></i>
+                            Сообщение будет отправлено в рабочий чат Telegram в указанное время
+                        </div>
+                    </div>
                 </div>
                 <div class="calendar-modal-actions">
                     <button class="btn btn-cancel">Отмена</button>
@@ -368,7 +759,6 @@ goToToday() {
     initializeModalHandlers(modal, dateKey, weekDates) {
         const tabBtns = modal.querySelectorAll('.tab-btn');
         const tabContents = modal.querySelectorAll('.tab-content');
-        
         tabBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 tabBtns.forEach(b => b.classList.remove('active'));
@@ -381,9 +771,7 @@ goToToday() {
         const closeModal = () => document.body.removeChild(modal);
         modal.querySelector('.calendar-modal-close').addEventListener('click', closeModal);
         modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { 
-            if (e.target === modal) closeModal(); 
-        });
+        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
         modal.querySelector('.btn-save').addEventListener('click', () => {
             const activeTab = modal.querySelector('.tab-btn.active').dataset.tab;
@@ -393,6 +781,8 @@ goToToday() {
                 this.saveDutyEvent(datesToSave);
             } else if (activeTab === 'vacation') {
                 this.saveVacationEvent(datesToSave);
+            } else if (activeTab === 'event') {
+                this.saveChatEvent(datesToSave);
             }
 
             closeModal();
@@ -421,7 +811,7 @@ goToToday() {
             }
         });
 
-        this.saveLocalData();
+        this.saveData();
     },
 
     saveVacationEvent(datesToSave) {
@@ -446,7 +836,24 @@ goToToday() {
             }
         });
 
-        this.saveLocalData();
+        this.saveData();
+    },
+
+    saveChatEvent(datesToSave) {
+        const eventTime = document.getElementById('eventTime')?.value;
+        const eventMessage = document.getElementById('eventMessage')?.value.trim();
+
+        if (!eventMessage) {
+            alert('Пожалуйста, введите сообщение для отправки');
+            return;
+        }
+
+        datesToSave.forEach(date => {
+            const eventDateTime = `${date}T${eventTime}:00`;
+            this.scheduleTelegramMessage(eventDateTime, eventMessage);
+        });
+
+        this.updateSyncStatus('success', 'Событие запланировано');
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
@@ -495,24 +902,24 @@ goToToday() {
         return dates;
     },
 
-    // Упрощенные методы навигации (если понадобятся)
-    previousMonth() { 
-        this.state.currentDate.setMonth(this.state.currentDate.getMonth() - 1); 
-        this.renderCalendar(); 
-    },
-    
-    nextMonth() { 
-        this.state.currentDate.setMonth(this.state.currentDate.getMonth() + 1); 
-        this.renderCalendar(); 
-    },
-    
-    goToToday() { 
-        this.state.currentDate = new Date(); 
-        this.renderCalendar(); 
-    },
+    scheduleTelegramMessage(eventDateTime, message) {
+        const eventTimestamp = new Date(eventDateTime).getTime();
+        const now = Date.now();
+        
+        if (eventTimestamp <= now) {
+            alert('Указанное время уже прошло');
+            return;
+        }
 
-    toggleSelectionMode() {
-        this.state.selectionMode = this.state.selectionMode === 'day' ? 'week' : 'day';
+        const scheduledMessages = JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
+        scheduledMessages.push({
+            timestamp: eventTimestamp,
+            message: message,
+            datetime: eventDateTime
+        });
+        
+        localStorage.setItem('scheduledTelegramMessages', JSON.stringify(scheduledMessages));
+        console.log(`⏰ Запланировано сообщение на ${eventDateTime}`);
     }
 };
 
