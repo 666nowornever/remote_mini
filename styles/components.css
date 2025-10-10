@@ -2018,3 +2018,122 @@
 .sync-status i {
     font-size: 14px;
 }
+
+/* Новый стиль для центрированного заголовка */
+.calendar-title-center {
+    font-size: 20px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex: 1;
+    text-align: center;
+}
+
+/* Обновленный header для календаря */
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+/* Стили для дней предыдущего/следующего месяца */
+.calendar-day.other-month {
+    opacity: 0.4;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.calendar-day.other-month .calendar-day-number {
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.calendar-day.other-month:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Убираем старый статус синхронизации */
+.sync-status {
+    display: none !important;
+}
+
+/* Улучшаем кнопки управления */
+.calendar-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+/* Фиолетовая кнопка режима */
+.calendar-mode-btn {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    border-radius: 10px;
+    color: white;
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.calendar-mode-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+/* Кнопка синхронизации */
+.calendar-sync-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 16px;
+}
+
+.calendar-sync-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.calendar-sync-btn.syncing {
+    background: rgba(255, 193, 7, 0.3);
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.calendar-sync-btn.syncing i {
+    animation: spin 1s linear infinite;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+    .calendar-header {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .calendar-title-center {
+        order: -1;
+    }
+    
+    .calendar-controls {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

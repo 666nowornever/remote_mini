@@ -4,16 +4,12 @@
         Назад
     </button>
     
-    <!-- Индикатор синхронизации -->
-    <div class="sync-status" id="syncStatus">
-        <i class="fas fa-desktop"></i> Локальные данные
-    </div>
-    
     <div class="card">
         <div class="calendar-header">
-            <div class="calendar-title">
+            <!-- Центрированная дата -->
+            <div class="calendar-title-center">
                 <i class="fas fa-calendar-alt"></i>
-                <span id="calendarTitle">Календарь дежурств</span>
+                <span id="calendarTitle">Октябрь 2025</span>
             </div>
             <div class="calendar-controls">
                 <button class="calendar-nav-btn" id="calendarPrev" title="Предыдущий месяц">
@@ -23,14 +19,13 @@
                 <button class="calendar-nav-btn" id="calendarNext" title="Следующий месяц">
                     <i class="fas fa-chevron-right"></i>
                 </button>
+                <!-- Фиолетовая кнопка режима -->
                 <button class="calendar-mode-btn" id="selectionModeBtn" title="Переключить режим выбора">
                     <i class="fas fa-calendar-day"></i> Режим: День
                 </button>
-                <button class="calendar-sync-btn" id="manualSyncBtn" title="Проверить обновления">
+                <!-- Кнопка загрузки/синхронизации -->
+                <button class="calendar-sync-btn" id="manualSyncBtn" title="Синхронизировать">
                     <i class="fas fa-sync-alt"></i>
-                </button>
-                <button class="calendar-export-btn" id="exportDataBtn" title="Экспорт данных">
-                    <i class="fas fa-download"></i>
                 </button>
             </div>
         </div>
