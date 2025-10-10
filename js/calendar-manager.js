@@ -320,49 +320,7 @@ const CalendarManager = {
         statusElement.style.background = config.color;
     },
 
-    // Показать уведомление об изменении
-    showChangeNotification() {
-        if (document.getElementById('calendarGrid')) {
-            // Удаляем предыдущее уведомление
-            const existingNotification = document.getElementById('changeNotification');
-            if (existingNotification) {
-                existingNotification.remove();
-            }
-
-            const notification = document.createElement('div');
-            notification.id = 'changeNotification';
-            notification.innerHTML = `
-                <i class="fas fa-sync"></i>
-                Календарь обновлен другим пользователем
-            `;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #4CAF50;
-                color: white;
-                padding: 12px 18px;
-                border-radius: 8px;
-                z-index: 10000;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-                display: flex;
-                align-items: center;
-                gap: 8px;
-                font-weight: 500;
-                backdrop-filter: blur(10px);
-                border: 1px solid rgba(255,255,255,0.2);
-                animation: slideIn 0.3s ease;
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 3000);
-        }
-    },
+    
 
     // === СИНХРОНИЗАЦИЯ ДАННЫХ ===
 
