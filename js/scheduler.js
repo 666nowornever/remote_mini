@@ -2,6 +2,7 @@
 const MessageScheduler = {
     // Интервал проверки запланированных сообщений (секунды)
     checkInterval: 30000, // 30 секунд
+    timer: null,
 
     // Инициализация планировщика
     init() {
@@ -12,11 +13,25 @@ const MessageScheduler = {
 
     // Запуск планировщика
     startScheduler() {
-        setInterval(() => {
+        // Останавливаем предыдущий таймер если есть
+        if (this.timer) {
+            clearInterval(this.timer);
+        }
+        
+        this.timer = setInterval(() => {
             this.checkScheduledMessages();
         }, this.checkInterval);
 
         console.log('⏰ Планировщик сообщений запущен');
+    },
+
+    // Остановка планировщика
+    stopScheduler() {
+        if (this.timer) {
+            clearInterval(this.timer);
+            this.timer = null;
+            console.log('⏰ Планировщик сообщений остановлен');
+        }
     },
 
     // Восстановление запланированных сообщений из localStorage
@@ -24,6 +39,10 @@ const MessageScheduler = {
         try {
             const messages = this.getScheduledMessages();
             console.log(`📋 Восстановлено ${messages.length} запланированных сообщений`);
+            
+            // Удаляем старые отправленные сообщения (старше 7 дней)
+            this.cleanupOldMessages();
+            
         } catch (error) {
             console.error('❌ Ошибка восстановления сообщений:', error);
         }
@@ -38,14 +57,15 @@ const MessageScheduler = {
             chatId: chatId,
             eventData: eventData,
             status: 'scheduled',
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            scheduledFor: new Date(timestamp).toLocaleString('ru-RU')
         };
 
         const messages = this.getScheduledMessages();
         messages.push(scheduledMessage);
         this.saveScheduledMessages(messages);
 
-        console.log(`⏰ Сообщение запланировано на ${new Date(timestamp).toLocaleString('ru-RU')}`, {
+        console.log(`⏰ Сообщение запланировано на ${scheduledMessage.scheduledFor}`, {
             id: scheduledMessage.id,
             messageLength: message.length
         });
@@ -109,11 +129,20 @@ const MessageScheduler = {
     },
 
     getScheduledMessages() {
-        return JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
+        try {
+            return JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
+        } catch (error) {
+            console.error('❌ Ошибка чтения сообщений:', error);
+            return [];
+        }
     },
 
     saveScheduledMessages(messages) {
-        localStorage.setItem('scheduledTelegramMessages', JSON.stringify(messages));
+        try {
+            localStorage.setItem('scheduledTelegramMessages', JSON.stringify(messages));
+        } catch (error) {
+            console.error('❌ Ошибка сохранения сообщений:', error);
+        }
     },
 
     updateMessageStatus(messageId, status, error = null) {
@@ -133,7 +162,25 @@ const MessageScheduler = {
         if (typeof DialogService !== 'undefined') {
             DialogService.showMessage('Уведомление', message, 'info');
         } else {
-            alert(message);
+            // Fallback уведомление
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4CAF50;
+                color: white;
+                padding: 15px;
+                border-radius: 10px;
+                z-index: 10000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                document.body.removeChild(notification);
+            }, 3000);
         }
     },
 
@@ -158,6 +205,31 @@ const MessageScheduler = {
         this.saveScheduledMessages(filteredMessages);
         
         return messages.length !== filteredMessages.length;
+    },
+
+    // Очистка старых сообщений
+    cleanupOldMessages() {
+        const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+        const messages = this.getScheduledMessages();
+        const activeMessages = messages.filter(msg => 
+            msg.status === 'scheduled' || 
+            (msg.status === 'sent' && msg.sentAt > oneWeekAgo)
+        );
+        
+        if (messages.length !== activeMessages.length) {
+            this.saveScheduledMessages(activeMessages);
+            console.log(`🧹 Очищено ${messages.length - activeMessages.length} старых сообщений`);
+        }
+    },
+
+    // Получить все запланированные сообщения (для интерфейса)
+    getAllMessages() {
+        return this.getScheduledMessages().sort((a, b) => a.timestamp - b.timestamp);
+    },
+
+    // Получить сообщения по статусу
+    getMessagesByStatus(status) {
+        return this.getAllMessages().filter(msg => msg.status === status);
     }
 };
 
