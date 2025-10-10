@@ -567,59 +567,121 @@ const CalendarManager = {
         }
     },
 
-    renderCalendar() {
-        const calendarElement = document.getElementById('calendarGrid');
-        if (!calendarElement) return;
+    r// === ОСНОВНЫЕ МЕТОДЫ КАЛЕНДАРЯ ===
 
-        const year = this.state.currentDate.getFullYear();
-        const month = this.state.currentDate.getMonth();
+renderCalendar() {
+    const calendarElement = document.getElementById('calendarGrid');
+    if (!calendarElement) return;
 
-        const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-        const titleElement = document.getElementById('calendarTitle');
-        if (titleElement) {
-            titleElement.textContent = `${monthNames[month]} ${year}`;
-        }
+    const year = this.state.currentDate.getFullYear();
+    const month = this.state.currentDate.getMonth();
+    const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
 
-        calendarElement.innerHTML = '';
+    const titleElement = document.getElementById('calendarTitle');
+    if (titleElement) {
+        titleElement.textContent = `${monthNames[month]} ${year}`;
+    }
 
-        // Заголовки дней недели
-        const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-        daysOfWeek.forEach(day => {
-            const dayHeader = document.createElement('div');
-            dayHeader.className = 'calendar-day-header';
-            dayHeader.textContent = day;
-            calendarElement.appendChild(dayHeader);
+    calendarElement.innerHTML = '';
+
+    // Заголовки дней недели
+    const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+    daysOfWeek.forEach(day => {
+        const dayHeader = document.createElement('div');
+        dayHeader.className = 'calendar-day-header';
+        dayHeader.textContent = day;
+        calendarElement.appendChild(dayHeader);
+    });
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
+
+    const endDate = new Date(lastDay);
+    endDate.setDate(endDate.getDate() + (7 - lastDay.getDay()) - (lastDay.getDay() === 0 ? 0 : 1));
+
+    const today = new Date();
+    let currentDate = new Date(startDate);
+
+    for (let i = 0; i < 35; i++) {
+        const dateKey = this.getDateKey(currentDate);
+        const isCurrentMonth = currentDate.getMonth() === month;
+        const isToday = currentDate.toDateString() === today.toDateString();
+
+        const dayElement = this.createMainDayElement(
+            new Date(currentDate),
+            dateKey,
+            currentDate.getDate(),
+            isToday,
+            !isCurrentMonth
+        );
+        calendarElement.appendChild(dayElement);
+        currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Добавляем блок с днями рождения месяца
+    this.renderMonthBirthdays(year, month);
+},
+
+// Рендер дней рождения в текущем месяце
+renderMonthBirthdays(year, month) {
+    const legendElement = document.querySelector('.calendar-legend-main');
+    if (!legendElement) return;
+
+    // Убираем старые элементы ДР из легенды
+    const legendItems = legendElement.querySelector('.legend-items-main');
+    if (legendItems) {
+        const birthdayItems = legendItems.querySelectorAll('.legend-item-main:has(.birthday-congratulation), .legend-item-main:has(.birthday-notification)');
+        birthdayItems.forEach(item => item.remove());
+    }
+
+    // Добавляем блок с днями рождения месяца
+    let birthdaysContainer = document.getElementById('monthBirthdays');
+    if (!birthdaysContainer) {
+        birthdaysContainer = document.createElement('div');
+        birthdaysContainer.id = 'monthBirthdays';
+        birthdaysContainer.className = 'month-birthdays';
+        legendElement.parentNode.insertBefore(birthdaysContainer, legendElement.nextSibling);
+    }
+
+    // Получаем дни рождения текущего месяца
+    const monthBirthdays = this.getBirthdaysForMonth(year, month);
+    
+    if (monthBirthdays.length > 0) {
+        let birthdaysHTML = '<div class="month-birthdays-title">🎂 Дни рождения в этом месяце:</div>';
+        birthdaysHTML += '<div class="month-birthdays-list">';
+        
+        monthBirthdays.forEach(birthday => {
+            const birthDate = new Date(birthday.date);
+            birthdaysHTML += `
+                <div class="birthday-item">
+                    <span class="birthday-date">${birthDate.getDate()} ${this.getMonthName(birthDate.getMonth())}</span>
+                    <span class="birthday-name">${birthday.name}</span>
+                </div>
+            `;
         });
+        
+        birthdaysHTML += '</div>';
+        birthdaysContainer.innerHTML = birthdaysHTML;
+    } else {
+        birthdaysContainer.innerHTML = '<div class="month-birthdays-title">🎂 В этом месяце дней рождений нет</div>';
+    }
+},
 
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        
-        const startDate = new Date(firstDay);
-        startDate.setDate(startDate.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
-        
-        const endDate = new Date(lastDay);
-        endDate.setDate(endDate.getDate() + (7 - lastDay.getDay()) - (lastDay.getDay() === 0 ? 0 : 1));
-        
-        const today = new Date();
-        let currentDate = new Date(startDate);
+// Получить дни рождения для конкретного месяца
+getBirthdaysForMonth(year, month) {
+    return this.birthdays.filter(birthday => {
+        const birthDate = new Date(birthday.date);
+        return birthDate.getMonth() === month;
+    });
+},
 
-        for (let i = 0; i < 35; i++) {
-            const dateKey = this.getDateKey(currentDate);
-            const isCurrentMonth = currentDate.getMonth() === month;
-            const isToday = currentDate.toDateString() === today.toDateString();
-            
-            const dayElement = this.createMainDayElement(
-                new Date(currentDate), 
-                dateKey, 
-                currentDate.getDate(), 
-                isToday, 
-                !isCurrentMonth
-            );
-            
-            calendarElement.appendChild(dayElement);
-            currentDate.setDate(currentDate.getDate() + 1);
-        }
-    },
+// Получить название месяца
+getMonthName(monthIndex) {
+    const monthNames = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    return monthNames[monthIndex];
+},
 
     // Создание элемента дня для новой структуры
     createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
@@ -729,23 +791,26 @@ const CalendarManager = {
     },
 
     // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
-    openEventModal(dateKey, weekDates = null) {
-        const isWeekMode = weekDates !== null;
-        const date = this.parseDateKey(dateKey);
-        
-        let dateString;
-        if (isWeekMode) {
-            const firstDate = this.parseDateKey(weekDates[0]);
-            const lastDate = this.parseDateKey(weekDates[6]);
-            dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
-        } else {
-            dateString = date.toLocaleDateString('ru-RU');
-        }
 
-        const modal = this.createModal(dateString, dateKey, weekDates);
-        document.body.appendChild(modal);
-        this.initializeModalHandlers(modal, dateKey, weekDates);
-    },
+openEventModal(dateKey, weekDates = null) {
+    const isWeekMode = weekDates !== null;
+    
+    // ИСПРАВЛЕНИЕ: используем правильную дату
+    const date = new Date(dateKey + 'T00:00:00'); // Фиксим проблему с часовым поясом
+    
+    let dateString;
+    if (isWeekMode) {
+        const firstDate = new Date(weekDates[0] + 'T00:00:00');
+        const lastDate = new Date(weekDates[6] + 'T00:00:00');
+        dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
+    } else {
+        dateString = date.toLocaleDateString('ru-RU');
+    }
+
+    const modal = this.createModal(dateString, dateKey, weekDates);
+    document.body.appendChild(modal);
+    this.initializeModalHandlers(modal, dateKey, weekDates);
+},
 
     createModal(dateString, dateKey, weekDates) {
         const modal = document.createElement('div');
