@@ -4,7 +4,7 @@ const TelegramService = {
     config: {
         botToken: '8327060232:AAHctUprj0nLxO1dY0LZXf88Nyl059PV1UQ',
         apiUrl: 'https://api.telegram.org/bot',
-        defaultChatId: '-1002380747129'
+        defaultChatId: '1002380747129'
     },
 
     // Инициализация
@@ -15,8 +15,6 @@ const TelegramService = {
         const configValid = this.validateConfiguration();
         if (configValid) {
             this.testConfiguration();
-        } else {
-            this.showConfigurationError();
         }
         
         return configValid;
@@ -41,42 +39,7 @@ const TelegramService = {
         }
         
         console.log('✅ TelegramService: Конфигурация проверена');
-        console.log('🤖 Бот токен:', this.config.botToken.substring(0, 10) + '...');
-        console.log('💬 Чат ID:', this.config.defaultChatId);
-        
         return true;
-    },
-
-    // Показать ошибку конфигурации
-    showConfigurationError() {
-        const errorMessage = `
-❌ Telegram бот не настроен!
-
-Для работы отправки сообщений необходимо:
-
-1. Получить BOT_TOKEN у @BotFather
-2. Получить CHAT_ID рабочего чата
-3. Обновить настройки в файле telegram-service.js
-
-Текущий статус:
-• BOT_TOKEN: ${this.config.botToken ? 'НАСТРОЕН' : 'НЕ НАСТРОЕН'}
-• CHAT_ID: ${this.config.defaultChatId ? 'НАСТРОЕН' : 'НЕ НАСТРОЕН'}
-
-Сообщения не будут отправляться до настройки!
-        `.trim();
-
-        console.error(errorMessage);
-        
-        // Показываем уведомление при первой инициализации
-        if (typeof DialogService !== 'undefined') {
-            setTimeout(() => {
-                DialogService.showMessage(
-                    '❌ Telegram не настроен',
-                    'Для отправки сообщений необходимо настроить бота. Проверьте консоль для инструкций.',
-                    'error'
-                );
-            }, 2000);
-        }
     },
 
     // Тестирование конфигурации
@@ -96,33 +59,11 @@ const TelegramService = {
             const botInfo = await this.getBotInfo();
             if (botInfo.success) {
                 console.log(`🤖 Бот: @${botInfo.username} (${botInfo.firstName})`);
-                
-                // Показываем успешное уведомление
-                if (typeof DialogService !== 'undefined') {
-                    setTimeout(() => {
-                        DialogService.showMessage(
-                            '✅ Telegram подключен',
-                            `Бот @${botInfo.username} успешно подключен!\n\nСообщения будут отправляться в указанный чат.`,
-                            'success'
-                        );
-                    }, 1000);
-                }
             }
             
             return true;
         } else {
             console.error('❌ TelegramService: Бот недоступен - проверьте токен');
-            
-            if (typeof DialogService !== 'undefined') {
-                setTimeout(() => {
-                    DialogService.showMessage(
-                        '❌ Ошибка подключения',
-                        'Не удалось подключиться к Telegram боту. Проверьте токен и интернет-соединение.',
-                        'error'
-                    );
-                }, 1000);
-            }
-            
             return false;
         }
     },
@@ -146,11 +87,7 @@ const TelegramService = {
                 ...options
             };
 
-            console.log('📤 Отправка сообщения в Telegram:', {
-                chatId: targetChatId,
-                messageLength: message.length,
-                url: url.replace(this.config.botToken, '***') // Скрываем токен в логах
-            });
+            console.log('📤 Отправка сообщения в Telegram');
 
             const response = await fetch(url, {
                 method: 'POST',
@@ -178,30 +115,8 @@ const TelegramService = {
             console.error('❌ Ошибка отправки сообщения:', error);
             return { 
                 success: false, 
-                error: error.message,
-                details: this.parseError(error)
+                error: error.message
             };
-        }
-    },
-
-    // Парсинг ошибок Telegram API
-    parseError(error) {
-        const message = error.message.toLowerCase();
-        
-        if (message.includes('chat not found')) {
-            return 'Чат не найден. Проверьте CHAT_ID';
-        } else if (message.includes('bot was blocked')) {
-            return 'Бот заблокирован в этом чате';
-        } else if (message.includes('not enough rights')) {
-            return 'У бота недостаточно прав для отправки сообщений';
-        } else if (message.includes('message is too long')) {
-            return 'Сообщение слишком длинное';
-        } else if (message.includes('bot_token')) {
-            return 'Неверный BOT_TOKEN';
-        } else if (message.includes('network') || message.includes('fetch')) {
-            return 'Проблемы с интернет-соединением';
-        } else {
-            return 'Ошибка сервера Telegram';
         }
     },
 
@@ -216,19 +131,11 @@ const TelegramService = {
             const response = await fetch(url);
             
             if (!response.ok) {
-                console.error('❌ Ошибка HTTP при проверке бота:', response.status);
                 return false;
             }
             
             const result = await response.json();
-            
-            if (result.ok) {
-                console.log('✅ Бот доступен:', result.result);
-                return true;
-            } else {
-                console.error('❌ Ошибка Telegram API:', result.description);
-                return false;
-            }
+            return result.ok;
             
         } catch (error) {
             console.error('❌ Бот недоступен:', error);
@@ -307,6 +214,55 @@ ${message}
         );
 
         return result;
+    },
+
+    // Получить текущие обновления (для поиска CHAT_ID)
+    async getUpdates() {
+        try {
+            const url = `${this.config.apiUrl}${this.config.botToken}/getUpdates`;
+            const response = await fetch(url);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            
+            const result = await response.json();
+            
+            if (result.ok) {
+                return result.result;
+            } else {
+                throw new Error(result.description);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка получения обновлений:', error);
+            return null;
+        }
+    },
+
+    // Найти CHAT_ID в обновлениях
+    async findChatId() {
+        console.log('🔍 Поиск CHAT_ID в обновлениях...');
+        
+        const updates = await this.getUpdates();
+        if (!updates || updates.length === 0) {
+            return null;
+        }
+        
+        const chatIds = [];
+        
+        updates.forEach(update => {
+            if (update.message) {
+                const chat = update.message.chat;
+                chatIds.push({
+                    id: chat.id,
+                    type: chat.type,
+                    title: chat.title || `${chat.first_name} ${chat.last_name || ''}`.trim(),
+                    username: chat.username
+                });
+            }
+        });
+        
+        return chatIds;
     }
 };
 

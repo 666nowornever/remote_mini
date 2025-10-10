@@ -148,13 +148,9 @@ const ScheduledMessagesManager = {
         const filterButtons = document.querySelectorAll('.filter-btn');
         filterButtons.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Убираем активный класс у всех кнопок
                 filterButtons.forEach(b => b.classList.remove('active'));
-                // Добавляем активный класс текущей кнопке
                 btn.classList.add('active');
-                // Устанавливаем фильтр
                 this.currentFilter = btn.dataset.filter;
-                // Перезагружаем сообщения
                 this.loadMessages();
             });
         });
@@ -165,10 +161,7 @@ const ScheduledMessagesManager = {
         if (confirm('Вы уверены, что хотите отменить это сообщение?')) {
             const success = MessageScheduler.cancelScheduledMessage(messageId);
             if (success) {
-                this.showNotification('✅ Сообщение отменено');
                 this.loadMessages();
-            } else {
-                this.showNotification('❌ Не удалось отменить сообщение');
             }
         }
     },
@@ -179,9 +172,7 @@ const ScheduledMessagesManager = {
         const message = messages.find(m => m.id === messageId);
         
         if (message && message.status === 'error') {
-            // Обновляем статус и планируем отправку через 1 минуту
             MessageScheduler.updateMessageStatus(messageId, 'scheduled');
-            this.showNotification('✅ Сообщение запланировано для повторной отправки');
             this.loadMessages();
         }
     },
@@ -190,15 +181,7 @@ const ScheduledMessagesManager = {
     cleanupMessages() {
         if (confirm('Очистить отправленные сообщения старше 7 дней?')) {
             MessageScheduler.cleanupOldMessages();
-            this.showNotification('✅ Старые сообщения очищены');
             this.loadMessages();
-        }
-    },
-
-    // Показать уведомление
-    showNotification(message) {
-        if (typeof DialogService !== 'undefined') {
-            DialogService.showMessage('Уведомление', message, 'info');
         }
     }
 };
