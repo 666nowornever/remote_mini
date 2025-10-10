@@ -1,0 +1,268 @@
+/* Server Lists */
+.servers-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.server-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid rgba(255,255,255,0.1);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: white;
+}
+
+.server-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(5px);
+}
+
+.server-name {
+    font-weight: 500;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.server-name i {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.server-status {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    background: rgba(76, 175, 80, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    font-weight: 600;
+}
+
+.server-status.offline {
+    background: rgba(244, 67, 54, 0.3);
+    border: 1px solid rgba(244, 67, 54, 0.5);
+}
+
+.server-status.warning {
+    background: rgba(255, 193, 7, 0.3);
+    border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+/* Navigation Arrow */
+.server-arrow {
+    opacity: 0.6;
+    font-size: 14px;
+}
+
+/* Separators */
+.cash-separator,
+.device-separator,
+.printer-separator {
+    margin: 15px 0;
+    text-align: center;
+}
+
+.separator-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    margin: 0 20px;
+}
+
+/* Device Specific Styles */
+.device-info,
+.cash-info,
+.printer-info,
+.service-info {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.device-id,
+.cash-ip,
+.printer-ip {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 15px;
+    font-family: 'Courier New', monospace;
+    color: white;
+}
+
+.device-name,
+.printer-name {
+    font-size: 16px;
+    opacity: 0.8;
+    margin-bottom: 10px;
+}
+
+.device-status,
+.cash-status,
+.printer-status,
+.service-status {
+    font-size: 16px;
+    opacity: 0.9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.device-status.online,
+.cash-status.online,
+.printer-status.online {
+    color: #4CAF50;
+}
+
+.device-status.offline,
+.cash-status.offline,
+.printer-status.offline {
+    color: #f44336;
+}
+
+/* Centered items */
+.cash-registers-page .server-item,
+.restaurants-page .server-item,
+.manager-pcs-page .server-item,
+.music-pcs-page .server-item {
+    justify-content: center;
+    text-align: center;
+}
+
+.restaurants-page .server-item {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    min-height: 80px;
+}
+
+.restaurants-page .server-name {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+}
+
+.restaurants-page .server-name i {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+.cash-registers-page .server-name,
+.manager-pcs-page .server-name,
+.music-pcs-page .server-name {
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+}
+
+.restaurants-page .server-arrow,
+.cash-registers-page .server-arrow {
+    display: none;
+}
+
+/* Printer Specific Styles */
+.printer-name-centered {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100%;
+    text-align: center;
+}
+
+.printer-address {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+}
+
+/* Department Styles */
+.department-item,
+.service-item {
+    justify-content: center;
+    text-align: center;
+    padding: 20px 15px;
+}
+
+.department-name,
+.service-name {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.department-name i,
+.service-name i {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+/* Department Icons Colors */
+.department-item:nth-child(1) .department-name i { color: #FF6B6B; }
+.department-item:nth-child(2) .department-name i { color: #FFD93D; }
+.department-item:nth-child(3) .department-name i { color: #4FC3F7; }
+.department-item:nth-child(4) .department-name i { color: #FF8A65; }
+.department-item:nth-child(5) .department-name i { color: #BA68C8; }
+
+/* Service Icons Colors */
+.service-item:nth-child(1) .service-name i { color: #2196F3; }
+.service-item:nth-child(2) .service-name i { color: #4CAF50; }
+.service-item:nth-child(3) .service-name i { color: #FF9800; }
+.service-item:nth-child(4) .service-name i { color: #9C27B0; }
+.service-item:nth-child(5) .service-name i { color: #00BCD4; }
+
+.services-page .service-item:nth-child(1) .service-name i { color: #FF9800; }
+.services-page .service-item:nth-child(2) .service-name i { color: #9C27B0; }
+
+.crm-services-page .service-item:nth-child(1) .service-name i { color: #2196F3; }
+.crm-services-page .service-item:nth-child(2) .service-name i { color: #4CAF50; }
+
+/* Service Status */
+.services-status-container {
+    margin-top: 20px;
+}
+
+.service-status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    margin-bottom: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.service-status-name {
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.service-status-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.loading-status {
+    text-align: center;
+    padding: 20px;
+    color: rgba(255, 255, 255, 0.7);
+}
