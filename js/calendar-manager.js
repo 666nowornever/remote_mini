@@ -840,22 +840,136 @@ createMainDayElement: function(date, dateKey, dayNumber, isToday) {
         this.saveData();
     },
 
-    saveChatEvent(datesToSave) {
-        const eventTime = document.getElementById('eventTime')?.value;
-        const eventMessage = document.getElementById('eventMessage')?.value.trim();
+    // В методе saveChatEvent замените создание даты
+saveChatEvent(datesToSave) {
+    const eventTime = document.getElementById('eventTime')?.value;
+    const eventMessage = document.getElementById('eventMessage')?.value.trim();
 
-        if (!eventMessage) {
-            alert('Пожалуйста, введите сообщение для отправки');
+    if (!eventMessage) {
+        DialogService.showMessage('❌ Ошибка', 'Пожалуйста, введите сообщение для отправки', 'error');
+        return;
+    }
+
+    if (!eventTime) {
+        DialogService.showMessage('❌ Ошибка', 'Пожалуйста, укажите время отправки', 'error');
+        return;
+    }
+
+    datesToSave.forEach(date => {
+        // Правильное создание даты с учетом времени
+        const eventDateTime = this.createDateTime(date, eventTime);
+        
+        if (!eventDateTime) {
+            DialogService.showMessage('❌ Ошибка', 'Неверный формат даты или времени', 'error');
             return;
         }
 
-        datesToSave.forEach(date => {
-            const eventDateTime = `${date}T${eventTime}:00`;
-            this.scheduleTelegramMessage(eventDateTime, eventMessage);
+        this.scheduleTelegramMessage(eventDateTime, eventMessage);
+    });
+
+    this.updateSyncStatus('success', 'Событие запланировано');
+},
+
+// Новый метод для создания корректного DateTime
+createDateTime(dateString, timeString) {
+    try {
+        // Создаем базовую дату из строки
+        const date = new Date(dateString + 'T00:00:00');
+        
+        if (isNaN(date.getTime())) {
+            console.error('❌ Неверный формат даты:', dateString);
+            return null;
+        }
+
+        // Разбираем время (формат HH:MM)
+        const [hours, minutes] = timeString.split(':').map(Number);
+        
+        if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+            console.error('❌ Неверный формат времени:', timeString);
+            return null;
+        }
+
+        // Устанавливаем время
+        date.setHours(hours, minutes, 0, 0);
+        
+        console.log('📅 Создана дата:', {
+            input: `${dateString} ${timeString}`,
+            result: date.toISOString(),
+            local: date.toLocaleString('ru-RU')
         });
 
-        this.updateSyncStatus('success', 'Событие запланировано');
-    },
+        return date.getTime(); // Возвращаем timestamp
+
+    } catch (error) {
+        console.error('❌ Ошибка создания даты:', error);
+        return null;
+    }
+},
+
+// Обновленный метод scheduleTelegramMessage
+scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
+    const now = Date.now();
+    
+    console.log('⏰ Проверка времени:', {
+        eventTime: new Date(eventTimestamp).toLocaleString('ru-RU'),
+        currentTime: new Date(now).toLocaleString('ru-RU'),
+        eventTimestamp,
+        now,
+        difference: eventTimestamp - now
+    });
+    
+    if (eventTimestamp <= now) {
+        DialogService.showMessage(
+            '❌ Ошибка', 
+            `Указанное время уже прошло.\n\n` +
+            `Выбрано: ${new Date(eventTimestamp).toLocaleString('ru-RU')}\n` +
+            `Сейчас: ${new Date(now).toLocaleString('ru-RU')}`,
+            'error'
+        );
+        return null;
+    }
+
+    if (!message || message.trim().length === 0) {
+        DialogService.showMessage(
+            '❌ Ошибка', 
+            'Введите текст сообщения для отправки.',
+            'error'
+        );
+        return null;
+    }
+
+    try {
+        // Планируем сообщение через scheduler
+        const messageId = MessageScheduler.scheduleMessage(
+            eventTimestamp, 
+            message.trim(), 
+            chatId,
+            {
+                type: 'calendar_event',
+                dateTime: new Date(eventTimestamp).toISOString(),
+                source: 'calendar'
+            }
+        );
+
+        DialogService.showMessage(
+            '✅ Успех', 
+            `Сообщение запланировано на ${new Date(eventTimestamp).toLocaleString('ru-RU')}`,
+            'success'
+        );
+
+        console.log(`⏰ Сообщение запланировано: ${messageId}`);
+        return messageId;
+
+    } catch (error) {
+        console.error('❌ Ошибка планирования сообщения:', error);
+        DialogService.showMessage(
+            '❌ Ошибка', 
+            'Не удалось запланировать сообщение. Попробуйте снова.',
+            'error'
+        );
+        return null;
+    }
+}
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
     isPersonOnDuty(dateKey, personId) {
