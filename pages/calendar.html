@@ -7,17 +7,14 @@
     <div class="card">
         <!-- ОСНОВНОЙ ЗАГОЛОВОК С НАВИГАЦИЕЙ -->
         <div class="calendar-main-header">
-            <!-- Левая кнопка -->
             <button class="calendar-nav-main" id="calendarPrev" title="Предыдущий месяц">
                 <i class="fas fa-chevron-left"></i>
             </button>
             
-            <!-- Центральный блок с названием месяца -->
             <div class="calendar-title-main">
                 <span id="calendarTitle">Октябрь 2025</span>
             </div>
             
-            <!-- Правая кнопка -->
             <button class="calendar-nav-main" id="calendarNext" title="Следующий месяц">
                 <i class="fas fa-chevron-right"></i>
             </button>
@@ -25,15 +22,11 @@
 
         <!-- Строка управления под основным заголовком -->
         <div class="calendar-controls-under-header">
-    <button class="calendar-mode-btn-main" id="selectionModeBtn">
-        <i class="fas fa-calendar-day"></i>
-        Режим: День
-    </button>
-    <button class="calendar-sync-btn-main" onclick="ScheduledMessagesManager.showScheduledMessages()">
-        <i class="fas fa-list"></i>
-        Запланированные
-    </button>
-</div>
+            <button class="calendar-mode-btn-main" id="selectionModeBtn">
+                <i class="fas fa-calendar-day"></i>
+                Режим: День
+            </button>
+        </div>
 
         <!-- Сетка календаря -->
         <div class="calendar-grid-main" id="calendarGrid">
@@ -59,8 +52,20 @@
                     <div class="legend-color-main vacation-color-main"></div>
                     <span>Отпуск</span>
                 </div>
+                <div class="legend-item-main">
+                    <div class="legend-color-main birthday-congratulation"></div>
+                    <span>ДР (поздравление)</span>
+                </div>
+                <div class="legend-item-main">
+                    <div class="legend-color-main birthday-notification"></div>
+                    <span>ДР (уведомление)</span>
+                </div>
             </div>
         </div>
-        
+    </div>
+
+    <!-- Кнопка запланированных сообщений и дней рождения -->
+    <div class="schedule-floating-btn" onclick="CalendarManager.showScheduledView()">
+        <i class="fas fa-clock"></i>
     </div>
 </div>

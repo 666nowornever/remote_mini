@@ -9,7 +9,7 @@ const ScheduledMessagesManager = {
 
     // Показать страницу сообщений
     showScheduledMessages() {
-        Navigation.showPage('scheduled-messages');
+        Navigation.showPage('scheduled-view');
     },
 
     // Загрузка страницы
@@ -67,7 +67,6 @@ const ScheduledMessagesManager = {
             }
         }
         
-        // Обновляем статистику
         this.loadStats();
     },
 
@@ -80,6 +79,8 @@ const ScheduledMessagesManager = {
                 return messages.filter(m => m.status === 'sent');
             case 'error':
                 return messages.filter(m => m.status === 'error');
+            case 'birthday':
+                return messages.filter(m => m.eventData?.type === 'birthday');
             default:
                 return messages;
         }
@@ -108,19 +109,40 @@ const ScheduledMessagesManager = {
             sending: 'Отправляется'
         };
 
+        // Определяем тип сообщения
+        let messageType = 'Обычное';
+        let typeIcon = '📝';
+        
+        if (message.eventData?.type === 'birthday') {
+            messageType = message.eventData.birthdayType === 'congratulation' ? 'ДР 🎉' : 'ДР 📅';
+            typeIcon = message.eventData.birthdayType === 'congratulation' ? '🎂' : '📅';
+        } else if (message.eventData?.type === 'calendar_event') {
+            messageType = 'Календарь';
+            typeIcon = '📅';
+        }
+
         return `
             <div class="message-item" data-message-id="${message.id}">
                 <div class="message-header">
+                    <div class="message-type">
+                        ${typeIcon} ${messageType}
+                    </div>
                     <div class="message-status" style="color: ${statusColors[message.status]}">
                         ${statusIcons[message.status]} ${statusTexts[message.status]}
                     </div>
-                    <div class="message-time">
-                        ${message.scheduledFor}
-                    </div>
+                </div>
+                <div class="message-time">
+                    ${message.scheduledFor}
                 </div>
                 <div class="message-content">
                     ${message.message}
                 </div>
+                ${message.eventData?.birthdayName ? `
+                    <div class="message-birthday-info">
+                        <i class="fas fa-user"></i>
+                        ${message.eventData.birthdayName}
+                    </div>
+                ` : ''}
                 <div class="message-actions">
                     ${message.status === 'scheduled' ? `
                         <button class="btn-cancel-message" onclick="ScheduledMessagesManager.cancelMessage('${message.id}')">
