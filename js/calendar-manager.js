@@ -767,26 +767,26 @@ const CalendarManager = {
         this.renderBirthdaysThisMonth();
     },
 
-   // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
-openEventModal(dateKey, weekDates = null) {
-    const isWeekMode = weekDates !== null;
-    const date = this.parseDateKey(dateKey);
-    
-    let dateString;
-    if (isWeekMode) {
-        const firstDate = this.parseDateKey(weekDates[0]);
-        const lastDate = this.parseDateKey(weekDates[6]);
-        // ИСПРАВЛЕНИЕ: используем локальное форматирование без времени
-        dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
-    } else {
-        // ИСПРАВЛЕНИЕ: используем правильную дату и форматирование
-        dateString = date.toLocaleDateString('ru-RU');
-    }
+    // === МОДАЛЬНОЕ ОКНО И СОХРАНЕНИЕ ===
+    openEventModal(dateKey, weekDates = null) {
+        const isWeekMode = weekDates !== null;
+        const date = this.parseDateKey(dateKey);
+        
+        let dateString;
+        if (isWeekMode) {
+            const firstDate = this.parseDateKey(weekDates[0]);
+            const lastDate = this.parseDateKey(weekDates[6]);
+            // ИСПРАВЛЕНИЕ: используем локальное форматирование без времени
+            dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
+        } else {
+            // ИСПРАВЛЕНИЕ: используем правильную дату и форматирование
+            dateString = date.toLocaleDateString('ru-RU');
+        }
 
-    const modal = this.createModal(dateString, dateKey, weekDates);
-    document.body.appendChild(modal);
-    this.initializeModalHandlers(modal, dateKey, weekDates);
-},
+        const modal = this.createModal(dateString, dateKey, weekDates);
+        document.body.appendChild(modal);
+        this.initializeModalHandlers(modal, dateKey, weekDates);
+    },
 
     createModal(dateString, dateKey, weekDates) {
         const modal = document.createElement('div');
@@ -982,26 +982,26 @@ openEventModal(dateKey, weekDates = null) {
     },
 
     createDateTime(dateString, timeString) {
-    try {
-        // ИСПРАВЛЕНИЕ: создаем дату в локальном времени
-        const [year, month, day] = dateString.split('-').map(Number);
-        const date = new Date(year, month - 1, day);
-        
-        if (isNaN(date.getTime())) {
+        try {
+            // ИСПРАВЛЕНИЕ: создаем дату в локальном времени
+            const [year, month, day] = dateString.split('-').map(Number);
+            const date = new Date(year, month - 1, day);
+            
+            if (isNaN(date.getTime())) {
+                return null;
+            }
+
+            const [hours, minutes] = timeString.split(':').map(Number);
+            if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+                return null;
+            }
+
+            date.setHours(hours, minutes, 0, 0);
+            return date.getTime();
+        } catch (error) {
             return null;
         }
-
-        const [hours, minutes] = timeString.split(':').map(Number);
-        if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-            return null;
-        }
-
-        date.setHours(hours, minutes, 0, 0);
-        return date.getTime();
-    } catch (error) {
-        return null;
-    }
-},
+    },
 
     scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
         const now = Date.now();
@@ -1047,39 +1047,54 @@ openEventModal(dateKey, weekDates = null) {
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
-isPersonOnDuty(dateKey, personId) {
-    return this.data.events[dateKey]?.some(event => event.id === personId);
-},
+    isPersonOnDuty(dateKey, personId) {
+        return this.data.events[dateKey]?.some(event => event.id === personId);
+    },
 
-isPersonOnVacation(dateKey, personId) {
-    return this.data.vacations[dateKey]?.some(vacation => vacation.id === personId);
-},
+    isPersonOnVacation(dateKey, personId) {
+        return this.data.vacations[dateKey]?.some(vacation => vacation.id === personId);
+    },
 
-getEventComment(dateKey) {
-    return this.data.events[dateKey]?.[0]?.comment || '';
-},
+    getEventComment(dateKey) {
+        return this.data.events[dateKey]?.[0]?.comment || '';
+    },
 
-getVacationComment(dateKey) {
-    return this.data.vacations[dateKey]?.[0]?.comment || '';
-},
+    getVacationComment(dateKey) {
+        return this.data.vacations[dateKey]?.[0]?.comment || '';
+    },
 
-getDateKey(date) {
-    return date.toISOString().split('T')[0];
-},
+    getDateKey(date) {
+        return date.toISOString().split('T')[0];
+    },
 
-parseDateKey(dateKey) {
-    // ИСПРАВЛЕНИЕ: создаем дату без времени для избежания смещения часового пояса
-    const [year, month, day] = dateKey.split('-').map(Number);
-    // Создаем дату в UTC чтобы избежать проблем с часовыми поясами
-    const date = new Date(Date.UTC(year, month - 1, day));
-    return date;
-},
+    parseDateKey(dateKey) {
+        // ИСПРАВЛЕНИЕ: создаем дату без времени для избежания смещения часового пояса
+        const [year, month, day] = dateKey.split('-').map(Number);
+        // Создаем дату в UTC чтобы избежать проблем с часовыми поясами
+        const date = new Date(Date.UTC(year, month - 1, day));
+        return date;
+    },
 
-handleWeekSelection(selectedDate) {
-    const weekDates = this.getWeekDates(selectedDate);
-    const dateKeys = weekDates.map(date => this.getDateKey(date));
-    this.openEventModal(dateKeys[0], dateKeys);
-},
+    handleWeekSelection(selectedDate) {
+        const weekDates = this.getWeekDates(selectedDate);
+        const dateKeys = weekDates.map(date => this.getDateKey(date));
+        this.openEventModal(dateKeys[0], dateKeys);
+    },
+
+    getWeekDates(date) {
+        const dates = [];
+        const dayOfWeek = date.getDay();
+        const startDate = new Date(date);
+        startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+        for (let i = 0; i < 7; i++) {
+            const currentDate = new Date(startDate);
+            currentDate.setDate(startDate.getDate() + i);
+            dates.push(currentDate);
+        }
+
+        return dates;
+    },
 
     // Показать запланированные сообщения и дни рождения
     showScheduledView() {
