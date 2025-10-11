@@ -136,3 +136,28 @@
 #erp-toggle-btn.pulse {
     animation: pulse 2s infinite;
 }
+
+/* Scheduler */
+/* Messages Actions */
+.messages-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.btn-refresh, .btn-cleanup {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.btn-refresh:hover, .btn-cleanup:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-1px);
+}
