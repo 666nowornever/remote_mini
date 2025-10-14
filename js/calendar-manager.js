@@ -655,7 +655,19 @@ createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
         });
     }
 
-    // Отпуска (используем корректный dateKey)
+   
+
+    // Дни рождения (используем корректный dateKey)
+    const birthdays = this.getBirthdaysForDate(correctDateKey);
+    if (birthdays.length > 0) {
+        const birthdayElement = document.createElement('div');
+        birthdayElement.className = 'calendar-birthday-emoji';
+        birthdayElement.textContent = '🎂';
+        birthdayElement.title = `Дни рождения: ${birthdays.map(b => b.name).join(', ')}`;
+        eventsContainer.appendChild(birthdayElement);
+    }
+
+     // Отпуска (используем корректный dateKey)
     if (this.data.vacations[correctDateKey]) {
         const vacationContainer = document.createElement('div');
         vacationContainer.className = 'calendar-vacation-container';
@@ -670,17 +682,6 @@ createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
         
         eventsContainer.appendChild(vacationContainer);
     }
-
-    // Дни рождения (используем корректный dateKey)
-    const birthdays = this.getBirthdaysForDate(correctDateKey);
-    if (birthdays.length > 0) {
-        const birthdayElement = document.createElement('div');
-        birthdayElement.className = 'calendar-birthday-emoji';
-        birthdayElement.textContent = '🎉';
-        birthdayElement.title = `Дни рождения: ${birthdays.map(b => b.name).join(', ')}`;
-        eventsContainer.appendChild(birthdayElement);
-    }
-
     dayElement.appendChild(eventsContainer);
 
     dayElement.addEventListener('click', () => {
