@@ -1121,10 +1121,6 @@ getWeekDates(date) {
     return dates;
 },
 
-    // Показать запланированные сообщения и дни рождения
-    showScheduledView() {
-        Navigation.showPage('scheduled-view');
-    }
 };
 
 // Инициализация

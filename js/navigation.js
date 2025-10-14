@@ -23,8 +23,7 @@ const Navigation = {
         'service-management-global': 'pages/service-management-global.html',
         'crm-services': 'pages/crm-services.html',
         'calendar': 'pages/calendar.html',
-        'scheduled-messages': 'pages/scheduled-messages.html',
-        'scheduled-view': 'pages/scheduled-view.html'
+        'scheduled-messages': 'pages/scheduled-messages.html'
     },
 
     // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
@@ -50,8 +49,7 @@ const Navigation = {
         'service-management-global': 'Управление службой',
         'crm-services': 'Службы CRM',
         'calendar': 'Календарь дежурств',
-        'scheduled-messages': 'Запланированные сообщения',
-        'scheduled-view': 'Запланированные события'
+        'scheduled-messages': 'Запланированные сообщения'
     },
 
     // Показать страницу
@@ -198,12 +196,7 @@ initializePage: function(pageId) {
                 ScheduledMessagesManager.loadScheduledMessagesPage();
                 }
                 break;
-            case 'scheduled-view':
-                console.log('🔄 Инициализация страницы запланированных событий...');
-                if (typeof ScheduledMessagesManager !== 'undefined' && ScheduledMessagesManager.loadScheduledMessagesPage) {
-                ScheduledMessagesManager.loadScheduledMessagesPage();
-                }
-                break;    
+           
             }
 },
 
