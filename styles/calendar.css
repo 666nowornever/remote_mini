@@ -211,7 +211,10 @@
     min-width: 100%;
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
-
+.calendar-birthday-emoji {
+    text-align: center;
+    font-size: 12px;
+}
 .calendar-vacation-main {
     height: 4px;
     border-radius: 2px;
@@ -221,10 +224,7 @@
     border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.calendar-birthday-emoji {
-    text-align: center;
-    font-size: 12px;
-}
+
 
 /* Calendar Legend */
 .calendar-legend-main {
