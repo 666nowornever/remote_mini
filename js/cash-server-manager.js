@@ -157,7 +157,7 @@ const CashServerManager = {
         
         setTimeout(() => {
             // Случайный статус для демонстрации
-            const statuses = ['Running', 'Stopped', 'Paused', 'Starting'];
+            const statuses = ['Running', 'Stopped', 'Starting'];
             const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
             
             let statusIcon = 'fa-question-circle';
@@ -280,7 +280,7 @@ const CashServerManager = {
             
             this.services.forEach(service => {
                 // Случайный статус для демонстрации
-                const statuses = ['Running', 'Stopped', 'Paused'];
+                const statuses = ['Running', 'Stopped'];
                 const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
                 
                 let statusIcon = 'fa-question-circle';
