@@ -295,10 +295,6 @@ const CashServerManager = {
                         statusIcon = 'fa-times-circle';
                         statusColor = '#f44336';
                         break;
-                    case 'Paused':
-                        statusIcon = 'fa-pause-circle';
-                        statusColor = '#ff9800';
-                        break;
                 }
                 
                 statusHTML += `
