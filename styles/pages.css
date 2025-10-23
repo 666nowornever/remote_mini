@@ -126,3 +126,74 @@
     width: 100%;
     height: 100%;
 }
+/* Login Form Styles */
+.login-form {
+    text-align: center;
+    padding: 20px;
+}
+
+.login-info {
+    margin-bottom: 25px;
+}
+
+.login-info i {
+    font-size: 48px;
+    color: #667eea;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.login-info p {
+    opacity: 0.8;
+    font-size: 16px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    opacity: 0.9;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 16px;
+}
+
+.readonly-field {
+    background: rgba(255, 255, 255, 0.05) !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    cursor: not-allowed;
+}
+
+.btn-login {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%) !important;
+    border: none !important;
+    padding: 15px 30px !important;
+    font-size: 16px !important;
+    min-height: auto !important;
+}
+
+.btn-logout {
+    background: rgba(244, 67, 54, 0.3) !important;
+    border: 1px solid rgba(244, 67, 54, 0.5) !important;
+}
+
+.btn-logout:hover {
+    background: rgba(244, 67, 54, 0.4) !important;
+}
+
+/* Hidden utility */
+.hidden {
+    display: none !important;
+}

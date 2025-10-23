@@ -200,12 +200,17 @@ initializePage: function(pageId) {
                 ScheduledMessagesManager.loadScheduledMessagesPage();
                 }
                 break;
-             case 'online-board':
-            console.log('🔄 Инициализация онлайн табло...');
-            if (typeof OnlineBoardManager !== 'undefined' && OnlineBoardManager.init) {
+        
+            case 'online-board':
+                console.log('🔄 Инициализация онлайн табло...');
+                if (typeof OnlineBoardManager !== 'undefined' && OnlineBoardManager.init) {
+                // Проверяем срок действия сессии
+                if (OnlineBoardManager.checkSessionExpiry) {
+                OnlineBoardManager.checkSessionExpiry();
+                 }
                 OnlineBoardManager.init();
-            }
-            break;
+                 }
+                 break;
            
             }
 },
