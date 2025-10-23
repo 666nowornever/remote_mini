@@ -35,3 +35,39 @@
     background: rgba(255, 255, 255, 0.3);
     border-radius: 3px;
 }
+/* Online Board Styles */
+.online-board-content {
+    text-align: center;
+    padding: 20px;
+}
+
+.board-info {
+    margin-bottom: 30px;
+}
+
+.board-info p {
+    margin-bottom: 10px;
+    opacity: 0.8;
+}
+
+.coming-soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.coming-soon i {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+
+/* Support Page Styles */
+.support-page .btn {
+    min-height: 100px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
