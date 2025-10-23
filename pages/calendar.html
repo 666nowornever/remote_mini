@@ -3,62 +3,66 @@
         <i class="fas fa-arrow-left"></i>
         Назад
     </button>
-    
-    <!-- Индикатор синхронизации -->
-    <div class="sync-status" id="syncStatus">
-        <i class="fas fa-desktop"></i> Локальные данные
-    </div>
-    
+
     <div class="card">
-        <div class="calendar-header">
-            <div class="calendar-title">
-                <i class="fas fa-calendar-alt"></i>
-                <span id="calendarTitle">Календарь дежурств</span>
+        <!-- ОСНОВНОЙ ЗАГОЛОВОК С НАВИГАЦИЕЙ -->
+        <div class="calendar-main-header">
+            <button class="calendar-nav-main" id="calendarPrev" title="Предыдущий месяц">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="calendar-title-main">
+                <span id="calendarTitle">Октябрь 2025</span>
             </div>
-            <div class="calendar-controls">
-                <button class="calendar-nav-btn" id="calendarPrev" title="Предыдущий месяц">
-                    <i class="fas fa-chevron-left"></i>
-                </button>
-                <button class="calendar-today-btn" id="calendarToday">Сегодня</button>
-                <button class="calendar-nav-btn" id="calendarNext" title="Следующий месяц">
-                    <i class="fas fa-chevron-right"></i>
-                </button>
-                <button class="calendar-mode-btn" id="selectionModeBtn" title="Переключить режим выбора">
-                    <i class="fas fa-calendar-day"></i> Режим: День
-                </button>
-                <button class="calendar-sync-btn" id="manualSyncBtn" title="Проверить обновления">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <button class="calendar-export-btn" id="exportDataBtn" title="Экспорт данных">
-                    <i class="fas fa-download"></i>
-                </button>
-            </div>
+            <button class="calendar-nav-main" id="calendarNext" title="Следующий месяц">
+                <i class="fas fa-chevron-right"></i>
+            </button>
         </div>
 
-        <div class="calendar-grid" id="calendarGrid">
+        <!-- Строка управления под основным заголовком -->
+        <div class="calendar-controls-under-header">
+            <button class="calendar-mode-btn-main" id="selectionModeBtn">
+                <i class="fas fa-calendar-day"></i>
+                Режим: День
+            </button>
+        </div>
+
+        <!-- Сетка календаря -->
+        <div class="calendar-grid-main" id="calendarGrid">
             <!-- Календарь будет сгенерирован JavaScript -->
         </div>
 
-        <div class="calendar-legend">
-            <div class="legend-title">Обозначения:</div>
-            <div class="legend-items">
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #2196F3"></div>
-                    <span>Кремнев Андрей</span>
+        <!-- Контейнер для легенды и дней рождения -->
+        <div class="calendar-bottom-section">
+            <!-- Легенда -->
+            <div class="calendar-legend-main">
+                <div class="legend-items-main">
+                    <div class="legend-item-main">
+                        <div class="legend-color-main" style="background-color: #2196F3"></div>
+                        <span>Кремнев Андрей</span>
+                    </div>
+                    <div class="legend-item-main">
+                        <div class="legend-color-main" style="background-color: #4CAF50"></div>
+                        <span>Васильев Иван</span>
+                    </div>
+                    <div class="legend-item-main">
+                        <div class="legend-color-main" style="background-color: #FF9800"></div>
+                        <span>Преображенский Дмитрий</span>
+                    </div>
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #4CAF50"></div>
-                    <span>Васильев Иван</span>
+            </div>
+
+            <!-- Блок с днями рождения в текущем месяце -->
+            <div class="birthdays-this-month">
+                <div class="birthdays-title">
+                    <i class="fas fa-birthday-cake"></i>
+                    Дни рождения в этом месяце
                 </div>
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: #FF9800"></div>
-                    <span>Преображенский Дмитрий</span>
-                </div>
-                <div class="legend-item">
-                    <div class="legend-color vacation-color"></div>
-                    <span>Отпуск</span>
+                <div id="birthdaysThisMonth">
+                    <!-- Дни рождения будут загружены здесь -->
                 </div>
             </div>
         </div>
     </div>
+
+
 </div>

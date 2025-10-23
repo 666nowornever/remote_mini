@@ -3,6 +3,9 @@ const Navigation = {
     // Маппинг страниц (ДОБАВЛЯЕМ НОВЫЕ СТРАНИЦЫ)
     pages: {
         'main': 'pages/main.html',
+        'support': 'pages/support.html',
+        'online-board': 'pages/online-board.html',
+        'online-board-auth': 'pages/online-board-auth.html',
         'first-line': 'pages/first-line.html',
         'second-line': 'pages/second-line.html',
         'restaurants': 'pages/restaurants.html',
@@ -22,12 +25,16 @@ const Navigation = {
         'services': 'pages/services.html',
         'service-management-global': 'pages/service-management-global.html',
         'crm-services': 'pages/crm-services.html',
-        'calendar': 'pages/calendar.html'
+        'calendar': 'pages/calendar.html',
+        'scheduled-messages': 'pages/scheduled-messages.html'
     },
 
     // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
     pageTitles: {
         'main': 'Главная страница',
+        'support': 'Служба поддержки',
+        'online-board': 'Онлайн табло',
+        'online-board-auth': 'Авторизация табло',
         'first-line': '1st Line - Выбор раздела',
         'second-line': '2nd Line - Системы',
         'restaurants': 'Управление ресторанами',
@@ -47,7 +54,8 @@ const Navigation = {
         'services': 'Службы',
         'service-management-global': 'Управление службой',
         'crm-services': 'Службы CRM',
-        'calendar': 'Календарь дежурств'
+        'calendar': 'Календарь дежурств',
+        'scheduled-messages': 'Запланированные сообщения'
     },
 
     // Показать страницу
@@ -188,7 +196,29 @@ initializePage: function(pageId) {
                     CalendarManager.loadCalendarPage();
                 }
                 break;
-    }
+            case 'scheduled-messages':
+                console.log('🔄 Инициализация страницы запланированных сообщений...');
+                if (typeof ScheduledMessagesManager !== 'undefined' && ScheduledMessagesManager.loadScheduledMessagesPage) {
+                ScheduledMessagesManager.loadScheduledMessagesPage();
+                }
+                break;
+        
+            case 'online-board':
+            console.log('🔄 Инициализация онлайн табло...');
+            // Проверяем авторизацию перед показом табло
+            OnlineBoardAuth.checkAuthStatus();
+            if (typeof OnlineBoardManager !== 'undefined' && OnlineBoardManager.init) {
+                OnlineBoardManager.init();
+            }
+            break;
+            
+            case 'online-board-auth':
+            console.log('🔄 Инициализация авторизации табло...');
+            if (typeof OnlineBoardAuth !== 'undefined' && OnlineBoardAuth.init) {
+                OnlineBoardAuth.init();
+            }
+            break;
+            }
 },
 
     // Инициализация страницы деталей устройства

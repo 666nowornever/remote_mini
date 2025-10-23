@@ -1,0 +1,32 @@
+<div class="page online-board-page">
+    <button class="back-btn" onclick="Navigation.showPage('main')">
+        <i class="fas fa-arrow-left"></i>
+        Назад
+    </button>
+
+    <div class="card full-height-card">
+        <div class="section-title">
+            <i class="fa-solid fa-chalkboard"></i>
+            Онлайн табло ресторана
+        </div>
+        
+        <div id="boardContent">
+            <!-- Контент будет загружен динамически -->
+        </div>
+        
+        <div class="board-controls">
+            <button class="btn btn-refresh" onclick="OnlineBoardManager.refreshBoard()">
+                <i class="fas fa-sync-alt"></i>
+                Обновить
+            </button>
+            <button class="btn btn-fullscreen" onclick="OnlineBoardManager.toggleFullscreen()">
+                <i class="fas fa-expand"></i>
+                Полный экран
+            </button>
+            <button class="btn btn-reauth" onclick="OnlineBoardManager.reauthenticate()">
+                <i class="fas fa-key"></i>
+                Переавторизация
+            </button>
+        </div>
+    </div>
+</div>

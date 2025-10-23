@@ -1,0 +1,233 @@
+/* Action Log */
+.action-log {
+    margin-top: 20px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    padding: 10px;
+    font-size: 12px;
+    font-family: 'Courier New', monospace;
+}
+
+.action-log::-webkit-scrollbar {
+    width: 6px;
+}
+
+.action-log::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+}
+
+.action-log::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 3px;
+}
+
+.log-entry {
+    margin-bottom: 5px;
+    padding: 5px;
+    border-radius: 5px;
+}
+
+.log-success {
+    background: rgba(76, 175, 80, 0.2);
+    color: #4CAF50;
+}
+
+.log-error {
+    background: rgba(244, 67, 54, 0.2);
+    color: #f44336;
+}
+
+.log-info {
+    background: rgba(33, 150, 243, 0.2);
+    color: #2196F3;
+}
+
+.log-time {
+    opacity: 0.7;
+    font-size: 10px;
+}
+
+/* Scheduled Messages Styles */
+.messages-stats {
+    margin-bottom: 20px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.stat-item {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.stat-number {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.messages-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+}
+
+.filter-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    color: white;
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.filter-btn.active {
+    background: rgba(76, 175, 80, 0.3);
+    border-color: rgba(76, 175, 80, 0.5);
+}
+
+.filter-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.messages-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 15px;
+}
+
+.message-item {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    margin-bottom: 10px;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.message-type {
+    font-size: 12px;
+    opacity: 0.8;
+    margin-bottom: 5px;
+}
+
+.message-status {
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.message-time {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
+.message-content {
+    margin-bottom: 10px;
+    line-height: 1.4;
+    white-space: pre-line;
+}
+
+.message-birthday-info {
+    background: rgba(156, 39, 176, 0.1);
+    border: 1px solid rgba(156, 39, 176, 0.3);
+    border-radius: 5px;
+    padding: 5px 8px;
+    margin: 5px 0;
+    font-size: 12px;
+    color: #9C27B0;
+}
+
+.message-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-cancel-message, .btn-retry-message {
+    background: rgba(244, 67, 54, 0.3);
+    border: 1px solid rgba(244, 67, 54, 0.5);
+    border-radius: 5px;
+    color: white;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+}
+
+.btn-retry-message {
+    background: rgba(255, 193, 7, 0.3);
+    border-color: rgba(255, 193, 7, 0.5);
+}
+
+.btn-cancel-message:hover {
+    background: rgba(244, 67, 54, 0.4);
+}
+
+.btn-retry-message:hover {
+    background: rgba(255, 193, 7, 0.4);
+}
+
+.message-error {
+    background: rgba(244, 67, 54, 0.2);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+    border-radius: 5px;
+    padding: 8px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #ff6b6b;
+}
+
+.no-messages {
+    text-align: center;
+    padding: 40px 20px;
+    opacity: 0.7;
+}
+
+.no-messages i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.messages-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-refresh, .btn-cleanup {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    color: white;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-refresh:hover, .btn-cleanup:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
