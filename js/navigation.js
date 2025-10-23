@@ -4,7 +4,6 @@ const Navigation = {
     pages: {
         'main': 'pages/main.html',
         'support': 'pages/support.html',
-        'online-board': 'pages/online-board.html',
         'first-line': 'pages/first-line.html',
         'second-line': 'pages/second-line.html',
         'restaurants': 'pages/restaurants.html',
@@ -32,7 +31,6 @@ const Navigation = {
     pageTitles: {
         'main': 'Главная страница',
         'support': 'Служба поддержки',
-        'online-board': 'Онлайн табло',
         'first-line': '1st Line - Выбор раздела',
         'second-line': '2nd Line - Системы',
         'restaurants': 'Управление ресторанами',
