@@ -71,3 +71,58 @@
     justify-content: center;
     align-items: center;
 }
+/* Online Board Styles */
+.full-height-card {
+    height: calc(100vh - 120px);
+    display: flex;
+    flex-direction: column;
+}
+
+.online-board-container {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.online-board-frame {
+    width: 100%;
+    height: 100%;
+    min-height: 500px;
+    background: white;
+}
+
+.board-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.board-controls .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-height: auto;
+}
+
+/* Fullscreen styles */
+.online-board-frame:-webkit-full-screen {
+    width: 100%;
+    height: 100%;
+}
+
+.online-board-frame:-moz-full-screen {
+    width: 100%;
+    height: 100%;
+}
+
+.online-board-frame:-ms-fullscreen {
+    width: 100%;
+    height: 100%;
+}
+
+.online-board-frame:fullscreen {
+    width: 100%;
+    height: 100%;
+}
