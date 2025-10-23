@@ -197,3 +197,54 @@
 .hidden {
     display: none !important;
 }
+/* Online Board Auth Styles */
+.auth-container {
+    text-align: center;
+}
+
+.auth-info {
+    margin-bottom: 20px;
+    opacity: 0.8;
+}
+
+.auth-info p {
+    margin-bottom: 8px;
+}
+
+.auth-frame-container {
+    height: 400px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.auth-frame {
+    width: 100%;
+    height: 100%;
+}
+
+.auth-status {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.auth-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.auth-actions .btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    min-height: auto;
+}

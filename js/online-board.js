@@ -1,144 +1,78 @@
 // Онлайн табло ресторана
 const OnlineBoardManager = {
     iframe: null,
-    isAuthenticated: false,
-    loginUrl: 'https://p.tomato-pizza.ru/index/Account/Login?ReturnUrl=%2Findex%2F',
-    boardUrl: 'https://dashboard.tomato-pizza.ru/',
     
     init() {
         console.log('🔄 OnlineBoardManager: инициализация');
+        this.loadDashboard();
+        this.setupEventListeners();
+    },
+    
+    loadDashboard() {
+        const boardContent = document.getElementById('boardContent');
+        if (!boardContent) return;
+        
+        boardContent.innerHTML = `
+            <div class="online-board-container">
+                <iframe 
+                    src="https://dashboard.tomato-pizza.ru/" 
+                    class="online-board-frame"
+                    frameborder="0"
+                    allowfullscreen
+                    loading="lazy"
+                    onload="onBoardLoad()"
+                    onerror="onBoardError()"
+                ></iframe>
+                <div id="boardError" class="board-error hidden">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Не удалось загрузить онлайн табло</p>
+                    <p>Возможно, требуется авторизация</p>
+                    <button class="btn btn-retry" onclick="OnlineBoardManager.refreshBoard()">
+                        <i class="fas fa-redo"></i>
+                        Попробовать снова
+                    </button>
+                    <button class="btn btn-reauth" onclick="OnlineBoardManager.reauthenticate()">
+                        <i class="fas fa-key"></i>
+                        Авторизоваться
+                    </button>
+                </div>
+            </div>
+        `;
+        
         this.iframe = document.querySelector('.online-board-frame');
-        this.checkExistingSession();
     },
     
-    // Проверка существующей сессии
-    checkExistingSession() {
-        const savedSession = localStorage.getItem('boardSession');
-        if (savedSession) {
-            this.isAuthenticated = true;
-            this.showBoard();
-        } else {
-            this.showLoginForm();
-        }
+    setupEventListeners() {
+        // Автоматическое обновление каждые 5 минут
+        setInterval(() => {
+            this.refreshBoard();
+        }, 5 * 60 * 1000);
     },
     
-    // Показать форму авторизации
-    showLoginForm() {
-        document.getElementById('loginForm').classList.remove('hidden');
-        document.getElementById('boardContainer').classList.add('hidden');
-        document.getElementById('boardControls').classList.add('hidden');
-        this.isAuthenticated = false;
-    },
-    
-    // Показать табло
-    showBoard() {
-        document.getElementById('loginForm').classList.add('hidden');
-        document.getElementById('boardContainer').classList.remove('hidden');
-        document.getElementById('boardControls').classList.remove('hidden');
-        this.isAuthenticated = true;
-        
-        // Загружаем табло после небольшой задержки
-        setTimeout(() => {
-            this.loadBoard();
-        }, 500);
-    },
-    
-    // Авторизация
-    async login() {
-        const loginDialog = DialogService.showLoading('Выполняется вход в табло...');
-        
-        try {
-            // Создаем скрытый iframe для авторизации
-            await this.performLogin();
-            
-            // Сохраняем сессию
-            localStorage.setItem('boardSession', 'authenticated');
-            localStorage.setItem('boardSessionTime', Date.now().toString());
-            
-            this.showBoard();
-            loginDialog.close();
-            DialogService.showMessage('✅ Успех', 'Авторизация прошла успешно', 'success');
-            
-        } catch (error) {
-            loginDialog.close();
-            DialogService.showMessage('❌ Ошибка', 'Не удалось выполнить вход в табло', 'error');
-            console.error('Ошибка авторизации:', error);
-        }
-    },
-    
-    // Выполнение авторизации через скрытый iframe
-    performLogin() {
-        return new Promise((resolve, reject) => {
-            const authFrame = document.createElement('iframe');
-            authFrame.style.display = 'none';
-            authFrame.src = this.loginUrl;
-            
-            authFrame.onload = () => {
-                console.log('🔐 Iframe авторизации загружен');
-                
-                // Даем время для загрузки формы
-                setTimeout(() => {
-                    try {
-                        // Заполняем форму авторизации
-                        const frameDoc = authFrame.contentDocument || authFrame.contentWindow.document;
-                        const usernameInput = frameDoc.querySelector('input[name="username"], input[type="text"], #username');
-                        const passwordInput = frameDoc.querySelector('input[name="password"], input[type="password"], #password');
-                        const submitButton = frameDoc.querySelector('input[type="submit"], button[type="submit"], .btn-login');
-                        
-                        if (usernameInput && passwordInput && submitButton) {
-                            usernameInput.value = 'kremnevav';
-                            passwordInput.value = 'drewhix1994';
-                            submitButton.click();
-                            
-                            // Ждем редирект после авторизации
-                            setTimeout(() => {
-                                document.body.removeChild(authFrame);
-                                resolve();
-                            }, 2000);
-                        } else {
-                            document.body.removeChild(authFrame);
-                            reject(new Error('Форма авторизации не найдена'));
-                        }
-                    } catch (error) {
-                        document.body.removeChild(authFrame);
-                        reject(error);
-                    }
-                }, 1000);
-            };
-            
-            authFrame.onerror = () => {
-                document.body.removeChild(authFrame);
-                reject(new Error('Ошибка загрузки страницы авторизации'));
-            };
-            
-            document.body.appendChild(authFrame);
-        });
-    },
-    
-    // Загрузка табло
-    loadBoard() {
-        if (this.iframe) {
-            this.iframe.src = this.boardUrl;
-            console.log('📊 Загружаем онлайн табло...');
-        }
-    },
-    
-    // Обновление табло
     refreshBoard() {
-        if (this.iframe && this.isAuthenticated) {
+        if (this.iframe) {
             const currentSrc = this.iframe.src;
             this.iframe.src = '';
             setTimeout(() => {
                 this.iframe.src = currentSrc;
             }, 100);
             
+            console.log('🔄 Онлайн табло обновлено');
             DialogService.showMessage('🔄 Обновление', 'Табло обновляется...', 'info');
         }
     },
     
-    // Полноэкранный режим
+    reauthenticate() {
+        // Очищаем старую авторизацию
+        localStorage.removeItem('onlineBoardAuth');
+        localStorage.removeItem('onlineBoardAuthTime');
+        
+        // Переходим к авторизации
+        Navigation.showPage('online-board-auth');
+    },
+    
     toggleFullscreen() {
-        if (!this.iframe || !this.isAuthenticated) return;
+        if (!this.iframe) return;
         
         if (!document.fullscreenElement) {
             if (this.iframe.requestFullscreen) {
@@ -157,42 +91,16 @@ const OnlineBoardManager = {
                 document.msExitFullscreen();
             }
         }
-    },
-    
-    // Выход
-    logout() {
-        localStorage.removeItem('boardSession');
-        localStorage.removeItem('boardSessionTime');
-        this.isAuthenticated = false;
-        this.showLoginForm();
-        
-        // Очищаем iframe
-        if (this.iframe) {
-            this.iframe.src = 'about:blank';
-        }
-        
-        DialogService.showMessage('👋 Выход', 'Вы вышли из табло', 'info');
-    },
-    
-    // Проверка срока действия сессии (24 часа)
-    checkSessionExpiry() {
-        const sessionTime = localStorage.getItem('boardSessionTime');
-        if (sessionTime) {
-            const sessionAge = Date.now() - parseInt(sessionTime);
-            const twentyFourHours = 24 * 60 * 60 * 1000;
-            
-            if (sessionAge > twentyFourHours) {
-                this.logout();
-                return false;
-            }
-        }
-        return true;
     }
 };
 
-// Инициализация
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof OnlineBoardManager !== 'undefined' && OnlineBoardManager.init) {
-        OnlineBoardManager.init();
-    }
-});
+// Обработчики событий iframe
+function onBoardLoad() {
+    console.log('✅ Табло загружено');
+    document.getElementById('boardError')?.classList.add('hidden');
+}
+
+function onBoardError() {
+    console.error('❌ Ошибка загрузки табло');
+    document.getElementById('boardError')?.classList.remove('hidden');
+}

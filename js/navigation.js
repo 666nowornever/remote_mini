@@ -5,6 +5,7 @@ const Navigation = {
         'main': 'pages/main.html',
         'support': 'pages/support.html',
         'online-board': 'pages/online-board.html',
+        'online-board-auth': 'pages/online-board-auth.html',
         'first-line': 'pages/first-line.html',
         'second-line': 'pages/second-line.html',
         'restaurants': 'pages/restaurants.html',
@@ -33,6 +34,7 @@ const Navigation = {
         'main': 'Главная страница',
         'support': 'Служба поддержки',
         'online-board': 'Онлайн табло',
+        'online-board-auth': 'Авторизация табло',
         'first-line': '1st Line - Выбор раздела',
         'second-line': '2nd Line - Системы',
         'restaurants': 'Управление ресторанами',
@@ -202,16 +204,20 @@ initializePage: function(pageId) {
                 break;
         
             case 'online-board':
-                console.log('🔄 Инициализация онлайн табло...');
-                if (typeof OnlineBoardManager !== 'undefined' && OnlineBoardManager.init) {
-                // Проверяем срок действия сессии
-                if (OnlineBoardManager.checkSessionExpiry) {
-                OnlineBoardManager.checkSessionExpiry();
-                 }
+            console.log('🔄 Инициализация онлайн табло...');
+            // Проверяем авторизацию перед показом табло
+            OnlineBoardAuth.checkAuthStatus();
+            if (typeof OnlineBoardManager !== 'undefined' && OnlineBoardManager.init) {
                 OnlineBoardManager.init();
-                 }
-                 break;
-           
+            }
+            break;
+            
+            case 'online-board-auth':
+            console.log('🔄 Инициализация авторизации табло...');
+            if (typeof OnlineBoardAuth !== 'undefined' && OnlineBoardAuth.init) {
+                OnlineBoardAuth.init();
+            }
+            break;
             }
 },
 

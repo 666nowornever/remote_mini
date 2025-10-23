@@ -10,38 +10,11 @@
             Онлайн табло ресторана
         </div>
         
-        <!-- Форма авторизации (показывается сначала) -->
-        <div id="loginForm" class="login-form">
-            <div class="login-info">
-                <i class="fas fa-lock"></i>
-                <p>Для доступа к онлайн табло требуется авторизация</p>
-            </div>
-            <div class="form-group">
-                <label for="username">Логин:</label>
-                <input type="text" id="username" value="kremnevav" readonly class="readonly-field">
-            </div>
-            <div class="form-group">
-                <label for="password">Пароль:</label>
-                <input type="password" id="password" value="drewhix1994" readonly class="readonly-field">
-            </div>
-            <button class="btn btn-login" onclick="OnlineBoardManager.login()">
-                <i class="fas fa-sign-in-alt"></i>
-                Войти в табло
-            </button>
+        <div id="boardContent">
+            <!-- Контент будет загружен динамически -->
         </div>
         
-        <!-- Контейнер табло (скрыт до авторизации) -->
-        <div id="boardContainer" class="online-board-container hidden">
-            <iframe 
-                src="about:blank" 
-                class="online-board-frame"
-                frameborder="0"
-                allowfullscreen
-                loading="lazy"
-            ></iframe>
-        </div>
-        
-        <div id="boardControls" class="board-controls hidden">
+        <div class="board-controls">
             <button class="btn btn-refresh" onclick="OnlineBoardManager.refreshBoard()">
                 <i class="fas fa-sync-alt"></i>
                 Обновить
@@ -50,9 +23,9 @@
                 <i class="fas fa-expand"></i>
                 Полный экран
             </button>
-            <button class="btn btn-logout" onclick="OnlineBoardManager.logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                Выйти
+            <button class="btn btn-reauth" onclick="OnlineBoardManager.reauthenticate()">
+                <i class="fas fa-key"></i>
+                Переавторизация
             </button>
         </div>
     </div>
