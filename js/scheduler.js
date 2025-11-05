@@ -17,7 +17,7 @@ const MessageScheduler = {
         if (this.timer) {
             clearInterval(this.timer);
         }
-        
+
         this.timer = setInterval(() => {
             this.checkScheduledMessages();
         }, this.checkInterval);
@@ -61,6 +61,7 @@ const MessageScheduler = {
         messages.push(scheduledMessage);
         this.saveScheduledMessages(messages);
 
+        console.log(`✅ Сообщение запланировано: ${new Date(timestamp).toLocaleString('ru-RU')}`);
         return scheduledMessage.id;
     },
 
@@ -68,11 +69,12 @@ const MessageScheduler = {
     async checkScheduledMessages() {
         const now = Date.now();
         const messages = this.getScheduledMessages();
-        const messagesToSend = messages.filter(msg => 
+        const messagesToSend = messages.filter(msg =>
             msg.status === 'scheduled' && msg.timestamp <= now
         );
 
         if (messagesToSend.length > 0) {
+            console.log(`📤 Найдено сообщений для отправки: ${messagesToSend.length}`);
             for (const message of messagesToSend) {
                 await this.sendScheduledMessage(message);
             }
@@ -84,7 +86,7 @@ const MessageScheduler = {
         try {
             // Обновляем статус
             this.updateMessageStatus(scheduledMessage.id, 'sending');
-            
+
             // Отправляем сообщение
             const result = await TelegramService.sendFormattedMessage(
                 scheduledMessage.chatId,
@@ -95,12 +97,13 @@ const MessageScheduler = {
 
             if (result.success) {
                 this.updateMessageStatus(scheduledMessage.id, 'sent');
+                console.log(`✅ Сообщение отправлено: ${scheduledMessage.message.substring(0, 50)}...`);
             } else {
                 throw new Error(result.error || 'Неизвестная ошибка отправки');
             }
-
         } catch (error) {
             this.updateMessageStatus(scheduledMessage.id, 'error', error.message);
+            console.error('❌ Ошибка отправки сообщения:', error);
         }
     },
 
@@ -113,6 +116,7 @@ const MessageScheduler = {
         try {
             return JSON.parse(localStorage.getItem('scheduledTelegramMessages') || '[]');
         } catch (error) {
+            console.error('❌ Ошибка получения сообщений:', error);
             return [];
         }
     },
@@ -133,7 +137,6 @@ const MessageScheduler = {
             messages[messageIndex].status = status;
             messages[messageIndex].sentAt = status === 'sent' ? Date.now() : undefined;
             messages[messageIndex].error = error || undefined;
-            
             this.saveScheduledMessages(messages);
         }
     },
@@ -148,7 +151,6 @@ const MessageScheduler = {
             error: messages.filter(m => m.status === 'error').length,
             sending: messages.filter(m => m.status === 'sending').length
         };
-        
         return stats;
     },
 
@@ -157,7 +159,6 @@ const MessageScheduler = {
         const messages = this.getScheduledMessages();
         const filteredMessages = messages.filter(msg => msg.id !== messageId);
         this.saveScheduledMessages(filteredMessages);
-        
         return messages.length !== filteredMessages.length;
     },
 
@@ -165,13 +166,14 @@ const MessageScheduler = {
     cleanupOldMessages() {
         const oneWeekAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
         const messages = this.getScheduledMessages();
-        const activeMessages = messages.filter(msg => 
-            msg.status === 'scheduled' || 
+        const activeMessages = messages.filter(msg =>
+            msg.status === 'scheduled' ||
             (msg.status === 'sent' && msg.sentAt > oneWeekAgo)
         );
-        
+
         if (messages.length !== activeMessages.length) {
             this.saveScheduledMessages(activeMessages);
+            console.log(`🗑️ Очищено ${messages.length - activeMessages.length} старых сообщений`);
         }
     },
 
@@ -183,32 +185,40 @@ const MessageScheduler = {
     // Получить сообщения по статусу
     getMessagesByStatus(status) {
         return this.getAllMessages().filter(msg => msg.status === status);
+    },
+
+    // Отладочный метод для проверки запланированных сообщений
+    debugScheduledMessages() {
+        const messages = this.getAllMessages();
+        console.log('📋 Отладочная информация о запланированных сообщениях:');
+        
+        messages.forEach((msg, index) => {
+            const date = new Date(msg.timestamp);
+            console.log(`${index + 1}. ${msg.message}`);
+            console.log(`   ID: ${msg.id}`);
+            console.log(`   Статус: ${msg.status}`);
+            console.log(`   Запланировано на: ${date.toLocaleString('ru-RU')}`);
+            console.log(`   Timestamp: ${msg.timestamp}`);
+            console.log(`   Тип: ${msg.eventData?.type || 'обычное'}`);
+            if (msg.eventData?.birthdayName) {
+                console.log(`   День рождения: ${msg.eventData.birthdayName}`);
+            }
+            console.log('---');
+        });
+        
+        return messages;
     }
 };
-// Отладочный метод для проверки запланированных сообщений
-debugScheduledMessages() {
-    const messages = this.getAllMessages();
-    console.log('📋 Отладочная информация о запланированных сообщениях:');
-    
-    messages.forEach((msg, index) => {
-        const date = new Date(msg.timestamp);
-        console.log(`${index + 1}. ${msg.message}`);
-        console.log(`   ID: ${msg.id}`);
-        console.log(`   Статус: ${msg.status}`);
-        console.log(`   Запланировано на: ${date.toLocaleString('ru-RU')}`);
-        console.log(`   Timestamp: ${msg.timestamp}`);
-        console.log(`   Тип: ${msg.eventData?.type || 'обычное'}`);
-        if (msg.eventData?.birthdayName) {
-            console.log(`   День рождения: ${msg.eventData.birthdayName}`);
-        }
-        console.log('---');
-    });
-    
-    return messages;
-},
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
-    MessageScheduler.init();
-
+    console.log('🚀 MessageScheduler: загрузка...');
+    if (typeof MessageScheduler !== 'undefined') {
+        MessageScheduler.init();
+    } else {
+        console.error('❌ MessageScheduler не определен');
+    }
 });
+
+// Сделаем глобально доступным для отладки
+window.MessageScheduler = MessageScheduler;
