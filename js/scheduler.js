@@ -11,7 +11,6 @@ const MessageScheduler = {
         console.log('🔄 MessageScheduler: инициализация');
         this.startScheduler();
         this.restoreScheduledMessages();
-        this.checkBirthdaySchedule();
     },
 
     // Запуск планировщика
@@ -27,31 +26,11 @@ const MessageScheduler = {
         console.log('⏰ Планировщик сообщений запущен');
     },
 
-    // Проверка расписания дней рождения
-    checkBirthdaySchedule() {
-        console.log('🎂 Проверка расписания дней рождения...');
-        const birthdayMessages = this.getMessagesByStatus('scheduled').filter(
-            m => m.eventData?.type === 'birthday'
-        );
-        console.log(`📅 Запланировано дней рождения: ${birthdayMessages.length}`);
-        
-        birthdayMessages.forEach(msg => {
-            console.log(`   - ${msg.eventData.birthdayName}: ${new Date(msg.timestamp).toLocaleString('ru-RU')}`);
-        });
-    },
-
     // Восстановление запланированных сообщений из localStorage
     restoreScheduledMessages() {
         try {
             const messages = this.getScheduledMessages();
             console.log(`📨 Восстановлено сообщений: ${messages.length}`);
-            
-            // Проверяем корректность временных меток
-            messages.forEach(msg => {
-                if (isNaN(new Date(msg.timestamp).getTime())) {
-                    console.error(`❌ Некорректная временная метка у сообщения ${msg.id}`);
-                }
-            });
         } catch (error) {
             console.error('❌ Ошибка восстановления сообщений:', error);
         }
@@ -59,18 +38,8 @@ const MessageScheduler = {
 
     // Планирование сообщения
     scheduleMessage(timestamp, message, chatId = null, eventData = {}) {
-        console.log('📅 Планирование сообщения:', { 
-            timestamp, 
-            date: new Date(timestamp).toLocaleString('ru-RU'),
-            message: message.substring(0, 50) 
-        });
+        console.log('📅 Планирование сообщения:', { timestamp, message: message.substring(0, 50) });
         
-        // Проверяем корректность timestamp
-        if (isNaN(new Date(timestamp).getTime())) {
-            console.error('❌ Некорректная временная метка:', timestamp);
-            return null;
-        }
-
         const scheduledMessage = {
             id: this.generateId(),
             timestamp: timestamp,
@@ -109,7 +78,6 @@ const MessageScheduler = {
     // Отправка запланированного сообщения
     async sendScheduledMessage(scheduledMessage) {
         try {
-            console.log(`🚀 Отправка сообщения: ${scheduledMessage.message.substring(0, 50)}...`);
             this.updateMessageStatus(scheduledMessage.id, 'sending');
             
             // Проверяем доступность TelegramService
@@ -127,26 +95,12 @@ const MessageScheduler = {
             if (result.success) {
                 this.updateMessageStatus(scheduledMessage.id, 'sent');
                 console.log(`✅ Сообщение отправлено: ${scheduledMessage.message.substring(0, 50)}...`);
-                
-                // Для дней рождения логируем дополнительную информацию
-                if (scheduledMessage.eventData?.type === 'birthday') {
-                    console.log(`🎂 День рождения отправлен: ${scheduledMessage.eventData.birthdayName}`);
-                }
             } else {
                 throw new Error(result.error || 'Неизвестная ошибка отправки');
             }
         } catch (error) {
-            console.error('❌ Ошибка отправки сообщения:', error);
             this.updateMessageStatus(scheduledMessage.id, 'error', error.message);
-            
-            // Детальный лог ошибок для отладки
-            console.error('🔍 Детали ошибки:', {
-                messageId: scheduledMessage.id,
-                timestamp: scheduledMessage.timestamp,
-                scheduledTime: new Date(scheduledMessage.timestamp).toLocaleString('ru-RU'),
-                currentTime: new Date().toLocaleString('ru-RU'),
-                error: error.message
-            });
+            console.error('❌ Ошибка отправки сообщения:', error);
         }
     },
 
@@ -211,8 +165,7 @@ const MessageScheduler = {
         const messages = this.getScheduledMessages();
         const activeMessages = messages.filter(msg =>
             msg.status === 'scheduled' ||
-            (msg.status === 'sent' && msg.sentAt > oneWeekAgo) ||
-            (msg.status === 'error' && msg.createdAt > oneWeekAgo)
+            (msg.status === 'sent' && msg.sentAt > oneWeekAgo)
         );
 
         if (messages.length !== activeMessages.length) {
@@ -223,7 +176,7 @@ const MessageScheduler = {
 
     // Получить все запланированные сообщения (для интерфейса)
     getAllMessages() {
-        return this.getScheduledMessages().sort((a, b) => b.timestamp - a.timestamp); // Сначала новые
+        return this.getScheduledMessages().sort((a, b) => a.timestamp - b.timestamp);
     },
 
     // Получить сообщения по статусу
@@ -251,13 +204,9 @@ const MessageScheduler = {
             console.log(`   Тип: ${msg.eventData?.type || 'обычное'}`);
             if (msg.eventData?.birthdayName) {
                 console.log(`   День рождения: ${msg.eventData.birthdayName}`);
-                console.log(`   Тип ДР: ${msg.eventData.birthdayType}`);
             }
             if (msg.error) {
                 console.log(`   Ошибка: ${msg.error}`);
-            }
-            if (msg.sentAt) {
-                console.log(`   Отправлено: ${new Date(msg.sentAt).toLocaleString('ru-RU')}`);
             }
             console.log('---');
         });
