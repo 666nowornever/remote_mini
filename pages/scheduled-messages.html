@@ -21,6 +21,7 @@
             <button class="filter-btn" data-filter="scheduled">Запланированные</button>
             <button class="filter-btn" data-filter="sent">Отправленные</button>
             <button class="filter-btn" data-filter="error">Ошибки</button>
+            <button class="filter-btn" data-filter="birthday">Дни рождения</button>
         </div>
 
         <!-- Список сообщений -->
@@ -30,13 +31,17 @@
 
         <!-- Действия -->
         <div class="messages-actions">
-            <button class="btn btn-refresh" onclick="ScheduledMessagesManager.loadMessages()">
+            <button class="btn btn-refresh" onclick="ScheduledMessagesManager.refreshMessages()">
                 <i class="fas fa-sync-alt"></i>
                 Обновить
             </button>
             <button class="btn btn-cleanup" onclick="ScheduledMessagesManager.cleanupMessages()">
                 <i class="fas fa-trash"></i>
                 Очистить старые
+            </button>
+            <button class="btn btn-debug" onclick="ScheduledMessagesManager.debugMessages()">
+                <i class="fas fa-bug"></i>
+                Отладка
             </button>
         </div>
     </div>

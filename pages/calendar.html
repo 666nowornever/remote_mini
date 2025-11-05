@@ -24,6 +24,9 @@
                 <i class="fas fa-calendar-day"></i>
                 Режим: День
             </button>
+            <button class="calendar-sync-btn-main" id="manualSyncBtn" title="Синхронизировать">
+                <i class="fas fa-cloud-check"></i>
+            </button>
         </div>
 
         <!-- Сетка календаря -->
@@ -48,6 +51,18 @@
                         <div class="legend-color-main" style="background-color: #FF9800"></div>
                         <span>Преображенский Дмитрий</span>
                     </div>
+                    <div class="legend-item-main">
+                        <div class="legend-color-main vacation-color-main"></div>
+                        <span>Отпуск</span>
+                    </div>
+                    <div class="legend-item-main">
+                        <div class="legend-color-main" style="background-color: #E91E63"></div>
+                        <span>ДР 🎉</span>
+                    </div>
+                    <div class="legend-item-main">
+                        <div class="legend-color-main" style="background-color: #9C27B0"></div>
+                        <span>ДР 📅</span>
+                    </div>
                 </div>
             </div>
 
@@ -64,5 +79,12 @@
         </div>
     </div>
 
-
+    <!-- Плавающие кнопки -->
+    <div class="calendar-floating-btn" onclick="CalendarManager.showCalendar()">
+        <i class="fas fa-calendar-alt"></i>
+    </div>
+    
+    <div class="schedule-floating-btn" onclick="Navigation.showPage('scheduled-messages')">
+        <i class="fas fa-clock"></i>
+    </div>
 </div>
