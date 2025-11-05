@@ -1,4 +1,6 @@
 // Планировщик отправки сообщений
+console.log('🔄 scheduler.js загружен');
+
 const MessageScheduler = {
     // Интервал проверки запланированных сообщений (секунды)
     checkInterval: 30000, // 30 секунд
@@ -13,7 +15,6 @@ const MessageScheduler = {
 
     // Запуск планировщика
     startScheduler() {
-        // Останавливаем предыдущий таймер если есть
         if (this.timer) {
             clearInterval(this.timer);
         }
@@ -25,20 +26,11 @@ const MessageScheduler = {
         console.log('⏰ Планировщик сообщений запущен');
     },
 
-    // Остановка планировщика
-    stopScheduler() {
-        if (this.timer) {
-            clearInterval(this.timer);
-            this.timer = null;
-        }
-    },
-
     // Восстановление запланированных сообщений из localStorage
     restoreScheduledMessages() {
         try {
             const messages = this.getScheduledMessages();
-            // Удаляем старые отправленные сообщения (старше 7 дней)
-            this.cleanupOldMessages();
+            console.log(`📨 Восстановлено сообщений: ${messages.length}`);
         } catch (error) {
             console.error('❌ Ошибка восстановления сообщений:', error);
         }
@@ -46,6 +38,8 @@ const MessageScheduler = {
 
     // Планирование сообщения
     scheduleMessage(timestamp, message, chatId = null, eventData = {}) {
+        console.log('📅 Планирование сообщения:', { timestamp, message: message.substring(0, 50) });
+        
         const scheduledMessage = {
             id: this.generateId(),
             timestamp: timestamp,
@@ -84,10 +78,13 @@ const MessageScheduler = {
     // Отправка запланированного сообщения
     async sendScheduledMessage(scheduledMessage) {
         try {
-            // Обновляем статус
             this.updateMessageStatus(scheduledMessage.id, 'sending');
+            
+            // Проверяем доступность TelegramService
+            if (typeof TelegramService === 'undefined') {
+                throw new Error('TelegramService не доступен');
+            }
 
-            // Отправляем сообщение
             const result = await TelegramService.sendFormattedMessage(
                 scheduledMessage.chatId,
                 'Запланированное уведомление',
@@ -192,9 +189,14 @@ const MessageScheduler = {
         const messages = this.getAllMessages();
         console.log('📋 Отладочная информация о запланированных сообщениях:');
         
+        if (messages.length === 0) {
+            console.log('   Нет запланированных сообщений');
+            return messages;
+        }
+        
         messages.forEach((msg, index) => {
             const date = new Date(msg.timestamp);
-            console.log(`${index + 1}. ${msg.message}`);
+            console.log(`${index + 1}. ${msg.message.substring(0, 50)}...`);
             console.log(`   ID: ${msg.id}`);
             console.log(`   Статус: ${msg.status}`);
             console.log(`   Запланировано на: ${date.toLocaleString('ru-RU')}`);
@@ -203,6 +205,9 @@ const MessageScheduler = {
             if (msg.eventData?.birthdayName) {
                 console.log(`   День рождения: ${msg.eventData.birthdayName}`);
             }
+            if (msg.error) {
+                console.log(`   Ошибка: ${msg.error}`);
+            }
             console.log('---');
         });
         
@@ -210,15 +215,18 @@ const MessageScheduler = {
     }
 };
 
+// Сделаем глобально доступным
+window.MessageScheduler = MessageScheduler;
+
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 MessageScheduler: загрузка...');
+    console.log('🚀 MessageScheduler: запуск инициализации...');
     if (typeof MessageScheduler !== 'undefined') {
         MessageScheduler.init();
+        console.log('✅ MessageScheduler инициализирован');
     } else {
-        console.error('❌ MessageScheduler не определен');
+        console.error('❌ MessageScheduler не определен при инициализации');
     }
 });
 
-// Сделаем глобально доступным для отладки
-window.MessageScheduler = MessageScheduler;
+console.log('✅ MessageScheduler создан и готов к использованию');
