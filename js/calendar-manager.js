@@ -162,56 +162,79 @@ const CalendarManager = {
 
     // === ДНИ РОЖДЕНИЯ ===
     // Планирование дней рождения
-    scheduleBirthdays() {
-        console.log('🎂 Планирование дней рождения...');
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        
-        this.birthdays.forEach(birthday => {
-            // Создаем дату дня рождения в текущем году
-            const birthDate = new Date(birthday.date);
-            const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+   // Планирование дней рождения
+scheduleBirthdays() {
+    console.log('🎂 Планирование дней рождения...');
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    this.birthdays.forEach(birthday => {
+        // Создаем дату дня рождения в текущем году
+        const birthDate = new Date(birthday.date);
+        const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
 
-            // Если день рождения уже прошел в этом году, планируем на следующий год
-            if (birthdayThisYear < now) {
-                birthdayThisYear.setFullYear(currentYear + 1);
-            }
-
-            // Устанавливаем время отправки
-            const sendTime = birthday.type === 'congratulation' ? '07:30' : '10:00';
-            const [hours, minutes] = sendTime.split(':').map(Number);
-            const sendDateTime = new Date(birthdayThisYear);
-            sendDateTime.setHours(hours, minutes, 0, 0);
-
-            // Планируем сообщение
-            this.scheduleBirthdayMessage(birthday, sendDateTime.getTime());
-        });
-    },
-
-    // Планирование сообщения о дне рождения
-    scheduleBirthdayMessage(birthday, timestamp) {
-        // Проверяем, не запланировано ли уже это сообщение
-        const existingMessages = MessageScheduler.getAllMessages();
-        const alreadyScheduled = existingMessages.some(msg =>
-            msg.eventData?.type === 'birthday' &&
-            msg.eventData?.birthdayId === birthday.id &&
-            new Date(msg.timestamp).getFullYear() === new Date(timestamp).getFullYear()
-        );
-
-        if (!alreadyScheduled) {
-            MessageScheduler.scheduleMessage(
-                timestamp,
-                birthday.message,
-                null,
-                {
-                    type: 'birthday',
-                    birthdayId: birthday.id,
-                    birthdayName: birthday.name,
-                    birthdayType: birthday.type
-                }
-            );
+        // Если день рождения уже прошел в этом году, планируем на следующий год
+        if (birthdayThisYear < now) {
+            birthdayThisYear.setFullYear(currentYear + 1);
         }
-    },
+
+        // Устанавливаем время отправки
+        const sendTime = birthday.type === 'congratulation' ? '07:30' : '10:00';
+        const [hours, minutes] = sendTime.split(':').map(Number);
+        const sendDateTime = new Date(birthdayThisYear);
+        sendDateTime.setHours(hours, minutes, 0, 0);
+
+        console.log(`📅 ${birthday.name}: ${birthdayThisYear.toLocaleDateString('ru-RU')} в ${sendTime}`);
+
+        // Планируем сообщение
+        this.scheduleBirthdayMessage(birthday, sendDateTime.getTime());
+    });
+},
+
+    
+   // Планирование сообщения о дне рождения
+scheduleBirthdayMessage(birthday, timestamp) {
+    // Проверяем, не запланировано ли уже это сообщение
+    const existingMessages = MessageScheduler.getAllMessages();
+    const alreadyScheduled = existingMessages.some(msg =>
+        msg.eventData?.type === 'birthday' &&
+        msg.eventData?.birthdayId === birthday.id &&
+        new Date(msg.timestamp).getFullYear() === new Date(timestamp).getFullYear()
+    );
+
+    if (!alreadyScheduled) {
+        // ИСПРАВЛЕНИЕ: Корректируем timestamp для правильного часового пояса
+        const correctedTimestamp = this.correctTimezoneForBirthday(timestamp, birthday.type);
+        
+        MessageScheduler.scheduleMessage(
+            correctedTimestamp,
+            birthday.message,
+            null,
+            {
+                type: 'birthday',
+                birthdayId: birthday.id,
+                birthdayName: birthday.name,
+                birthdayType: birthday.type
+            }
+        );
+        
+        console.log(`🎂 Запланировано сообщение для ${birthday.name} на ${new Date(correctedTimestamp).toLocaleString('ru-RU')}`);
+    }
+},
+
+// НОВЫЙ МЕТОД: Коррекция часового пояса для дней рождения
+correctTimezoneForBirthday(timestamp, birthdayType) {
+    const date = new Date(timestamp);
+    
+    // Устанавливаем правильное время (07:30 для поздравлений, 10:00 для уведомлений)
+    const sendTime = birthdayType === 'congratulation' ? '07:30' : '10:00';
+    const [hours, minutes] = sendTime.split(':').map(Number);
+    
+    // Создаем дату в правильном часовом поясе
+    const correctedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
+    
+    return correctedDate.getTime();
+},
 
     // Получить дни рождения на конкретную дату
     getBirthdaysForDate(dateKey) {
@@ -1004,23 +1027,22 @@ getDateKey(date) {
         DialogService.showMessage('✅ Успех', 'Событие запланировано', 'success');
     },
 
-    createDateTime(dateString, timeString) {
+   createDateTime(dateString, timeString) {
     try {
-        // ИСПРАВЛЕНИЕ: используем наш корректный парсер
-        const date = this.parseDateKeyCorrect(dateString);
+        // ИСПРАВЛЕНИЕ: создаем дату в локальном времени с правильным часовым поясом
+        const [year, month, day] = dateString.split('-').map(Number);
+        const [hours, minutes] = timeString.split(':').map(Number);
+        
+        // Создаем дату с указанным временем в локальном часовом поясе
+        const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
         if (isNaN(date.getTime())) {
             return null;
         }
 
-        const [hours, minutes] = timeString.split(':').map(Number);
-        if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-            return null;
-        }
-
-        date.setHours(hours, minutes, 0, 0);
         return date.getTime();
     } catch (error) {
+        console.error('❌ Ошибка создания даты:', error);
         return null;
     }
 },
@@ -1129,4 +1151,5 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof CalendarManager !== 'undefined' && CalendarManager.init) {
         CalendarManager.init();
     }
+
 });
