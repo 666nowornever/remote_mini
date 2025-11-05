@@ -194,6 +194,11 @@ scheduleBirthdays() {
     
    // Планирование сообщения о дне рождения
 scheduleBirthdayMessage(birthday, timestamp) {
+    // ПРОВЕРКА: Убедимся что MessageScheduler доступен
+    if (typeof MessageScheduler === 'undefined') {
+        console.error('❌ MessageScheduler не доступен для планирования дня рождения');
+        return;
+    }
     // Проверяем, не запланировано ли уже это сообщение
     const existingMessages = MessageScheduler.getAllMessages();
     const alreadyScheduled = existingMessages.some(msg =>
@@ -1153,3 +1158,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 });
+
