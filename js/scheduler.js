@@ -185,8 +185,30 @@ const MessageScheduler = {
         return this.getAllMessages().filter(msg => msg.status === status);
     }
 };
+// Отладочный метод для проверки запланированных сообщений
+debugScheduledMessages() {
+    const messages = this.getAllMessages();
+    console.log('📋 Отладочная информация о запланированных сообщениях:');
+    
+    messages.forEach((msg, index) => {
+        const date = new Date(msg.timestamp);
+        console.log(`${index + 1}. ${msg.message}`);
+        console.log(`   ID: ${msg.id}`);
+        console.log(`   Статус: ${msg.status}`);
+        console.log(`   Запланировано на: ${date.toLocaleString('ru-RU')}`);
+        console.log(`   Timestamp: ${msg.timestamp}`);
+        console.log(`   Тип: ${msg.eventData?.type || 'обычное'}`);
+        if (msg.eventData?.birthdayName) {
+            console.log(`   День рождения: ${msg.eventData.birthdayName}`);
+        }
+        console.log('---');
+    });
+    
+    return messages;
+},
 
 // Инициализация при загрузке
 document.addEventListener('DOMContentLoaded', function() {
     MessageScheduler.init();
+
 });
