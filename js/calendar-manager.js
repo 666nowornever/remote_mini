@@ -766,7 +766,6 @@ const CalendarManager = {
                 <div class="birthday-item">
                     <div class="birthday-date">${formattedDate}</div>
                     <div class="birthday-name">${birthday.name}</div>
-                    <div class="birthday-type">${birthday.type === 'congratulation' ? '🎉 Поздравление' : '📅 Уведомление'}</div>
                 </div>
             `;
         });
