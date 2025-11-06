@@ -158,6 +158,10 @@ const CalendarManager = {
         // Планируем дни рождения
         this.scheduleBirthdays();
         console.log('✅ CalendarManager: инициализация завершена');
+        
+        // Делаем доступным глобально для отладки
+        window.CalendarManager = this;
+        console.log('🔧 CalendarManager доступен глобально для отладки');
     },
 
     // === ДНИ РОЖДЕНИЯ ===
@@ -1180,14 +1184,37 @@ const CalendarManager = {
     // Проверка запланированных дней рождения
     checkScheduledBirthdays() {
         console.log('🔍 Проверка запланированных дней рождения...');
+        
+        if (typeof MessageScheduler === 'undefined') {
+            console.error('❌ MessageScheduler не доступен');
+            return [];
+        }
+        
         const messages = MessageScheduler.getAllMessages();
         const birthdayMessages = messages.filter(msg => msg.eventData?.type === 'birthday');
         
         console.log(`🎂 Найдено запланированных дней рождения: ${birthdayMessages.length}`);
         
-        birthdayMessages.forEach(msg => {
-            console.log(`📅 ${msg.eventData.birthdayName}: ${new Date(msg.timestamp).toLocaleString('ru-RU')} - ${msg.status}`);
-        });
+        if (birthdayMessages.length === 0) {
+            console.log('ℹ️ Нет запланированных дней рождения');
+        } else {
+            birthdayMessages.forEach(msg => {
+                const statusColors = {
+                    scheduled: '🟡',
+                    sent: '🟢',
+                    error: '🔴',
+                    sending: '🔵'
+                };
+                
+                console.log(`${statusColors[msg.status] || '⚪'} ${msg.eventData.birthdayName}:`);
+                console.log(`   📅 ${new Date(msg.timestamp).toLocaleString('ru-RU')}`);
+                console.log(`   📝 ${msg.message.substring(0, 50)}...`);
+                console.log(`   🆔 ${msg.id}`);
+                console.log(`   📊 Статус: ${msg.status}`);
+                if (msg.error) console.log(`   ❌ Ошибка: ${msg.error}`);
+                console.log('---');
+            });
+        }
         
         return birthdayMessages;
     },
@@ -1196,18 +1223,36 @@ const CalendarManager = {
     rescheduleAllBirthdays() {
         console.log('🔄 Перепланирование всех дней рождения...');
         
+        if (typeof MessageScheduler === 'undefined') {
+            console.error('❌ MessageScheduler не доступен');
+            DialogService.showMessage('❌ Ошибка', 'MessageScheduler не доступен', 'error');
+            return;
+        }
+        
         // Удаляем старые сообщения о днях рождения
         const messages = MessageScheduler.getAllMessages();
+        let deletedCount = 0;
+        
         messages.forEach(msg => {
             if (msg.eventData?.type === 'birthday' && msg.status === 'scheduled') {
-                MessageScheduler.cancelScheduledMessage(msg.id);
+                const success = MessageScheduler.cancelScheduledMessage(msg.id);
+                if (success) deletedCount++;
             }
         });
+        
+        console.log(`🗑️ Удалено старых сообщений: ${deletedCount}`);
         
         // Планируем заново
         this.scheduleBirthdays();
         
-        DialogService.showMessage('✅ Успех', 'Все дни рождения перепланированы', 'success');
+        // Проверяем результат
+        const newMessages = this.checkScheduledBirthdays();
+        
+        DialogService.showMessage(
+            '✅ Успех', 
+            `Все дни рождения перепланированы\nУдалено: ${deletedCount}\nЗапланировано: ${newMessages.length}`,
+            'success'
+        );
     },
     
     // Проверка корректности времени
@@ -1216,25 +1261,56 @@ const CalendarManager = {
         console.log('Текущее время:', new Date().toLocaleString('ru-RU'));
         console.log('Часовой пояс:', Intl.DateTimeFormat().resolvedOptions().timeZone);
         console.log('UTC смещение:', new Date().getTimezoneOffset(), 'минут');
+        console.log('UTC время:', new Date().toUTCString());
         
         // Проверяем пример дня рождения
         const testBirthday = this.birthdays[0];
         const birthDate = new Date(testBirthday.date);
-        const nextBirthday = new Date(new Date().getFullYear(), birthDate.getMonth(), birthDate.getDate());
+        const currentYear = new Date().getFullYear();
+        const nextBirthday = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
         
         if (nextBirthday < new Date()) {
             nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
         }
         
+        // Тестируем оба времени
         nextBirthday.setHours(10, 0, 0, 0);
+        const congratulationTime = new Date(nextBirthday);
+        congratulationTime.setHours(7, 30, 0, 0);
         
         console.log('Пример дня рождения:', testBirthday.name);
         console.log('Дата рождения:', birthDate.toLocaleDateString('ru-RU'));
-        console.log('Следующий ДР:', nextBirthday.toLocaleString('ru-RU'));
-        console.log('Timestamp:', nextBirthday.getTime());
+        console.log('Следующий ДР (уведомление):', nextBirthday.toLocaleString('ru-RU'));
+        console.log('Следующий ДР (поздравление):', congratulationTime.toLocaleString('ru-RU'));
+        console.log('Timestamp уведомление:', nextBirthday.getTime());
+        console.log('Timestamp поздравление:', congratulationTime.getTime());
+        
+        // Проверяем разницу с текущим временем
+        const now = new Date();
+        console.log('Разница с текущим временем (уведомление):', Math.round((nextBirthday - now) / (1000 * 60 * 60)), 'часов');
+        console.log('Разница с текущим временем (поздравление):', Math.round((congratulationTime - now) / (1000 * 60 * 60)), 'часов');
+    },
+    
+    // Проверка всех систем
+    debugAllSystems() {
+        console.log('🔧 Проверка всех систем CalendarManager...');
+        this.debugTimeIssues();
+        console.log('---');
+        this.checkScheduledBirthdays();
+        console.log('---');
+        
+        // Проверяем доступность зависимостей
+        console.log('📋 Проверка зависимостей:');
+        console.log('MessageScheduler:', typeof MessageScheduler !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
+        console.log('TelegramService:', typeof TelegramService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
+        console.log('Navigation:', typeof Navigation !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
+        console.log('DialogService:', typeof DialogService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
     }
 
 };
+
+// Делаем глобально доступным сразу
+window.CalendarManager = CalendarManager;
 
 // Инициализация
 document.addEventListener('DOMContentLoaded', function() {
