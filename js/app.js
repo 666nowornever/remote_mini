@@ -95,6 +95,16 @@ function initializeManagers() {
         console.log('✅ ScheduledMessagesManager инициализирован');
     }
     
+if (typeof MessageScheduler !== 'undefined' && MessageScheduler.init) {
+    setTimeout(() => {
+        MessageScheduler.init();
+        console.log('✅ MessageScheduler запущен');
+        setTimeout(() => {
+            MessageScheduler.forceSendOverdueMessages();
+        }, 15000);
+    }, 3000);
+}
+    
     console.log('✅ Все менеджеры инициализированы');
 }
 
