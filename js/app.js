@@ -99,7 +99,7 @@ async function initializeManagers() {
             init: () => CalendarManager.init(),
             optional: true // Опциональный, зависит от MessageScheduler
         }
-        // ScheduledMessagesManager удален из списка, так как он может отсутствовать
+    
     ];
 
     // Инициализируем менеджеры последовательно

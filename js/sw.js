@@ -1,91 +1,59 @@
 // Service Worker для фоновой отправки сообщений
-const CACHE_NAME = 'telegram-scheduler-v1';
-const API_URL = 'https://api.telegram.org/bot';
+const CACHE_NAME = 'message-scheduler-v1';
+const CHECK_INTERVAL = 30000; // 30 секунд
 
-// Установка Service Worker
 self.addEventListener('install', (event) => {
     console.log('🔄 Service Worker: установка');
     self.skipWaiting();
 });
 
-// Активация Service Worker
 self.addEventListener('activate', (event) => {
     console.log('🔄 Service Worker: активация');
     event.waitUntil(self.clients.claim());
 });
 
-// Фоновая синхронизация
-self.addEventListener('sync', (event) => {
-    console.log('🔄 Service Worker: синхронизация', event.tag);
+self.addEventListener('message', async (event) => {
+    const { type, messages, messageId, error } = event.data;
     
-    if (event.tag === 'message-sync') {
-        event.waitUntil(sendScheduledMessages());
-    }
-});
-
-// Периодическая фоновая синхронизация (каждые 5 минут)
-self.addEventListener('periodicsync', (event) => {
-    if (event.tag === 'message-periodic-sync') {
-        console.log('🔄 Service Worker: периодическая синхронизация');
-        event.waitUntil(sendScheduledMessages());
-    }
-});
-
-// Отправка запланированных сообщений
-async function sendScheduledMessages() {
-    try {
-        console.log('📤 Service Worker: проверка сообщений для отправки');
-        
-        // Получаем данные из IndexedDB
-        const messages = await getScheduledMessages();
-        const now = Date.now();
-        const messagesToSend = messages.filter(msg => 
-            msg.status === 'scheduled' && msg.timestamp <= now
-        );
-
-        console.log(`📤 Service Worker: найдено ${messagesToSend.length} сообщений для отправки`);
-
-        for (const message of messagesToSend) {
-            await sendMessage(message);
-            // Задержка между отправками
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        }
-    } catch (error) {
-        console.error('❌ Service Worker: ошибка отправки сообщений:', error);
-    }
-}
-
-// Получение сообщений из IndexedDB
-async function getScheduledMessages() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('TelegramSchedulerDB', 1);
-        
-        request.onerror = () => reject(new Error('Ошибка открытия БД'));
-        request.onsuccess = (event) => {
-            const db = event.target.result;
-            const transaction = db.transaction(['messages'], 'readonly');
-            const store = transaction.objectStore('messages');
-            const getAllRequest = store.getAll();
+    switch (type) {
+        case 'SYNC_MESSAGES':
+            console.log('📡 Service Worker: получены сообщения для синхронизации', messages.length);
+            await storeMessages(messages);
+            startBackgroundChecks();
+            break;
             
-            getAllRequest.onsuccess = () => resolve(getAllRequest.result);
-            getAllRequest.onerror = () => reject(new Error('Ошибка чтения данных'));
-        };
+        case 'MESSAGE_CANCELLED':
+            console.log('🗑️ Service Worker: отмена сообщения', messageId);
+            await removeMessage(messageId);
+            break;
+    }
+});
+
+// Фоновая проверка сообщений
+function startBackgroundChecks() {
+    setInterval(async () => {
+        const messages = await getStoredMessages();
+        const now = Date.now();
+        const messagesToSend = messages.filter(msg => msg.timestamp <= now);
         
-        request.onupgradeneeded = (event) => {
-            const db = event.target.result;
-            if (!db.objectStoreNames.contains('messages')) {
-                db.createObjectStore('messages', { keyPath: 'id' });
+        if (messagesToSend.length > 0) {
+            console.log(`📤 Service Worker: найдено ${messagesToSend.length} сообщений для отправки`);
+            
+            for (const message of messagesToSend) {
+                await sendMessageFromWorker(message);
+                await new Promise(resolve => setTimeout(resolve, 2000));
             }
-        };
-    });
+        }
+    }, CHECK_INTERVAL);
 }
 
-// Отправка сообщения через Telegram API
-async function sendMessage(message) {
+// Отправка сообщения из Service Worker
+async function sendMessageFromWorker(message) {
     try {
-        console.log(`📤 Service Worker: отправка сообщения "${message.message.substring(0, 50)}..."`);
+        console.log(`📤 Service Worker: отправка сообщения ${message.id}`);
         
-        const response = await fetch(`${API_URL}${message.botToken}/sendMessage`, {
+        // Используем fetch для отправки через API
+        const response = await fetch('https://api.telegram.org/bot' + message.botToken + '/sendMessage', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -96,47 +64,89 @@ async function sendMessage(message) {
                 parse_mode: 'HTML'
             })
         });
-
+        
         if (response.ok) {
             const result = await response.json();
-            console.log('✅ Service Worker: сообщение отправлено успешно');
-            await updateMessageStatus(message.id, 'sent');
-            return { success: true, messageId: result.result.message_id };
+            console.log('✅ Service Worker: сообщение отправлено', message.id);
+            
+            // Уведомляем клиент
+            sendToClient({
+                type: 'MESSAGE_SENT',
+                messageId: message.id
+            });
+            
+            // Удаляем отправленное сообщение
+            await removeMessage(message.id);
+            
         } else {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            throw new Error(`HTTP ${response.status}`);
         }
+        
     } catch (error) {
-        console.error('❌ Service Worker: ошибка отправки:', error);
-        await updateMessageStatus(message.id, 'error', error.message);
-        return { success: false, error: error.message };
+        console.error('❌ Service Worker: ошибка отправки', message.id, error);
+        
+        // Уведомляем клиент об ошибке
+        sendToClient({
+            type: 'MESSAGE_ERROR',
+            messageId: message.id,
+            error: error.message
+        });
     }
 }
 
-// Обновление статуса сообщения в IndexedDB
-async function updateMessageStatus(messageId, status, error = null) {
+// Хранение сообщений в IndexedDB
+async function storeMessages(messages) {
+    const db = await openDB();
+    const tx = db.transaction('messages', 'readwrite');
+    const store = tx.objectStore('messages');
+    
+    // Очищаем старые сообщения
+    await store.clear();
+    
+    // Сохраняем новые
+    for (const message of messages) {
+        await store.add(message);
+    }
+    
+    console.log(`💾 Service Worker: сохранено ${messages.length} сообщений`);
+}
+
+async function getStoredMessages() {
+    const db = await openDB();
+    const tx = db.transaction('messages', 'readonly');
+    const store = tx.objectStore('messages');
+    return await store.getAll();
+}
+
+async function removeMessage(messageId) {
+    const db = await openDB();
+    const tx = db.transaction('messages', 'readwrite');
+    const store = tx.objectStore('messages');
+    await store.delete(messageId);
+}
+
+async function openDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open('TelegramSchedulerDB', 1);
+        const request = indexedDB.open('MessageSchedulerDB', 1);
         
-        request.onerror = () => reject(new Error('Ошибка открытия БД'));
-        request.onsuccess = (event) => {
+        request.onerror = () => reject(request.error);
+        request.onsuccess = () => resolve(request.result);
+        
+        request.onupgradeneeded = (event) => {
             const db = event.target.result;
-            const transaction = db.transaction(['messages'], 'readwrite');
-            const store = transaction.objectStore('messages');
-            
-            const getRequest = store.get(messageId);
-            getRequest.onsuccess = () => {
-                const message = getRequest.result;
-                if (message) {
-                    message.status = status;
-                    message.sentAt = status === 'sent' ? Date.now() : undefined;
-                    message.error = error || undefined;
-                    message.updatedAt = Date.now();
-                    
-                    const putRequest = store.put(message);
-                    putRequest.onsuccess = () => resolve();
-                    putRequest.onerror = () => reject(new Error('Ошибка обновления данных'));
-                }
-            };
+            if (!db.objectStoreNames.contains('messages')) {
+                const store = db.createObjectStore('messages', { keyPath: 'id' });
+                store.createIndex('timestamp', 'timestamp', { unique: false });
+            }
         };
+    });
+}
+
+// Отправка сообщения клиенту
+function sendToClient(message) {
+    self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+            client.postMessage(message);
+        });
     });
 }
