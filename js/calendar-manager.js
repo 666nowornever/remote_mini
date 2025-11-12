@@ -115,7 +115,7 @@ const CalendarManager = {
         {
             id: 13,
             name: 'test',
-            date: '2025-01-06',
+            date: '2025-11-12',
             type: 'notification',
             message: '📅 TEST DR'
         }
