@@ -6,17 +6,28 @@ const MessageScheduler = {
     checkInterval: 30000, // 30 секунд
     timer: null,
     isInitialized: false,
+    useServiceWorker: false,
 
     // Инициализация планировщика
-    init() {
+    async init() {
         console.log('🔄 MessageScheduler: инициализация');
         if (this.isInitialized) {
             console.log('ℹ️ MessageScheduler уже инициализирован');
             return;
         }
         
-        this.startScheduler();
-        this.restoreScheduledMessages();
+        // Проверяем поддержку Service Worker
+        this.useServiceWorker = await this.checkServiceWorkerSupport();
+        
+        if (this.useServiceWorker) {
+            console.log('🔧 Используется Service Worker для фоновой отправки');
+            await this.initServiceWorker();
+        } else {
+            console.log('⚠️ Service Worker не поддерживается, используется обычный режим');
+            this.startScheduler();
+        }
+        
+        await this.restoreScheduledMessages();
         this.isInitialized = true;
         
         // Проверяем сразу при инициализации
@@ -25,7 +36,53 @@ const MessageScheduler = {
         }, 5000);
     },
 
-    // Запуск планировщика
+    // Проверка поддержки Service Worker
+    async checkServiceWorkerSupport() {
+        if (!('serviceWorker' in navigator) || !('SyncManager' in window)) {
+            return false;
+        }
+        
+        try {
+            const registration = await navigator.serviceWorker.ready;
+            return !!registration;
+        } catch (error) {
+            console.warn('⚠️ Service Worker не доступен:', error);
+            return false;
+        }
+    },
+
+    // Инициализация Service Worker
+    async initServiceWorker() {
+        try {
+            // Регистрируем Service Worker
+            const registration = await navigator.serviceWorker.register('/sw.js');
+            console.log('✅ Service Worker зарегистрирован:', registration);
+            
+            // Запрашиваем разрешение на уведомления
+            if ('Notification' in window && Notification.permission === 'default') {
+                await Notification.requestPermission();
+            }
+            
+            // Запускаем периодическую синхронизацию
+            if ('periodicSync' in registration) {
+                try {
+                    await registration.periodicSync.register('message-periodic-sync', {
+                        minInterval: 5 * 60 * 1000, // 5 минут
+                    });
+                    console.log('✅ Периодическая синхронизация зарегистрирована');
+                } catch (error) {
+                    console.warn('⚠️ Периодическая синхронизация не поддерживается:', error);
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ Ошибка регистрации Service Worker:', error);
+            this.useServiceWorker = false;
+            this.startScheduler(); // Запускаем обычный планировщик как fallback
+        }
+    },
+
+    // Запуск планировщика (для режима без Service Worker)
     startScheduler() {
         if (this.timer) {
             clearInterval(this.timer);
@@ -52,11 +109,16 @@ const MessageScheduler = {
         }
     },
 
-    // Восстановление запланированных сообщений из localStorage
-    restoreScheduledMessages() {
+    // Восстановление запланированных сообщений
+    async restoreScheduledMessages() {
         try {
             const messages = this.getScheduledMessages();
             console.log(`📨 Восстановлено сообщений: ${messages.length}`);
+            
+            // Синхронизируем с IndexedDB если используем Service Worker
+            if (this.useServiceWorker) {
+                await this.syncWithIndexedDB(messages);
+            }
             
             // Логируем запланированные сообщения
             const scheduledMessages = messages.filter(m => m.status === 'scheduled');
@@ -71,8 +133,64 @@ const MessageScheduler = {
         }
     },
 
+    // Синхронизация с IndexedDB
+    async syncWithIndexedDB(messages) {
+        if (!this.useServiceWorker) return;
+        
+        try {
+            // Сохраняем конфигурацию бота в IndexedDB
+            const botConfig = {
+                botToken: TelegramService?.config?.botToken,
+                defaultChatId: TelegramService?.config?.defaultChatId
+            };
+            
+            await this.saveToIndexedDB('config', botConfig);
+            
+            // Сохраняем сообщения в IndexedDB
+            for (const message of messages) {
+                await this.saveToIndexedDB('messages', {
+                    ...message,
+                    botToken: botConfig.botToken,
+                    chatId: message.chatId || botConfig.defaultChatId
+                });
+            }
+            
+            console.log('✅ Данные синхронизированы с IndexedDB');
+        } catch (error) {
+            console.error('❌ Ошибка синхронизации с IndexedDB:', error);
+        }
+    },
+
+    // Сохранение в IndexedDB
+    async saveToIndexedDB(storeName, data) {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open('TelegramSchedulerDB', 1);
+            
+            request.onerror = () => reject(new Error('Ошибка открытия БД'));
+            request.onsuccess = (event) => {
+                const db = event.target.result;
+                const transaction = db.transaction([storeName], 'readwrite');
+                const store = transaction.objectStore(storeName);
+                
+                const putRequest = store.put(data);
+                putRequest.onsuccess = () => resolve();
+                putRequest.onerror = () => reject(new Error('Ошибка сохранения данных'));
+            };
+            
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains('messages')) {
+                    db.createObjectStore('messages', { keyPath: 'id' });
+                }
+                if (!db.objectStoreNames.contains('config')) {
+                    db.createObjectStore('config', { keyPath: 'id' });
+                }
+            };
+        });
+    },
+
     // Планирование сообщения
-    scheduleMessage(timestamp, message, chatId = null, eventData = {}) {
+    async scheduleMessage(timestamp, message, chatId = null, eventData = {}) {
         console.log('📅 Планирование сообщения:', { timestamp, message: message.substring(0, 50) });
         
         // Проверяем, что timestamp в будущем
@@ -96,19 +214,39 @@ const MessageScheduler = {
         messages.push(scheduledMessage);
         this.saveScheduledMessages(messages);
 
+        // Синхронизируем с Service Worker если используется
+        if (this.useServiceWorker) {
+            await this.syncWithIndexedDB([scheduledMessage]);
+            
+            // Запускаем синхронизацию в Service Worker
+            if (navigator.serviceWorker?.controller) {
+                navigator.serviceWorker.controller.postMessage({
+                    type: 'MESSAGE_SCHEDULED',
+                    message: scheduledMessage
+                });
+            }
+        }
+
         console.log(`✅ Сообщение запланировано: ${new Date(timestamp).toLocaleString('ru-RU')}`);
         console.log(`🆔 ID: ${scheduledMessage.id}`);
         
-        // Запускаем немедленную проверку
-        setTimeout(() => {
-            this.checkScheduledMessages();
-        }, 1000);
+        // Запускаем немедленную проверку (для обычного режима)
+        if (!this.useServiceWorker) {
+            setTimeout(() => {
+                this.checkScheduledMessages();
+            }, 1000);
+        }
         
         return scheduledMessage.id;
     },
 
-    // Проверка запланированных сообщений
+    // Проверка запланированных сообщений (для обычного режима)
     async checkScheduledMessages() {
+        if (this.useServiceWorker) {
+            console.log('ℹ️ Проверка сообщений выполняется Service Worker');
+            return;
+        }
+
         const now = Date.now();
         const messages = this.getScheduledMessages();
         const messagesToSend = messages.filter(msg =>
