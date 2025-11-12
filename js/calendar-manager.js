@@ -156,7 +156,7 @@ const CalendarManager = {
         // Инициализируем real-time синхронизацию
         this.initRealtimeSync();
         // Планируем дни рождения
-        this.scheduleBirthdaysWithCheck();
+        this.scheduleBirthdays();
         console.log('✅ CalendarManager: инициализация завершена');
         
         // Делаем доступным глобально для отладки
@@ -766,6 +766,7 @@ const CalendarManager = {
                 <div class="birthday-item">
                     <div class="birthday-date">${formattedDate}</div>
                     <div class="birthday-name">${birthday.name}</div>
+                    <div class="birthday-type">${birthday.type === 'congratulation' ? '🎉 Поздравление' : '📅 Уведомление'}</div>
                 </div>
             `;
         });
@@ -1304,45 +1305,7 @@ const CalendarManager = {
         console.log('TelegramService:', typeof TelegramService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
         console.log('Navigation:', typeof Navigation !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
         console.log('DialogService:', typeof DialogService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
-    }
-        // Проверка и запуск планировщика
-    ensureSchedulerRunning() {
-        if (typeof MessageScheduler === 'undefined') {
-            console.error('❌ MessageScheduler не доступен');
-            return false;
-        }
-
-        // Проверяем, запущен ли планировщик
-        if (!MessageScheduler.timer) {
-            console.log('🔄 Запуск MessageScheduler...');
-            MessageScheduler.startScheduler();
-        }
-
-        // Принудительно проверяем сообщения
-        console.log('🔍 Принудительная проверка запланированных сообщений...');
-        MessageScheduler.checkScheduledMessages();
-
-        return true;
     },
-
-    // Улучшенное планирование дней рождения с проверкой
-    scheduleBirthdaysWithCheck() {
-        console.log('🎂 Планирование дней рождения с проверкой...');
-        
-        if (!this.ensureSchedulerRunning()) {
-            console.error('❌ Не удалось запустить планировщик');
-            return;
-        }
-
-        this.scheduleBirthdays();
-        
-        // Дополнительная проверка через 5 секунд
-        setTimeout(() => {
-            this.checkScheduledBirthdays();
-        }, 5000);
-    }
-
-};
 
     // Проверка и запуск планировщика
     ensureSchedulerRunning() {
@@ -1380,6 +1343,8 @@ const CalendarManager = {
             this.checkScheduledBirthdays();
         }, 5000);
     }
+
+};
 
 // Делаем глобально доступным сразу
 window.CalendarManager = CalendarManager;
