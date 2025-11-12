@@ -111,6 +111,13 @@ const CalendarManager = {
             date: '2025-10-28',
             type: 'notification',
             message: '📅 Сегодня день рождения у Чупеткина И.'
+        },
+        {
+            id: 13,
+            name: 'test',
+            date: '2025-01-06',
+            type: 'notification',
+            message: '📅 TEST DR'
         }
     ],
 
