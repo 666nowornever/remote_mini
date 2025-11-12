@@ -61,50 +61,45 @@ async function initializeManagers() {
             name: 'PCManager',
             instance: PCManager,
             init: () => PCManager.init(),
-            dependencies: []
+            optional: false
         },
         {
             name: 'PrinterManager',
             instance: PrinterManager,
             init: () => PrinterManager.init(),
-            dependencies: []
+            optional: false
         },
         {
             name: 'CashServerManager',
             instance: CashServerManager,
             init: () => CashServerManager.init(),
-            dependencies: []
+            optional: false
         },
         {
             name: 'ServicesManager',
             instance: ServicesManager,
             init: () => ServicesManager.init(),
-            dependencies: []
+            optional: false
         },
         {
             name: 'TelegramService',
             instance: TelegramService,
             init: () => TelegramService.init(),
-            dependencies: []
+            optional: true // Опциональный, может быть не настроен
         },
         {
             name: 'MessageScheduler',
             instance: MessageScheduler,
             init: () => MessageScheduler.init(),
-            dependencies: ['TelegramService']
+            optional: true // Опциональный, зависит от TelegramService
         },
         {
             name: 'CalendarManager',
             instance: CalendarManager,
             init: () => CalendarManager.init(),
-            dependencies: ['MessageScheduler']
-        },
-        {
-            name: 'ScheduledMessagesManager',
-            instance: ScheduledMessagesManager,
-            init: () => ScheduledMessagesManager.init(),
-            dependencies: ['MessageScheduler']
+            optional: true // Опциональный, зависит от MessageScheduler
         }
+        // ScheduledMessagesManager удален из списка, так как он может отсутствовать
     ];
 
     // Инициализируем менеджеры последовательно
@@ -120,16 +115,19 @@ async function initializeManagers() {
 
 // Инициализация отдельного менеджера
 async function initializeManager(manager) {
-    const { name, instance, init, dependencies } = manager;
+    const { name, instance, init, optional } = manager;
     
-    // Проверяем зависимости
-    const missingDeps = dependencies.filter(dep => typeof window[dep] === 'undefined');
-    if (missingDeps.length > 0) {
-        console.warn(`⚠️ ${name}: пропущен, отсутствуют зависимости: ${missingDeps.join(', ')}`);
-        return;
+    if (typeof instance === 'undefined') {
+        if (optional) {
+            console.warn(`⚠️ ${name}: пропущен (опциональный компонент)`);
+            return;
+        } else {
+            console.error(`❌ ${name}: не найден (обязательный компонент)`);
+            throw new Error(`Обязательный компонент ${name} не загружен`);
+        }
     }
     
-    if (typeof instance !== 'undefined' && init) {
+    if (typeof init === 'function') {
         try {
             await init();
             console.log(`✅ ${name} инициализирован`);
@@ -143,10 +141,15 @@ async function initializeManager(manager) {
             }
             
         } catch (error) {
-            console.error(`❌ Ошибка инициализации ${name}:`, error);
+            if (optional) {
+                console.warn(`⚠️ Ошибка инициализации ${name} (опциональный):`, error.message);
+            } else {
+                console.error(`❌ Ошибка инициализации ${name}:`, error);
+                throw error;
+            }
         }
     } else {
-        console.warn(`⚠️ ${name}: не доступен для инициализации`);
+        console.warn(`⚠️ ${name}: метод init не найден`);
     }
 }
 
@@ -154,7 +157,7 @@ async function initializeManager(manager) {
 function startDelayedTasks() {
     console.log('🔄 Запуск отложенных задач...');
     
-    // Принудительная проверка MessageScheduler через 3 секунды
+    // Принудительная проверка MessageScheduler через 3 секунды (если доступен)
     setTimeout(() => {
         if (typeof MessageScheduler !== 'undefined') {
             console.log('🔍 Принудительная проверка MessageScheduler...');
@@ -163,24 +166,28 @@ function startDelayedTasks() {
             // Проверяем статус планировщика
             const status = MessageScheduler.getSchedulerStatus();
             console.log('📊 Статус MessageScheduler:', status);
+        } else {
+            console.log('ℹ️ MessageScheduler не доступен для проверки');
         }
     }, 3000);
     
-    // Проверка дней рождения через 10 секунд
+    // Проверка дней рождения через 10 секунд (если доступен CalendarManager)
     setTimeout(() => {
         if (typeof CalendarManager !== 'undefined' && CalendarManager.checkScheduledBirthdays) {
             console.log('🔍 Проверка запланированных дней рождения...');
             CalendarManager.checkScheduledBirthdays();
+        } else {
+            console.log('ℹ️ CalendarManager не доступен для проверки дней рождения');
         }
     }, 10000);
     
-    // Периодическая проверка каждые 5 минут
-    setInterval(() => {
-        if (typeof MessageScheduler !== 'undefined') {
+    // Периодическая проверка каждые 5 минут (если доступен MessageScheduler)
+    if (typeof MessageScheduler !== 'undefined') {
+        setInterval(() => {
             console.log('🔄 Периодическая проверка MessageScheduler...');
             MessageScheduler.checkScheduledMessages();
-        }
-    }, 5 * 60 * 1000); // 5 минут
+        }, 5 * 60 * 1000); // 5 минут
+    }
 }
 
 // Финальная проверка систем
@@ -188,40 +195,45 @@ function performFinalSystemCheck() {
     console.log('🔧 Финальная проверка систем...');
     
     const systems = [
-        { name: 'Navigation', check: () => typeof Navigation !== 'undefined' },
-        { name: 'DialogService', check: () => typeof DialogService !== 'undefined' },
-        { name: 'ERPHandler', check: () => typeof ERPHandler !== 'undefined' },
-        { name: 'TelegramService', check: () => typeof TelegramService !== 'undefined' && TelegramService.config?.botToken },
-        { name: 'MessageScheduler', check: () => typeof MessageScheduler !== 'undefined' && MessageScheduler.isInitialized },
-        { name: 'CalendarManager', check: () => typeof CalendarManager !== 'undefined' }
+        { name: 'Navigation', check: () => typeof Navigation !== 'undefined', critical: true },
+        { name: 'DialogService', check: () => typeof DialogService !== 'undefined', critical: true },
+        { name: 'ERPHandler', check: () => typeof ERPHandler !== 'undefined', critical: true },
+        { name: 'PCManager', check: () => typeof PCManager !== 'undefined', critical: false },
+        { name: 'PrinterManager', check: () => typeof PrinterManager !== 'undefined', critical: false },
+        { name: 'CashServerManager', check: () => typeof CashServerManager !== 'undefined', critical: false },
+        { name: 'ServicesManager', check: () => typeof ServicesManager !== 'undefined', critical: false },
+        { name: 'TelegramService', check: () => typeof TelegramService !== 'undefined' && TelegramService.config?.botToken, critical: false },
+        { name: 'MessageScheduler', check: () => typeof MessageScheduler !== 'undefined' && MessageScheduler.isInitialized, critical: false },
+        { name: 'CalendarManager', check: () => typeof CalendarManager !== 'undefined', critical: false }
     ];
     
     let allSystemsOk = true;
+    let criticalFailures = [];
     
     systems.forEach(system => {
         const isOk = system.check();
-        console.log(`${isOk ? '✅' : '❌'} ${system.name}: ${isOk ? 'OK' : 'FAIL'}`);
-        if (!isOk) allSystemsOk = false;
+        const status = isOk ? '✅' : (system.critical ? '❌' : '⚠️');
+        console.log(`${status} ${system.name}: ${isOk ? 'OK' : system.critical ? 'FAIL' : 'MISSING'}`);
+        
+        if (!isOk) {
+            allSystemsOk = false;
+            if (system.critical) {
+                criticalFailures.push(system.name);
+            }
+        }
     });
     
     if (allSystemsOk) {
         console.log('🎉 Все системы работают корректно!');
-    } else {
-        console.warn('⚠️ Некоторые системы требуют внимания');
-        
-        // Показываем предупреждение только если критичные системы не работают
-        const criticalSystems = ['Navigation', 'DialogService', 'ERPHandler'];
-        const criticalFailures = systems.filter(s => 
-            criticalSystems.includes(s.name) && !s.check()
+    } else if (criticalFailures.length > 0) {
+        console.error('❌ Критические системы не работают:', criticalFailures.join(', '));
+        DialogService.showMessage(
+            '⚠️ Ошибка системы',
+            `Критические компоненты не загружены:\n${criticalFailures.join(', ')}\n\nПриложение может работать некорректно.`,
+            'error'
         );
-        
-        if (criticalFailures.length > 0) {
-            DialogService.showMessage(
-                '⚠️ Предупреждение системы',
-                `Некоторые компоненты не загружены:\n${criticalFailures.map(s => s.name).join(', ')}\n\nПриложение может работать с ограничениями.`,
-                'warning'
-            );
-        }
+    } else {
+        console.warn('⚠️ Некоторые необязательные системы отсутствуют');
     }
 }
 
@@ -260,7 +272,7 @@ function initializeEventHandlers() {
             CalendarManager.showCalendar();
         }
         
-        // Обработка кнопки запланированных сообщений
+        // Обработка кнопки запланированных сообщений (если ScheduledMessagesManager доступен)
         const scheduleBtn = e.target.closest('.schedule-floating-btn');
         if (scheduleBtn && typeof ScheduledMessagesManager !== 'undefined') {
             e.preventDefault();
@@ -278,7 +290,7 @@ function initializeEventHandlers() {
             }
         }
         
-        // Ctrl+Shift+M - открыть запланированные сообщения
+        // Ctrl+Shift+M - открыть запланированные сообщения (если доступен)
         if (e.ctrlKey && e.shiftKey && e.key === 'M') {
             e.preventDefault();
             if (typeof ScheduledMessagesManager !== 'undefined') {
@@ -315,9 +327,14 @@ window.debugApp = function() {
     console.log('Navigation:', typeof Navigation !== 'undefined' ? '✅' : '❌');
     console.log('DialogService:', typeof DialogService !== 'undefined' ? '✅' : '❌');
     console.log('ERPHandler:', typeof ERPHandler !== 'undefined' ? '✅' : '❌');
+    console.log('PCManager:', typeof PCManager !== 'undefined' ? '✅' : '❌');
+    console.log('PrinterManager:', typeof PrinterManager !== 'undefined' ? '✅' : '❌');
+    console.log('CashServerManager:', typeof CashServerManager !== 'undefined' ? '✅' : '❌');
+    console.log('ServicesManager:', typeof ServicesManager !== 'undefined' ? '✅' : '❌');
     console.log('TelegramService:', typeof TelegramService !== 'undefined' ? '✅' : '❌');
     console.log('MessageScheduler:', typeof MessageScheduler !== 'undefined' ? '✅' : '❌');
     console.log('CalendarManager:', typeof CalendarManager !== 'undefined' ? '✅' : '❌');
+    console.log('ScheduledMessagesManager:', typeof ScheduledMessagesManager !== 'undefined' ? '✅' : '❌');
     
     if (typeof MessageScheduler !== 'undefined') {
         console.log('=== MESSAGE SCHEDULER ===');
