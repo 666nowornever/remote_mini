@@ -841,29 +841,35 @@ const CalendarManager = {
         const [year, month, day] = dateString.split('-').map(Number);
         const [hours, minutes] = timeString.split(':').map(Number);
         
-        // Создаем дату в UTC+3 (Московское время)
+        // Создаем дату в локальном времени (MSK)
         const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
         
-        // Конвертируем в UTC (убираем 3 часа)
-        const utcDate = new Date(localDate.getTime() - (3 * 60 * 60 * 1000));
+        // ДОБАВЛЯЕМ 3 ЧАСА для конвертации MSK → UTC
+        const utcDate = new Date(localDate.getTime() + (3 * 60 * 60 * 1000));
         
         const timestamp = utcDate.getTime();
         
         console.log(`📅 Создание события: ${dateString} ${timeString} MSK`);
         console.log(`🕒 Московское время: ${localDate.toLocaleString('ru-RU')}`);
-        console.log(`🌐 UTC время: ${utcDate.toLocaleString('ru-RU')}`);
+        console.log(`🌐 UTC время (для сервера): ${utcDate.toLocaleString('ru-RU')}`);
         console.log(`⏰ Timestamp: ${timestamp}`);
+        
+        const now = Date.now();
+        console.log(`⏱️ Сейчас timestamp: ${now}`);
+        console.log(`⏱️ Разница: ${timestamp - now} мс`);
         
         if (isNaN(timestamp)) {
             console.error('❌ Неверная дата или время');
             return null;
         }
 
-        const now = Date.now();
         if (timestamp <= now) {
             DialogService.showMessage(
                 '❌ Ошибка',
-                'Указанное время уже прошло. Выберите будущее время.',
+                `Указанное время уже прошло.\n` +
+                `Локальное время: ${localDate.toLocaleString('ru-RU')}\n` +
+                `UTC время: ${utcDate.toLocaleString('ru-RU')}\n` +
+                `Текущее время: ${new Date().toLocaleString('ru-RU')}`,
                 'error'
             );
             return null;
