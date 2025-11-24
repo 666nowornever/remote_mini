@@ -1,7 +1,7 @@
 // Менеджер календаря дежурств с серверной синхронизацией
 const CalendarManager = {
     // === КОНФИГУРАЦИЯ ===
-    apiUrl: 'https://your-server.com/api',
+    apiUrl: 'https://message-scheduler-server.onrender.com/api',
     syncInterval: 30000,
     syncTimer: null,
 
