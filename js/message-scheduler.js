@@ -1,29 +1,28 @@
-// Упрощенный MessageScheduler для работы с сервером
 const MessageScheduler = {
-    apiUrl: 'https://message-scheduler-server.onrender.com/api', // ЗАМЕНИ НА СВОЙ URL
+    // ЗАМЕНИ НА СВОЙ РЕАЛЬНЫЙ URL
+    apiUrl: 'https://message-scheduler-server.onrender.com/api',
     
     isInitialized: false,
     
-    // Инициализация
     async init() {
-        console.log('🔄 MessageScheduler: инициализация');
+        console.log('🔄 MessageScheduler: проверка сервера...');
+        
         try {
             const response = await fetch(`${this.apiUrl}/health`);
             if (response.ok) {
-                console.log('✅ Сервер доступен');
+                const data = await response.json();
+                console.log('✅ Сервер доступен:', data.status);
                 this.isInitialized = true;
+            } else {
+                console.warn('⚠️ Сервер недоступен');
             }
         } catch (error) {
             console.warn('⚠️ Сервер недоступен:', error.message);
         }
     },
 
-    // Планирование сообщения
     async scheduleMessage(timestamp, message, chatId = null, eventData = {}) {
-        console.log('📅 Планирование сообщения...', {
-            time: new Date(timestamp).toLocaleString('ru-RU'),
-            message: message.substring(0, 50)
-        });
+        console.log('📅 Планирование сообщения...');
 
         try {
             const response = await fetch(`${this.apiUrl}/messages`, {
@@ -31,7 +30,7 @@ const MessageScheduler = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: 'telegram_user',
-                    chatId: chatId || '-2380747129', // Замени на реальный chatId
+                    chatId: chatId || '-2380747129',
                     message: message,
                     scheduledFor: new Date(timestamp).toISOString(),
                     eventData: eventData
@@ -41,7 +40,7 @@ const MessageScheduler = {
             const result = await response.json();
             
             if (result.success) {
-                console.log('✅ Сообщение запланировано на сервере. ID:', result.message.id);
+                console.log('✅ Сообщение запланировано. ID:', result.message.id);
                 return result.message.id;
             } else {
                 console.error('❌ Ошибка сервера:', result.error);
@@ -53,7 +52,6 @@ const MessageScheduler = {
         }
     },
 
-    // Получение сообщений
     async getMessages() {
         try {
             const response = await fetch(`${this.apiUrl}/messages/telegram_user`);
@@ -65,53 +63,28 @@ const MessageScheduler = {
         }
     },
 
-    // Отладочные методы
     async debugMessages() {
         console.log('🔍 Проверка запланированных сообщений...');
         const messages = await this.getMessages();
         
         console.log(`📋 Всего сообщений: ${messages.length}`);
         
-        if (messages.length === 0) {
-            console.log('📭 Нет запланированных сообщений');
-            return;
-        }
-        
         messages.forEach(msg => {
-            const statusColors = {
-                scheduled: '🟡',
-                sent: '🟢', 
-                error: '🔴'
-            };
-            
-            console.log(`${statusColors[msg.status] || '⚪'} ${msg.id}:`);
-            console.log(`   📝 ${msg.message.substring(0, 60)}...`);
-            console.log(`   ⏰ ${new Date(msg.scheduledFor).toLocaleString('ru-RU')}`);
-            console.log(`   📊 Статус: ${msg.status}`);
-            if (msg.error) console.log(`   ❌ Ошибка: ${msg.error}`);
+            const statusColors = { scheduled: '🟡', sent: '🟢', error: '🔴' };
+            console.log(`${statusColors[msg.status] || '⚪'} ${msg.id}: ${msg.message.substring(0, 50)}...`);
         });
-    },
-
-    // Статус
-    getSchedulerStatus() {
-        return {
-            isRunning: true,
-            isInitialized: this.isInitialized,
-            server: this.apiUrl
-        };
+        
+        return messages;
     }
 };
 
-// Сделаем глобально доступным
 window.MessageScheduler = MessageScheduler;
 
 // Автоматическая инициализация
 document.addEventListener('DOMContentLoaded', function() {
-    if (typeof MessageScheduler !== 'undefined' && MessageScheduler.init) {
-        setTimeout(() => {
+    setTimeout(() => {
+        if (window.MessageScheduler && MessageScheduler.init) {
             MessageScheduler.init();
-        }, 1000);
-    }
+        }
+    }, 2000);
 });
-
-console.log('✅ MessageScheduler загружен');
