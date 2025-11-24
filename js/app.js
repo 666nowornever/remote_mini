@@ -51,6 +51,13 @@ async function initializeManagers() {
     
     // Список менеджеров для инициализации в правильном порядке
     const managers = [
+         {
+            name: 'MessageScheduler', 
+            instance: MessageScheduler,
+            init: () => MessageScheduler.init(),
+            optional: true
+        },
+
         {
             name: 'PCManager',
             instance: PCManager,
