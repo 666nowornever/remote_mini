@@ -836,39 +836,46 @@ const CalendarManager = {
         this.saveLocalFallback();
     },
 
-    createDateTime(dateString, timeString) {
-        try {
-            const [year, month, day] = dateString.split('-').map(Number);
-            const [hours, minutes] = timeString.split(':').map(Number);
-            
-            const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-            const timestamp = localDate.getTime();
-            
-            console.log(`📅 Создание события: ${dateString} ${timeString}`);
-            console.log(`🕒 Локальная дата: ${localDate.toLocaleString('ru-RU')}`);
-            
-            if (isNaN(timestamp)) {
-                console.error('❌ Неверная дата или время');
-                return null;
-            }
-
-            const now = Date.now();
-            if (timestamp <= now) {
-                DialogService.showMessage(
-                    '❌ Ошибка',
-                    'Указанное время уже прошло. Выберите будущее время.',
-                    'error'
-                );
-                return null;
-            }
-
-            return timestamp;
-            
-        } catch (error) {
-            console.error('❌ Ошибка создания даты:', error);
+   createDateTime(dateString, timeString) {
+    try {
+        const [year, month, day] = dateString.split('-').map(Number);
+        const [hours, minutes] = timeString.split(':').map(Number);
+        
+        // Создаем дату в UTC+3 (Московское время)
+        const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        
+        // Конвертируем в UTC (убираем 3 часа)
+        const utcDate = new Date(localDate.getTime() - (3 * 60 * 60 * 1000));
+        
+        const timestamp = utcDate.getTime();
+        
+        console.log(`📅 Создание события: ${dateString} ${timeString} MSK`);
+        console.log(`🕒 Московское время: ${localDate.toLocaleString('ru-RU')}`);
+        console.log(`🌐 UTC время: ${utcDate.toLocaleString('ru-RU')}`);
+        console.log(`⏰ Timestamp: ${timestamp}`);
+        
+        if (isNaN(timestamp)) {
+            console.error('❌ Неверная дата или время');
             return null;
         }
-    },
+
+        const now = Date.now();
+        if (timestamp <= now) {
+            DialogService.showMessage(
+                '❌ Ошибка',
+                'Указанное время уже прошло. Выберите будущее время.',
+                'error'
+            );
+            return null;
+        }
+
+        return timestamp;
+        
+    } catch (error) {
+        console.error('❌ Ошибка создания даты:', error);
+        return null;
+    }
+},
 
     async scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
         if (!message || message.trim().length === 0) {
