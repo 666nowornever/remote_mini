@@ -11,25 +11,21 @@ const MessageScheduler = {
 
     // Планирование сообщения
     async scheduleMessage(timestamp, message, chatId = null, eventData = {}) {
-        try {
-            console.log('📅 Планирование сообщения на сервере...', {
-                timestamp: new Date(timestamp).toLocaleString('ru-RU'),
-                message: message.substring(0, 50)
-            });
-
-            const response = await fetch(`${this.apiUrl}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    userId: 'telegram_user', // Временно, пока не настроен TelegramService
-                    chatId: chatId || '-1001234567890', // Твой chat ID
-                    message: message,
-                    scheduledFor: new Date(timestamp).toISOString(),
-                    eventData: eventData
-                })
-            });
+    try {
+        // Замени на реальный ID чата куда отправлять сообщения
+        const defaultChatId = '-2380747129'; // Твой рабочий чат ID
+        
+        const response = await fetch(`${this.apiUrl}/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: 'telegram_user',
+                chatId: chatId || defaultChatId,
+                message: message,
+                scheduledFor: new Date(timestamp).toISOString(),
+                eventData: eventData
+            })
+        });
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}`);
