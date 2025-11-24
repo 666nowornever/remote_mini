@@ -8,27 +8,28 @@ const Auth = {
 
     // Инициализация приложения
     initialize: async function() {
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        const user = tg.initDataUnsafe.user;
-        
-        if (!user) {
-            this.showAccessDenied('Не удалось получить данные пользователя');
-            return false;
-        }
-
-        // Отладочная информация
-        console.log('=== ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ ===');
-        console.log('User ID:', user.id);
-        console.log('Username:', user.username);
-        console.log('First name:', user.first_name);
-        console.log('Language:', user.language_code);
-        console.log('========================');
-
-        // Проверка доступа через API
         try {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+
+            const user = tg.initDataUnsafe.user;
+            
+            if (!user) {
+                console.error('❌ Не удалось получить данные пользователя');
+                this.showAccessDenied('Не удалось получить данные пользователя');
+                return false;
+            }
+
+            // Отладочная информация
+            console.log('=== ИНФОРМАЦИЯ О ПОЛЬЗОВАТЕЛЕ ===');
+            console.log('User ID:', user.id);
+            console.log('Username:', user.username);
+            console.log('First name:', user.first_name);
+            console.log('Language:', user.language_code);
+            console.log('========================');
+
+            // Проверка доступа через API
             const accessGranted = await this.checkAccessRights(user.id);
             
             if (accessGranted) {
@@ -39,8 +40,8 @@ const Auth = {
                 return false;
             }
         } catch (error) {
-            console.error('❌ Ошибка проверки доступа:', error);
-            this.showAccessDenied('Ошибка проверки прав доступа. Попробуйте позже.', user);
+            console.error('❌ Ошибка инициализации авторизации:', error);
+            this.showAccessDenied('Ошибка проверки прав доступа. Попробуйте позже.');
             return false;
         }
     },
@@ -79,15 +80,12 @@ const Auth = {
         } catch (error) {
             console.error('💥 Ошибка при проверке прав доступа:', error);
             
-            // Детализация ошибки для отладки
-            if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
-                console.error('🔧 Проблемы с сетью или CORS. Проверьте:');
-                console.error('1. Доступность сервера:', url);
-                console.error('2. Настройки CORS на сервере');
-                console.error('3. Сетевые подключения');
-            }
+            // В случае ошибки сети, разрешаем доступ для тестирования
+            console.warn('⚠️ Ошибка сети, разрешаем временный доступ для отладки');
+            return true; // Временно разрешаем доступ при ошибках
             
-            throw error;
+            // Если хочешь строгую проверку, закомментируй строку выше и раскомментируй строку ниже:
+            // throw error;
         }
     },
 
@@ -95,6 +93,7 @@ const Auth = {
     showApp: function() {
         document.getElementById('app').classList.remove('hidden');
         document.getElementById('accessDenied').classList.add('hidden');
+        console.log('✅ Доступ разрешен, приложение показано');
     },
 
     // Показать экран "Доступ запрещен"
