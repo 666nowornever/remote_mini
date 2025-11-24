@@ -10,42 +10,96 @@ const MessageScheduler = {
 
     // Инициализация планировщика
     async init() {
-        console.log('🔄 MessageScheduler: инициализация');
-        
-        if (this.isInitialized) {
-            console.log('ℹ️ MessageScheduler уже инициализирован');
-            return;
+    console.log('🔄 MessageScheduler: инициализация');
+    
+    if (this.isInitialized) {
+        console.log('ℹ️ MessageScheduler уже инициализирован');
+        return;
+    }
+    
+    try {
+        // Регистрируем Service Worker
+        if (this.serviceWorkerSupported) {
+            await this.registerServiceWorker();
+            
+            // Запрашиваем разрешение на уведомления и фоновую работу
+            await this.requestPermissions();
+        } else {
+            console.warn('⚠️ Service Worker не поддерживается, используется fallback режим');
         }
         
-        try {
-            // Регистрируем Service Worker для фоновой работы
-            if (this.serviceWorkerSupported) {
-                await this.registerServiceWorker();
-            } else {
-                console.warn('⚠️ Service Worker не поддерживается, используется fallback режим');
+        // Запускаем планировщик
+        this.startScheduler();
+        
+        // Восстанавливаем сообщения
+        this.restoreScheduledMessages();
+        
+        // Синхронизируем с Service Worker
+        await this.syncAllWithServiceWorker();
+        
+        // Проверяем сразу
+        setTimeout(() => {
+            this.checkScheduledMessages();
+        }, 2000);
+        
+        this.isInitialized = true;
+        console.log('✅ MessageScheduler инициализирован');
+        
+    } catch (error) {
+        console.error('❌ Ошибка инициализации MessageScheduler:', error);
+        // Fallback
+        this.startScheduler();
+        this.restoreScheduledMessages();
+    }
+},
+
+// Запрос разрешений
+async requestPermissions() {
+    try {
+        // Запрашиваем разрешение на уведомления
+        if ('Notification' in window && Notification.permission === 'default') {
+            await Notification.requestPermission();
+        }
+        
+        // Запрашиваем фоновую синхронизацию
+        if ('periodicSync' in registration) {
+            try {
+                await registration.periodicSync.register('message-check', {
+                    minInterval: 5 * 60 * 1000 // 5 минут
+                });
+                console.log('✅ Фоновая синхронизация зарегистрирована');
+            } catch (error) {
+                console.warn('⚠️ Фоновая синхронизация не поддерживается:', error);
             }
-            
-            // Запускаем планировщик
-            this.startScheduler();
-            
-            // Восстанавливаем сообщения
-            this.restoreScheduledMessages();
-            
-            // Проверяем сразу
-            setTimeout(() => {
-                this.checkScheduledMessages();
-            }, 2000);
-            
-            this.isInitialized = true;
-            console.log('✅ MessageScheduler инициализирован');
-            
-        } catch (error) {
-            console.error('❌ Ошибка инициализации MessageScheduler:', error);
-            // Fallback: запускаем без Service Worker
-            this.startScheduler();
-            this.restoreScheduledMessages();
         }
-    },
+    } catch (error) {
+        console.warn('⚠️ Ошибка запроса разрешений:', error);
+    }
+},
+// Полная синхронизация с Service Worker
+async syncAllWithServiceWorker() {
+    if (!navigator.serviceWorker.controller) return;
+    
+    const messages = this.getScheduledMessages();
+    const config = {
+        botToken: TelegramService?.config?.botToken,
+        defaultChatId: TelegramService?.config?.defaultChatId
+    };
+    
+    // Синхронизируем конфигурацию
+    navigator.serviceWorker.controller.postMessage({
+        type: 'SYNC_CONFIG',
+        config: config
+    });
+    
+    // Синхронизируем сообщения
+    navigator.serviceWorker.controller.postMessage({
+        type: 'SYNC_MESSAGES',
+        messages: messages
+    });
+    
+    console.log(`📡 Синхронизировано ${messages.length} сообщений и конфигурация с Service Worker`);
+},
 
     // Регистрация Service Worker
     async registerServiceWorker() {
@@ -168,48 +222,47 @@ const MessageScheduler = {
 
     // Планирование сообщения
     scheduleMessage(timestamp, message, chatId = null, eventData = {}) {
-        console.log('📅 Планирование сообщения:', { 
-            timestamp, 
-            scheduledTime: new Date(timestamp).toLocaleString('ru-RU'),
-            message: message.substring(0, 50) 
-        });
-        
-        // Проверяем, что timestamp в будущем
-        if (timestamp <= Date.now()) {
-            console.error('❌ Нельзя запланировать сообщение в прошлом');
-            return null;
-        }
+    console.log('📅 Планирование сообщения:', { 
+        timestamp, 
+        scheduledTime: new Date(timestamp).toLocaleString('ru-RU'),
+        message: message.substring(0, 50) 
+    });
+    
+    if (timestamp <= Date.now()) {
+        console.error('❌ Нельзя запланировать сообщение в прошлом');
+        return null;
+    }
 
-        const scheduledMessage = {
-            id: this.generateId(),
-            timestamp: timestamp,
-            message: message,
-            chatId: chatId,
-            eventData: eventData,
-            status: 'scheduled',
-            createdAt: Date.now(),
-            scheduledFor: new Date(timestamp).toLocaleString('ru-RU'),
-            attempts: 0,
-            maxAttempts: 3
-        };
+    const scheduledMessage = {
+        id: this.generateId(),
+        timestamp: timestamp,
+        message: message,
+        chatId: chatId,
+        eventData: eventData,
+        status: 'scheduled',
+        createdAt: Date.now(),
+        scheduledFor: new Date(timestamp).toLocaleString('ru-RU'),
+        attempts: 0,
+        maxAttempts: 3
+    };
 
-        const messages = this.getScheduledMessages();
-        messages.push(scheduledMessage);
-        this.saveScheduledMessages(messages);
+    const messages = this.getScheduledMessages();
+    messages.push(scheduledMessage);
+    this.saveScheduledMessages(messages);
 
-        console.log(`✅ Сообщение запланировано: ${new Date(timestamp).toLocaleString('ru-RU')}`);
-        console.log(`🆔 ID: ${scheduledMessage.id}`);
-        
-        // Синхронизируем с Service Worker
-        this.syncWithServiceWorker();
-        
-        // Запускаем немедленную проверку
-        setTimeout(() => {
-            this.checkScheduledMessages();
-        }, 1000);
-        
-        return scheduledMessage.id;
-    },
+    console.log(`✅ Сообщение запланировано: ${new Date(timestamp).toLocaleString('ru-RU')}`);
+    console.log(`🆔 ID: ${scheduledMessage.id}`);
+    
+    // Синхронизируем с Service Worker
+    this.syncAllWithServiceWorker();
+    
+    // Запускаем немедленную проверку
+    setTimeout(() => {
+        this.checkScheduledMessages();
+    }, 1000);
+    
+    return scheduledMessage.id;
+},
 
     // Проверка запланированных сообщений
     async checkScheduledMessages() {

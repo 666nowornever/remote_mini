@@ -158,6 +158,10 @@ const CalendarManager = {
     // === ИНИЦИАЛИЗАЦИЯ ===
     async init() {
         console.log('🔄 CalendarManager: инициализация...');
+        
+        // Проверяем возможности фоновой работы
+        this.checkBackgroundCapabilities();
+        
         // Загружаем локальные данные
         this.loadLocalData();
         // Инициализируем real-time синхронизацию
@@ -169,6 +173,27 @@ const CalendarManager = {
         // Делаем доступным глобально для отладки
         window.CalendarManager = this;
         console.log('🔧 CalendarManager доступен глобально для отладки');
+        
+        // Дополнительная проверка через 10 секунд
+        setTimeout(() => {
+            this.ensureSchedulerRunning();
+            this.checkScheduledBirthdays();
+        }, 10000);
+    },
+
+    // === ПРОВЕРКА ФОНОВОЙ РАБОТЫ ===
+    checkBackgroundCapabilities() {
+        console.log('🔍 Проверка возможностей фоновой работы:');
+        console.log('Service Worker:', 'serviceWorker' in navigator);
+        console.log('Background Sync:', 'sync' in (navigator.serviceWorker?.ready || {}));
+        console.log('Push Notifications:', 'PushManager' in window);
+        
+        if (!('serviceWorker' in navigator)) {
+            console.warn('⚠️ Фоновая работа недоступна: Service Worker не поддерживается');
+            console.warn('📱 Автоматическая отправка дней рождения работает только когда приложение открыто');
+        } else {
+            console.log('✅ Фоновая работа возможна через Service Worker');
+        }
     },
 
     // === ДНИ РОЖДЕНИЯ ===
@@ -1232,7 +1257,7 @@ const CalendarManager = {
         
         if (typeof MessageScheduler === 'undefined') {
             console.error('❌ MessageScheduler не доступен');
-            DialogService.showMessage('❌ Ошибка', 'MessageScheduler не доступен', 'error');
+            console.error('💡 Используйте: CalendarManager.rescheduleAllBirthdays()');
             return;
         }
         
@@ -1255,11 +1280,9 @@ const CalendarManager = {
         // Проверяем результат
         const newMessages = this.checkScheduledBirthdays();
         
-        DialogService.showMessage(
-            '✅ Успех', 
-            `Все дни рождения перепланированы\nУдалено: ${deletedCount}\nЗапланировано: ${newMessages.length}`,
-            'success'
-        );
+        console.log(`✅ Перепланирование завершено:`);
+        console.log(`   Удалено: ${deletedCount}`);
+        console.log(`   Запланировано: ${newMessages.length}`);
     },
     
     // Проверка корректности времени
@@ -1312,6 +1335,12 @@ const CalendarManager = {
         console.log('TelegramService:', typeof TelegramService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
         console.log('Navigation:', typeof Navigation !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
         console.log('DialogService:', typeof DialogService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
+        
+        // Проверяем статус планировщика
+        if (typeof MessageScheduler !== 'undefined') {
+            const schedulerStatus = MessageScheduler.getSchedulerStatus();
+            console.log('⏰ Статус планировщика:', schedulerStatus);
+        }
     },
 
     // Проверка и запуск планировщика
@@ -1349,6 +1378,41 @@ const CalendarManager = {
         setTimeout(() => {
             this.checkScheduledBirthdays();
         }, 5000);
+    },
+
+    // Принудительная проверка всех дней рождения
+    forceCheckBirthdays() {
+        console.log('🚀 Принудительная проверка дней рождения...');
+        this.scheduleBirthdaysWithCheck();
+        
+        if (typeof MessageScheduler !== 'undefined') {
+            MessageScheduler.checkScheduledMessages();
+            MessageScheduler.forceSendOverdueMessages();
+        }
+        
+        console.log('✅ Проверка запущена');
+    },
+
+    // Проверка фоновой работы
+    checkBackgroundWork() {
+        console.log('🌐 Проверка фоновой работы...');
+        
+        if (typeof MessageScheduler !== 'undefined') {
+            const status = MessageScheduler.getSchedulerStatus();
+            console.log('📊 Статус планировщика:', status);
+            
+            // Проверяем Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.ready.then(registration => {
+                    console.log('✅ Service Worker активен');
+                }).catch(error => {
+                    console.error('❌ Service Worker не активен:', error);
+                });
+            }
+        }
+        
+        // Проверяем запланированные сообщения
+        this.checkScheduledBirthdays();
     }
 
 };
@@ -1362,3 +1426,25 @@ document.addEventListener('DOMContentLoaded', function() {
         CalendarManager.init();
     }
 });
+
+// Добавляем команды для отладки в консоль
+console.log(`
+🎯 Команды для отладки CalendarManager:
+
+🔍 Проверка дней рождения:
+CalendarManager.checkScheduledBirthdays() - показать запланированные ДР
+CalendarManager.debugTimeIssues() - отладка проблем со временем
+CalendarManager.debugAllSystems() - полная проверка систем
+
+🔄 Управление планированием:
+CalendarManager.rescheduleAllBirthdays() - перепланировать все ДР
+CalendarManager.forceCheckBirthdays() - принудительная проверка
+CalendarManager.scheduleBirthdaysWithCheck() - планирование с проверкой
+
+🌐 Фоновая работа:
+CalendarManager.checkBackgroundWork() - проверка фоновой работы
+CalendarManager.ensureSchedulerRunning() - запуск планировщика
+
+📊 Общая отладка:
+CalendarManager.debugAllSystems() - полная диагностика
+`);
