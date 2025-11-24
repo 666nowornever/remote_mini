@@ -1,6 +1,6 @@
 // Упрощенный MessageScheduler для работы с сервером
 const MessageScheduler = {
-    apiUrl: 'https://your-server.com/api', // Замени на реальный URL сервера
+    apiUrl: 'https://message-scheduler-server.onrender.com/api', // Замени на реальный URL сервера
     
     // Инициализация
     async init() {
