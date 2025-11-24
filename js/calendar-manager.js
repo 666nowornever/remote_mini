@@ -115,7 +115,7 @@ const CalendarManager = {
         {
             id: 13,
             name: 'test',
-            date: '2025-11-13',
+            date: '2025-11-24',
             type: 'notification',
             message: '📅 TEST DR'
         }
@@ -1362,6 +1362,48 @@ const CalendarManager = {
 
         return true;
     },
+    // Проверка запланированных сообщений
+async checkScheduledMessages() {
+    const now = Date.now();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Начало текущего дня
+    
+    const messages = this.getScheduledMessages();
+    
+    // ФИЛЬТРУЕМ: только те сообщения, у которых время наступило И дата >= сегодняшней
+    const messagesToSend = messages.filter(msg => {
+        const messageDate = new Date(msg.timestamp);
+        const messageDay = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
+        
+        return msg.status === 'scheduled' && 
+               msg.timestamp <= now && 
+               messageDay >= today;
+    });
+
+    console.log(`🔍 Проверка сообщений: ${messagesToSend.length} для отправки`);
+
+    if (messagesToSend.length > 0) {
+        console.log(`📤 Найдено сообщений для отправки: ${messagesToSend.length}`);
+        
+        for (const message of messagesToSend) {
+            await this.sendScheduledMessage(message);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+    }
+    
+    
+    // Логируем пропущенные сообщения (для отладки)
+    const skippedMessages = messages.filter(msg => 
+        msg.status === 'scheduled' && 
+        msg.timestamp <= now && 
+        !messagesToSend.includes(msg)
+    );
+    
+    if (skippedMessages.length > 0) {
+        console.log(`⏰ Пропущено сообщений с прошедшей датой: ${skippedMessages.length}`);
+    }
+},
+
 
     // Улучшенное планирование дней рождения с проверкой
     scheduleBirthdaysWithCheck() {
