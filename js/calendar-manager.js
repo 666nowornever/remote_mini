@@ -1,15 +1,11 @@
-// Менеджер календаря дежурств с real-time синхронизацией и днями рождения
+// Менеджер календаря дежурств с серверной синхронизацией
 const CalendarManager = {
-    // === КОНФИГУРАЦИЯ СИНХРОНИЗАЦИИ ===
-    syncConfig: {
-        wsUrl: 'wss://remote-api-calendar.onrender.com/ws',
-        apiUrl: 'https://remote-api-calendar.onrender.com/api',
-        reconnectInterval: 3000,
-        maxReconnectAttempts: 5,
-        syncInterval: 10000
-    },
+    // === КОНФИГУРАЦИЯ ===
+    apiUrl: 'https://your-server.com/api',
+    syncInterval: 30000,
+    syncTimer: null,
 
-    // Данные
+    // Данные (синхронизируются с сервером)
     data: {
         events: {},
         vacations: {},
@@ -24,9 +20,8 @@ const CalendarManager = {
         { id: 3, name: 'Преображенский Дмитрий', color: '#FF9800' }
     ],
 
-    // Дни рождения (хранятся в коде)
+    // Дни рождения
     birthdays: [
-        // Поздравление в чат в 07:30
         {
             id: 1,
             name: 'Васильев Иван',
@@ -62,7 +57,6 @@ const CalendarManager = {
             type: 'congratulation',
             message: '🎉 Поздравляем @darkwellx с днем рождения! 🎂'
         },
-        // Просто уведомление в 10:00
         {
             id: 6,
             name: 'Дяблов Алексей',
@@ -115,7 +109,7 @@ const CalendarManager = {
         {
             id: 13,
             name: 'test',
-            date: '2025-11-25',
+            date: '2025-11-13',
             type: 'notification',
             message: '📅 TEST DR'
         }
@@ -145,111 +139,198 @@ const CalendarManager = {
         selectionMode: 'day',
         isOnline: false,
         isSyncing: false,
-        retryCount: 0,
-        lastSync: 0
+        lastServerCheck: 0
     },
 
-    // WebSocket
-    ws: null,
-    reconnectAttempts: 0,
-    isConnected: false,
-    httpSyncInterval: null,
-
-    // === ИНИЦИАЛИЗАЦИЯ ===
+    // === ИНИЦИАЛИЗАЦИЯ И СИНХРОНИЗАЦИЯ ===
     async init() {
         console.log('🔄 CalendarManager: инициализация...');
-        
-        // Проверяем возможности фоновой работы
-        this.checkBackgroundCapabilities();
-        
-        // Загружаем локальные данные
-        this.loadLocalData();
-        // Инициализируем real-time синхронизацию
-        this.initRealtimeSync();
-        // Планируем дни рождения
+        await this.loadFromServer();
+        this.startSync();
         this.scheduleBirthdays();
         console.log('✅ CalendarManager: инициализация завершена');
-        
-        // Делаем доступным глобально для отладки
         window.CalendarManager = this;
-        console.log('🔧 CalendarManager доступен глобально для отладки');
-        
-        // Дополнительная проверка через 10 секунд
-        setTimeout(() => {
-            this.ensureSchedulerRunning();
-            this.checkScheduledBirthdays();
-        }, 10000);
     },
 
-    // === ПРОВЕРКА ФОНОВОЙ РАБОТЫ ===
-    checkBackgroundCapabilities() {
-        console.log('🔍 Проверка возможностей фоновой работы:');
-        console.log('Service Worker:', 'serviceWorker' in navigator);
-        console.log('Background Sync:', 'sync' in (navigator.serviceWorker?.ready || {}));
-        console.log('Push Notifications:', 'PushManager' in window);
-        
-        if (!('serviceWorker' in navigator)) {
-            console.warn('⚠️ Фоновая работа недоступна: Service Worker не поддерживается');
-            console.warn('📱 Автоматическая отправка дней рождения работает только когда приложение открыто');
-        } else {
-            console.log('✅ Фоновая работа возможна через Service Worker');
+    async loadFromServer() {
+        try {
+            console.log('📥 Загрузка данных с сервера...');
+            const response = await fetch(`${this.apiUrl}/calendar`);
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const result = await response.json();
+            
+            if (result.success && this.validateData(result.data)) {
+                this.data = result.data;
+                this.state.lastServerCheck = Date.now();
+                this.state.isOnline = true;
+                console.log('✅ Данные загружены с сервера');
+                
+                if (document.getElementById('calendarGrid')) {
+                    this.renderCalendar();
+                    this.renderBirthdaysThisMonth();
+                }
+            } else {
+                throw new Error('Invalid server response');
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки с сервера:', error);
+            this.state.isOnline = false;
+            this.loadLocalFallback();
         }
     },
 
+    async saveToServer() {
+        if (this.state.isSyncing) return;
+        this.state.isSyncing = true;
+        
+        try {
+            console.log('📤 Сохранение данных на сервер...');
+            const userId = this.getUserId();
+            
+            const response = await fetch(`${this.apiUrl}/calendar`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...this.data,
+                    lastModified: Date.now(),
+                    updatedBy: userId || 'unknown'
+                })
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.data.lastModified = result.lastModified;
+                this.data.version = result.version;
+                this.state.isOnline = true;
+                console.log('✅ Данные сохранены на сервер');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Ошибка сохранения на сервер:', error);
+            this.state.isOnline = false;
+            this.saveLocalFallback();
+        } finally {
+            this.state.isSyncing = false;
+        }
+    },
+
+    startSync() {
+        if (this.syncTimer) clearInterval(this.syncTimer);
+
+        this.syncTimer = setInterval(async () => {
+            await this.syncWithServer();
+        }, this.syncInterval);
+
+        console.log('🔄 Синхронизация запущена');
+    },
+
+    async syncWithServer() {
+        try {
+            const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`);
+            if (!response.ok) return;
+            
+            const result = await response.json();
+            
+            if (result.success && this.validateData(result.data)) {
+                if (result.data.lastModified > this.data.lastModified) {
+                    console.log('🔄 Обновление данных с сервера');
+                    this.data = result.data;
+                    this.state.lastServerCheck = Date.now();
+                    this.state.isOnline = true;
+                    
+                    if (document.getElementById('calendarGrid')) {
+                        this.renderCalendar();
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка синхронизации:', error);
+            this.state.isOnline = false;
+        }
+    },
+
+    loadLocalFallback() {
+        try {
+            const saved = localStorage.getItem('calendarData_backup');
+            if (saved) {
+                const localData = JSON.parse(saved);
+                if (this.validateData(localData)) {
+                    this.data = localData;
+                    console.log('✅ Данные загружены из локального backup');
+                    return true;
+                }
+            }
+        } catch (error) {
+            console.error('❌ Ошибка загрузки backup:', error);
+        }
+        return false;
+    },
+
+    saveLocalFallback() {
+        try {
+            localStorage.setItem('calendarData_backup', JSON.stringify(this.data));
+            console.log('💾 Данные сохранены в локальный backup');
+        } catch (error) {
+            console.error('❌ Ошибка сохранения backup:', error);
+        }
+    },
+
+    getUserId() {
+        if (window.Telegram && Telegram.WebApp) {
+            return Telegram.WebApp.initDataUnsafe.user?.id?.toString();
+        }
+        return 'unknown';
+    },
+
+    validateData(data) {
+        return data &&
+            typeof data === 'object' &&
+            typeof data.events === 'object' &&
+            typeof data.vacations === 'object' &&
+            typeof data.lastModified === 'number' &&
+            typeof data.version === 'number';
+    },
+
     // === ДНИ РОЖДЕНИЯ ===
-    // Планирование дней рождения
     scheduleBirthdays() {
-        console.log('🎂 Планирование дней рождения...');
+        console.log('🎂 Планирование дней рождения на сервере...');
         const now = new Date();
         const currentYear = now.getFullYear();
         
         this.birthdays.forEach(birthday => {
-            // Создаем дату дня рождения в текущем году
             const birthDate = new Date(birthday.date);
             const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
 
-            // Если день рождения уже прошел в этом году, планируем на следующий год
             if (birthdayThisYear < now) {
                 birthdayThisYear.setFullYear(currentYear + 1);
             }
 
-            // Устанавливаем время отправки
             const sendTime = birthday.type === 'congratulation' ? '07:30' : '10:00';
             const [hours, minutes] = sendTime.split(':').map(Number);
             
-            // Создаем корректную дату с временем в локальном часовом поясе
             const sendDateTime = new Date(birthdayThisYear);
             sendDateTime.setHours(hours, minutes, 0, 0);
 
-            console.log(`📅 ${birthday.name}: ${sendDateTime.toLocaleDateString('ru-RU')} в ${sendTime} (timestamp: ${sendDateTime.getTime()})`);
-
-            // Планируем сообщение
+            console.log(`📅 ${birthday.name}: ${sendDateTime.toLocaleDateString('ru-RU')} в ${sendTime}`);
             this.scheduleBirthdayMessage(birthday, sendDateTime.getTime());
         });
     },
 
-    // Планирование сообщения о дне рождения
-    scheduleBirthdayMessage(birthday, timestamp) {
-        // ПРОВЕРКА: Убедимся что MessageScheduler доступен
+    async scheduleBirthdayMessage(birthday, timestamp) {
         if (typeof MessageScheduler === 'undefined') {
-            console.error('❌ MessageScheduler не доступен для планирования дня рождения');
+            console.error('❌ MessageScheduler не доступен');
             return;
         }
 
-        // Проверяем, не запланировано ли уже это сообщение
-        const existingMessages = MessageScheduler.getAllMessages();
-        const alreadyScheduled = existingMessages.some(msg =>
-            msg.eventData?.type === 'birthday' &&
-            msg.eventData?.birthdayId === birthday.id &&
-            new Date(msg.timestamp).getFullYear() === new Date(timestamp).getFullYear()
-        );
-
-        if (!alreadyScheduled) {
-            // Корректируем timestamp для правильного часового пояса
-            const correctedTimestamp = this.correctTimezoneForBirthday(timestamp, birthday.type);
-            
-            const messageId = MessageScheduler.scheduleMessage(
-                correctedTimestamp,
+        try {
+            const messageId = await MessageScheduler.scheduleMessage(
+                timestamp,
                 birthday.message,
                 null,
                 {
@@ -261,32 +342,13 @@ const CalendarManager = {
             );
             
             if (messageId) {
-                console.log(`🎂 Запланировано сообщение для ${birthday.name} на ${new Date(correctedTimestamp).toLocaleString('ru-RU')} (ID: ${messageId})`);
-            } else {
-                console.error(`❌ Не удалось запланировать сообщение для ${birthday.name}`);
+                console.log(`🎂 Запланировано на сервере: ${birthday.name}`);
             }
-        } else {
-            console.log(`ℹ️ Сообщение для ${birthday.name} уже запланировано`);
+        } catch (error) {
+            console.error(`❌ Ошибка планирования для ${birthday.name}:`, error);
         }
     },
 
-    // Коррекция часового пояса для дней рождения
-    correctTimezoneForBirthday(timestamp, birthdayType) {
-        const date = new Date(timestamp);
-        
-        // Устанавливаем правильное время (07:30 для поздравлений, 10:00 для уведомлений)
-        const sendTime = birthdayType === 'congratulation' ? '07:30' : '10:00';
-        const [hours, minutes] = sendTime.split(':').map(Number);
-        
-        // Создаем дату в правильном часовом поясе
-        const correctedDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours, minutes, 0, 0);
-        
-        console.log(`🕒 Коррекция времени: ${date.toLocaleString('ru-RU')} -> ${correctedDate.toLocaleString('ru-RU')}`);
-        
-        return correctedDate.getTime();
-    },
-
-    // Получить дни рождения на конкретную дату
     getBirthdaysForDate(dateKey) {
         return this.birthdays.filter(birthday => {
             const birthDate = new Date(birthday.date);
@@ -296,326 +358,19 @@ const CalendarManager = {
         });
     },
 
-    // Получить дни рождения в текущем месяце
     getBirthdaysForCurrentMonth() {
         const currentMonth = this.state.currentDate.getMonth();
         const currentYear = this.state.currentDate.getFullYear();
         
         return this.birthdays.filter(birthday => {
             const birthDate = new Date(birthday.date);
-            // Создаем дату в текущем году для сравнения
             const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
             return birthdayThisYear.getMonth() === currentMonth;
         }).sort((a, b) => {
-            // Сортируем по дате
             const dateA = new Date(a.date);
             const dateB = new Date(b.date);
             return (dateA.getMonth() * 100 + dateA.getDate()) - (dateB.getMonth() * 100 + dateB.getDate());
         });
-    },
-
-    // === REAL-TIME СИНХРОНИЗАЦИЯ ===
-    // Инициализация WebSocket соединения
-    initRealtimeSync() {
-        try {
-            console.log('🔗 Подключение к WebSocket...');
-            this.ws = new WebSocket(this.syncConfig.wsUrl);
-            
-            this.ws.onopen = () => {
-                console.log('✅ WebSocket connected');
-                this.isConnected = true;
-                this.reconnectAttempts = 0;
-                this.state.isOnline = true;
-                this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
-            };
-
-            this.ws.onmessage = (event) => {
-                try {
-                    const message = JSON.parse(event.data);
-                    this.handleWebSocketMessage(message);
-                } catch (error) {
-                    console.error('❌ Error parsing WebSocket message:', error);
-                }
-            };
-
-            this.ws.onclose = (event) => {
-                console.log('🔌 WebSocket disconnected:', event.code, event.reason);
-                this.isConnected = false;
-                this.state.isOnline = false;
-                this.handleReconnection();
-            };
-
-            this.ws.onerror = (error) => {
-                console.error('❌ WebSocket error:', error);
-                this.isConnected = false;
-                this.state.isOnline = false;
-            };
-
-        } catch (error) {
-            console.error('❌ Error initializing WebSocket:', error);
-            this.fallbackToHTTPSync();
-        }
-    },
-
-    // Обработка сообщений WebSocket
-    handleWebSocketMessage(message) {
-        switch (message.type) {
-            case 'INIT_DATA':
-                if (this.validateData(message.data)) {
-                    this.handleRemoteUpdate(message.data, 'server');
-                }
-                break;
-            case 'DATA_UPDATE':
-                if (this.validateData(message.data)) {
-                    this.handleRemoteUpdate(message.data, 'client');
-                }
-                break;
-            case 'UPDATE_CONFIRMED':
-                this.data.lastModified = message.lastModified;
-                this.saveLocalData();
-                this.updateSyncStatus('success', 'Сохранено');
-                break;
-            case 'ERROR':
-                console.error('❌ Server error:', message.message);
-                this.updateSyncStatus('error', message.message);
-                break;
-        }
-    },
-
-    // Обработка удаленного обновления
-    handleRemoteUpdate(remoteData, source) {
-        const localTimestamp = this.data.lastModified || 0;
-        const remoteTimestamp = remoteData.lastModified || 0;
-
-        if (remoteTimestamp > localTimestamp) {
-            const hadChanges = JSON.stringify(this.data) !== JSON.stringify(remoteData);
-            this.data = remoteData;
-            this.saveLocalData();
-
-            if (hadChanges) {
-                this.updateSyncStatus('success', `Обновлено: ${new Date().toLocaleTimeString()}`);
-                if (document.getElementById('calendarGrid')) {
-                    this.renderCalendar();
-                }
-            }
-        }
-    },
-
-    // Отправка обновления на сервер через WebSocket
-    sendUpdateToServer() {
-        if (this.ws && this.isConnected && this.ws.readyState === WebSocket.OPEN) {
-            this.ws.send(JSON.stringify({
-                type: 'DATA_UPDATE',
-                data: this.data,
-                timestamp: Date.now()
-            }));
-            return true;
-        }
-        return false;
-    },
-
-    // Переподключение при разрыве соединения
-    handleReconnection() {
-        if (this.reconnectAttempts < this.syncConfig.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            this.updateSyncStatus('syncing', 'Переподключение...');
-            
-            setTimeout(() => {
-                this.initRealtimeSync();
-            }, this.syncConfig.reconnectInterval);
-        } else {
-            this.fallbackToHTTPSync();
-        }
-    },
-
-    // Fallback на HTTP синхронизацию
-    fallbackToHTTPSync() {
-        this.updateSyncStatus('warning', 'Режим HTTP синхронизации');
-        this.startHTTPSyncInterval();
-    },
-
-    // HTTP синхронизация - получение данных
-    async syncViaHTTP() {
-        try {
-            const response = await fetch(`${this.syncConfig.apiUrl}/calendar?t=${Date.now()}`);
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && this.validateData(result.data)) {
-                    this.handleRemoteUpdate(result.data, 'http');
-                    return true;
-                }
-            }
-        } catch (error) {
-            console.error('❌ HTTP sync error:', error);
-        }
-        return false;
-    },
-
-    // HTTP синхронизация - отправка данных
-    async sendUpdateViaHTTP() {
-        try {
-            const response = await fetch(`${this.syncConfig.apiUrl}/calendar`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(this.data)
-            });
-
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success) {
-                    this.data.lastModified = result.lastModified;
-                    this.saveLocalData();
-                    return true;
-                }
-            }
-        } catch (error) {
-            console.error('❌ HTTP update error:', error);
-        }
-        return false;
-    },
-
-    // Запуск периодической HTTP синхронизации
-    startHTTPSyncInterval() {
-        if (this.httpSyncInterval) {
-            clearInterval(this.httpSyncInterval);
-        }
-
-        this.syncViaHTTP();
-        this.httpSyncInterval = setInterval(async () => {
-            await this.syncViaHTTP();
-        }, this.syncConfig.syncInterval);
-    },
-
-    // === СИНХРОНИЗАЦИЯ ДАННЫХ ===
-    // Загрузка локальных данных
-    loadLocalData() {
-        try {
-            const saved = localStorage.getItem('calendarData');
-            if (saved) {
-                const localData = JSON.parse(saved);
-                if (this.validateData(localData)) {
-                    this.data = localData;
-                    return true;
-                }
-            }
-        } catch (error) {
-            console.error('❌ Ошибка загрузки локальных данных:', error);
-        }
-
-        this.data = {
-            events: {},
-            vacations: {},
-            lastModified: Date.now(),
-            version: 1
-        };
-        return false;
-    },
-
-    // Сохранение локальных данных
-    saveLocalData() {
-        try {
-            localStorage.setItem('calendarData', JSON.stringify(this.data));
-        } catch (error) {
-            console.error('❌ Ошибка сохранения локальных данных:', error);
-        }
-    },
-
-    // Валидация данных
-    validateData(data) {
-        return data &&
-            typeof data === 'object' &&
-            typeof data.events === 'object' &&
-            typeof data.vacations === 'object' &&
-            typeof data.lastModified === 'number' &&
-            typeof data.version === 'number';
-    },
-
-    // Обновленный метод saveData
-    async saveData() {
-        this.data.lastModified = Date.now();
-        this.saveLocalData();
-
-        let syncSuccess = this.sendUpdateToServer();
-        if (!syncSuccess) {
-            syncSuccess = await this.sendUpdateViaHTTP();
-        }
-
-        if (syncSuccess) {
-            this.updateSyncStatus('success', 'Сохранено');
-        } else {
-            this.updateSyncStatus('warning', 'Сохранено локально');
-        }
-    },
-
-    // Ручная синхронизация
-    async manualSync() {
-        if (this.state.isSyncing) {
-            return false;
-        }
-
-        this.state.isSyncing = true;
-        this.updateSyncStatus('syncing', 'Ручная синхронизация...');
-
-        try {
-            let success = false;
-            if (this.isConnected) {
-                success = await this.syncViaHTTP();
-            } else {
-                success = await this.syncViaHTTP();
-            }
-
-            if (success) {
-                this.updateSyncStatus('success', 'Синхронизировано');
-            } else {
-                this.updateSyncStatus('error', 'Ошибка синхронизации');
-            }
-            return success;
-        } finally {
-            this.state.isSyncing = false;
-        }
-    },
-
-    // Обновление статуса синхронизации
-    updateSyncStatus(status, message) {
-        const statusElement = document.getElementById('syncStatus');
-        if (!statusElement) return;
-
-        statusElement.className = `sync-status ${status}`;
-        statusElement.innerHTML = `
-            <i class="fas fa-${this.getSyncIcon(status)}"></i>
-            ${message}
-        `;
-
-        this.updateSyncButton(status);
-    },
-
-    // Обновление вида кнопки синхронизации
-    updateSyncButton(status) {
-        const syncBtn = document.getElementById('manualSyncBtn');
-        if (!syncBtn) return;
-
-        syncBtn.classList.remove('syncing', 'success', 'error', 'warning', 'offline');
-        if (status !== 'success') {
-            syncBtn.classList.add(status);
-        }
-
-        const icon = syncBtn.querySelector('i');
-        if (icon) {
-            icon.className = `fas fa-${this.getSyncIcon(status)}`;
-        }
-    },
-
-    getSyncIcon(status) {
-        const icons = {
-            syncing: 'sync-alt fa-spin',
-            success: 'cloud-check',
-            error: 'exclamation-triangle',
-            warning: 'exclamation-circle',
-            offline: 'wifi-slash'
-        };
-        return icons[status] || 'cloud';
     },
 
     // === ОСНОВНЫЕ МЕТОДЫ КАЛЕНДАРЯ ===
@@ -627,12 +382,19 @@ const CalendarManager = {
         this.renderCalendar();
         this.initializeCalendarHandlers();
         this.renderBirthdaysThisMonth();
+        this.updateSyncStatus();
+    },
 
-        if (this.isConnected) {
-            this.updateSyncStatus('success', 'Синхронизировано в реальном времени');
+    updateSyncStatus() {
+        const statusElement = document.getElementById('syncStatus');
+        if (!statusElement) return;
+
+        if (this.state.isOnline) {
+            statusElement.className = 'sync-status success';
+            statusElement.innerHTML = '<i class="fas fa-cloud-check"></i> Синхронизировано';
         } else {
-            this.updateSyncStatus(this.state.isOnline ? 'success' : 'offline',
-                this.state.isOnline ? 'Синхронизировано' : 'Локальные данные');
+            statusElement.className = 'sync-status warning';
+            statusElement.innerHTML = '<i class="fas fa-cloud-slash"></i> Оффлайн режим';
         }
     },
 
@@ -689,19 +451,13 @@ const CalendarManager = {
         }
     },
 
-    // Создание элемента дня для новой структуры
     createMainDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day-main';
         
-        if (isToday) {
-            dayElement.classList.add('today');
-        }
-        if (isOtherMonth) {
-            dayElement.classList.add('other-month');
-        }
+        if (isToday) dayElement.classList.add('today');
+        if (isOtherMonth) dayElement.classList.add('other-month');
 
-        // Сохраняем корректный dateKey
         const correctDateKey = this.getDateKey(date);
         dayElement.dataset.date = correctDateKey;
 
@@ -717,7 +473,7 @@ const CalendarManager = {
         const eventsContainer = document.createElement('div');
         eventsContainer.className = 'calendar-day-events-main';
 
-        // Дежурства (используем корректный dateKey)
+        // Дежурства
         if (this.data.events[correctDateKey]) {
             this.data.events[correctDateKey].forEach(event => {
                 const eventElement = document.createElement('div');
@@ -728,7 +484,7 @@ const CalendarManager = {
             });
         }
 
-        // Отпуска (используем корректный dateKey)
+        // Отпуска
         if (this.data.vacations[correctDateKey]) {
             const vacationContainer = document.createElement('div');
             vacationContainer.className = 'calendar-vacation-container';
@@ -744,7 +500,7 @@ const CalendarManager = {
             eventsContainer.appendChild(vacationContainer);
         }
 
-        // Дни рождения (используем корректный dateKey)
+        // Дни рождения
         const birthdays = this.getBirthdaysForDate(correctDateKey);
         if (birthdays.length > 0) {
             const birthdayElement = document.createElement('div');
@@ -758,7 +514,6 @@ const CalendarManager = {
 
         dayElement.addEventListener('click', () => {
             if (this.state.selectionMode === 'day') {
-                // Передаем корректный dateKey
                 this.openEventModal(correctDateKey);
             } else {
                 this.handleWeekSelection(date);
@@ -768,7 +523,6 @@ const CalendarManager = {
         return dayElement;
     },
 
-    // Рендер блока с днями рождения в текущем месяце
     renderBirthdaysThisMonth() {
         const birthdaysContainer = document.getElementById('birthdaysThisMonth');
         if (!birthdaysContainer) return;
@@ -798,6 +552,7 @@ const CalendarManager = {
                 <div class="birthday-item">
                     <div class="birthday-date">${formattedDate}</div>
                     <div class="birthday-name">${birthday.name}</div>
+                    <div class="birthday-type">${birthday.type === 'congratulation' ? '🎉 Поздравление' : '📅 Уведомление'}</div>
                 </div>
             `;
         });
@@ -812,6 +567,11 @@ const CalendarManager = {
         document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
         document.getElementById('selectionModeBtn')?.addEventListener('click', () => this.toggleSelectionMode());
         document.getElementById('manualSyncBtn')?.addEventListener('click', () => this.manualSync());
+    },
+
+    async manualSync() {
+        await this.loadFromServer();
+        this.updateSyncStatus();
     },
 
     toggleSelectionMode() {
@@ -851,36 +611,18 @@ const CalendarManager = {
         let actualDateKey = dateKey;
         
         if (isWeekMode) {
-            // Для недельного режима
             const firstDate = this.parseDateKeyCorrect(weekDates[0]);
             const lastDate = this.parseDateKeyCorrect(weekDates[6]);
             dateString = `${firstDate.toLocaleDateString('ru-RU')} - ${lastDate.toLocaleDateString('ru-RU')}`;
         } else {
-            // Создаем дату напрямую из dateKey без преобразований
             const date = this.parseDateKeyCorrect(dateKey);
             dateString = date.toLocaleDateString('ru-RU');
-            actualDateKey = this.getDateKey(date); // Пересоздаем корректный dateKey
+            actualDateKey = this.getDateKey(date);
         }
 
         const modal = this.createModal(dateString, actualDateKey, weekDates);
         document.body.appendChild(modal);
         this.initializeModalHandlers(modal, actualDateKey, weekDates);
-    },
-
-    // Корректный парсинг dateKey без проблем с часовым поясом
-    parseDateKeyCorrect(dateKey) {
-        // Разбиваем dateKey на компоненты и создаем дату в локальном времени
-        const [year, month, day] = dateKey.split('-').map(Number);
-        return new Date(year, month - 1, day);
-    },
-
-    // Создание dateKey из даты
-    getDateKey(date) {
-        // Создаем строку в формате YYYY-MM-DD без времени
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
     },
 
     createModal(dateString, dateKey, weekDates) {
@@ -1088,29 +830,28 @@ const CalendarManager = {
         }
     },
 
-    // ИСПРАВЛЕННЫЙ МЕТОД: Создание даты с правильным часовым поясом
+    async saveData() {
+        this.data.lastModified = Date.now();
+        await this.saveToServer();
+        this.saveLocalFallback();
+    },
+
     createDateTime(dateString, timeString) {
         try {
-            // Разбираем компоненты даты и времени
             const [year, month, day] = dateString.split('-').map(Number);
             const [hours, minutes] = timeString.split(':').map(Number);
             
-            // Создаем дату в локальном часовом поясе пользователя
             const localDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
-            
-            // Преобразуем в timestamp (уже будет корректным для локального времени)
             const timestamp = localDate.getTime();
             
             console.log(`📅 Создание события: ${dateString} ${timeString}`);
             console.log(`🕒 Локальная дата: ${localDate.toLocaleString('ru-RU')}`);
-            console.log(`⏰ Timestamp: ${timestamp}`);
             
             if (isNaN(timestamp)) {
                 console.error('❌ Неверная дата или время');
                 return null;
             }
 
-            // Проверяем, что дата в будущем
             const now = Date.now();
             if (timestamp <= now) {
                 DialogService.showMessage(
@@ -1129,7 +870,7 @@ const CalendarManager = {
         }
     },
 
-    scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
+    async scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
         if (!message || message.trim().length === 0) {
             DialogService.showMessage(
                 '❌ Ошибка',
@@ -1140,7 +881,7 @@ const CalendarManager = {
         }
 
         try {
-            const messageId = MessageScheduler.scheduleMessage(
+            const messageId = await MessageScheduler.scheduleMessage(
                 eventTimestamp,
                 message.trim(),
                 chatId,
@@ -1153,9 +894,8 @@ const CalendarManager = {
             );
 
             if (messageId) {
-                console.log(`✅ Сообщение запланировано: ${message.substring(0, 50)}...`);
+                console.log(`✅ Сообщение запланировано на сервере: ${message.substring(0, 50)}...`);
                 console.log(`⏰ На: ${new Date(eventTimestamp).toLocaleString('ru-RU')}`);
-                console.log(`🆔 ID: ${messageId}`);
                 return messageId;
             } else {
                 console.error('❌ Не удалось запланировать сообщение');
@@ -1210,10 +950,20 @@ const CalendarManager = {
         return dates;
     },
 
-    // === ДОПОЛНИТЕЛЬНЫЕ МЕТОДЫ ДЛЯ ОТЛАДКИ ===
-    
-    // Проверка запланированных дней рождения
-    checkScheduledBirthdays() {
+    parseDateKeyCorrect(dateKey) {
+        const [year, month, day] = dateKey.split('-').map(Number);
+        return new Date(year, month - 1, day);
+    },
+
+    getDateKey(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+
+    // === МЕТОДЫ ДЛЯ ОТЛАДКИ ===
+    async checkScheduledBirthdays() {
         console.log('🔍 Проверка запланированных дней рождения...');
         
         if (typeof MessageScheduler === 'undefined') {
@@ -1221,271 +971,91 @@ const CalendarManager = {
             return [];
         }
         
-        const messages = MessageScheduler.getAllMessages();
-        const birthdayMessages = messages.filter(msg => msg.eventData?.type === 'birthday');
-        
-        console.log(`🎂 Найдено запланированных дней рождения: ${birthdayMessages.length}`);
-        
-        if (birthdayMessages.length === 0) {
-            console.log('ℹ️ Нет запланированных дней рождения');
-        } else {
-            birthdayMessages.forEach(msg => {
-                const statusColors = {
-                    scheduled: '🟡',
-                    sent: '🟢',
-                    error: '🔴',
-                    sending: '🔵'
-                };
-                
-                console.log(`${statusColors[msg.status] || '⚪'} ${msg.eventData.birthdayName}:`);
-                console.log(`   📅 ${new Date(msg.timestamp).toLocaleString('ru-RU')}`);
-                console.log(`   📝 ${msg.message.substring(0, 50)}...`);
-                console.log(`   🆔 ${msg.id}`);
-                console.log(`   📊 Статус: ${msg.status}`);
-                if (msg.error) console.log(`   ❌ Ошибка: ${msg.error}`);
-                console.log('---');
-            });
+        try {
+            const messages = await MessageScheduler.getMessages();
+            const birthdayMessages = messages.filter(msg => msg.eventData?.type === 'birthday');
+            
+            console.log(`🎂 Найдено запланированных дней рождения: ${birthdayMessages.length}`);
+            
+            if (birthdayMessages.length === 0) {
+                console.log('ℹ️ Нет запланированных дней рождения');
+            } else {
+                birthdayMessages.forEach(msg => {
+                    const statusColors = {
+                        scheduled: '🟡',
+                        sent: '🟢',
+                        error: '🔴',
+                        sending: '🔵'
+                    };
+                    
+                    console.log(`${statusColors[msg.status] || '⚪'} ${msg.eventData.birthdayName}:`);
+                    console.log(`   📅 ${new Date(msg.scheduledFor).toLocaleString('ru-RU')}`);
+                    console.log(`   📝 ${msg.message.substring(0, 50)}...`);
+                    console.log(`   🆔 ${msg.id}`);
+                    console.log(`   📊 Статус: ${msg.status}`);
+                    if (msg.error) console.log(`   ❌ Ошибка: ${msg.error}`);
+                    console.log('---');
+                });
+            }
+            
+            return birthdayMessages;
+        } catch (error) {
+            console.error('❌ Ошибка проверки сообщений:', error);
+            return [];
         }
-        
-        return birthdayMessages;
     },
     
-    // Перепланирование всех дней рождения (для отладки)
-    rescheduleAllBirthdays() {
+    async rescheduleAllBirthdays() {
         console.log('🔄 Перепланирование всех дней рождения...');
         
         if (typeof MessageScheduler === 'undefined') {
             console.error('❌ MessageScheduler не доступен');
-            console.error('💡 Используйте: CalendarManager.rescheduleAllBirthdays()');
             return;
         }
         
-        // Удаляем старые сообщения о днях рождения
-        const messages = MessageScheduler.getAllMessages();
-        let deletedCount = 0;
-        
-        messages.forEach(msg => {
-            if (msg.eventData?.type === 'birthday' && msg.status === 'scheduled') {
-                const success = MessageScheduler.cancelScheduledMessage(msg.id);
-                if (success) deletedCount++;
-            }
-        });
-        
-        console.log(`🗑️ Удалено старых сообщений: ${deletedCount}`);
-        
-        // Планируем заново
-        this.scheduleBirthdays();
-        
-        // Проверяем результат
-        const newMessages = this.checkScheduledBirthdays();
-        
-        console.log(`✅ Перепланирование завершено:`);
-        console.log(`   Удалено: ${deletedCount}`);
-        console.log(`   Запланировано: ${newMessages.length}`);
-    },
-    
-    // Проверка корректности времени
-    debugTimeIssues() {
-        console.log('🐛 Отладка проблем со временем:');
-        console.log('Текущее время:', new Date().toLocaleString('ru-RU'));
-        console.log('Часовой пояс:', Intl.DateTimeFormat().resolvedOptions().timeZone);
-        console.log('UTC смещение:', new Date().getTimezoneOffset(), 'минут');
-        console.log('UTC время:', new Date().toUTCString());
-        
-        // Проверяем пример дня рождения
-        const testBirthday = this.birthdays[0];
-        const birthDate = new Date(testBirthday.date);
-        const currentYear = new Date().getFullYear();
-        const nextBirthday = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
-        
-        if (nextBirthday < new Date()) {
-            nextBirthday.setFullYear(nextBirthday.getFullYear() + 1);
-        }
-        
-        // Тестируем оба времени
-        nextBirthday.setHours(10, 0, 0, 0);
-        const congratulationTime = new Date(nextBirthday);
-        congratulationTime.setHours(7, 30, 0, 0);
-        
-        console.log('Пример дня рождения:', testBirthday.name);
-        console.log('Дата рождения:', birthDate.toLocaleDateString('ru-RU'));
-        console.log('Следующий ДР (уведомление):', nextBirthday.toLocaleString('ru-RU'));
-        console.log('Следующий ДР (поздравление):', congratulationTime.toLocaleString('ru-RU'));
-        console.log('Timestamp уведомление:', nextBirthday.getTime());
-        console.log('Timestamp поздравление:', congratulationTime.getTime());
-        
-        // Проверяем разницу с текущим временем
-        const now = new Date();
-        console.log('Разница с текущим временем (уведомление):', Math.round((nextBirthday - now) / (1000 * 60 * 60)), 'часов');
-        console.log('Разница с текущим временем (поздравление):', Math.round((congratulationTime - now) / (1000 * 60 * 60)), 'часов');
-    },
-    
-    // Проверка всех систем
-    debugAllSystems() {
-        console.log('🔧 Проверка всех систем CalendarManager...');
-        this.debugTimeIssues();
-        console.log('---');
-        this.checkScheduledBirthdays();
-        console.log('---');
-        
-        // Проверяем доступность зависимостей
-        console.log('📋 Проверка зависимостей:');
-        console.log('MessageScheduler:', typeof MessageScheduler !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
-        console.log('TelegramService:', typeof TelegramService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
-        console.log('Navigation:', typeof Navigation !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
-        console.log('DialogService:', typeof DialogService !== 'undefined' ? '✅ Доступен' : '❌ Не доступен');
-        
-        // Проверяем статус планировщика
-        if (typeof MessageScheduler !== 'undefined') {
-            const schedulerStatus = MessageScheduler.getSchedulerStatus();
-            console.log('⏰ Статус планировщика:', schedulerStatus);
-        }
-    },
-
-    // Проверка и запуск планировщика
-    ensureSchedulerRunning() {
-        if (typeof MessageScheduler === 'undefined') {
-            console.error('❌ MessageScheduler не доступен');
-            return false;
-        }
-
-        // Проверяем, запущен ли планировщик
-        if (!MessageScheduler.timer) {
-            console.log('🔄 Запуск MessageScheduler...');
-            MessageScheduler.startScheduler();
-        }
-
-        // Принудительно проверяем сообщения
-        console.log('🔍 Принудительная проверка запланированных сообщений...');
-        MessageScheduler.checkScheduledMessages();
-
-        return true;
-    },
-    // Проверка запланированных сообщений
-async checkScheduledMessages() {
-    const now = Date.now();
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Начало текущего дня
-    
-    const messages = this.getScheduledMessages();
-    
-    // ФИЛЬТРУЕМ: только те сообщения, у которых время наступило И дата >= сегодняшней
-    const messagesToSend = messages.filter(msg => {
-        const messageDate = new Date(msg.timestamp);
-        const messageDay = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
-        
-        return msg.status === 'scheduled' && 
-               msg.timestamp <= now && 
-               messageDay >= today;
-    });
-
-    console.log(`🔍 Проверка сообщений: ${messagesToSend.length} для отправки`);
-
-    if (messagesToSend.length > 0) {
-        console.log(`📤 Найдено сообщений для отправки: ${messagesToSend.length}`);
-        
-        for (const message of messagesToSend) {
-            await this.sendScheduledMessage(message);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-        }
-    }
-    
-    
-    // Логируем пропущенные сообщения (для отладки)
-    const skippedMessages = messages.filter(msg => 
-        msg.status === 'scheduled' && 
-        msg.timestamp <= now && 
-        !messagesToSend.includes(msg)
-    );
-    
-    if (skippedMessages.length > 0) {
-        console.log(`⏰ Пропущено сообщений с прошедшей датой: ${skippedMessages.length}`);
-    }
-},
-
-
-    // Улучшенное планирование дней рождения с проверкой
-    scheduleBirthdaysWithCheck() {
-        console.log('🎂 Планирование дней рождения с проверкой...');
-        
-        if (!this.ensureSchedulerRunning()) {
-            console.error('❌ Не удалось запустить планировщик');
-            return;
-        }
-
-        this.scheduleBirthdays();
-        
-        // Дополнительная проверка через 5 секунд
-        setTimeout(() => {
-            this.checkScheduledBirthdays();
-        }, 5000);
-    },
-
-    // Принудительная проверка всех дней рождения
-    forceCheckBirthdays() {
-        console.log('🚀 Принудительная проверка дней рождения...');
-        this.scheduleBirthdaysWithCheck();
-        
-        if (typeof MessageScheduler !== 'undefined') {
-            MessageScheduler.checkScheduledMessages();
-            MessageScheduler.forceSendOverdueMessages();
-        }
-        
-        console.log('✅ Проверка запущена');
-    },
-
-    // Проверка фоновой работы
-    checkBackgroundWork() {
-        console.log('🌐 Проверка фоновой работы...');
-        
-        if (typeof MessageScheduler !== 'undefined') {
-            const status = MessageScheduler.getSchedulerStatus();
-            console.log('📊 Статус планировщика:', status);
+        try {
+            const messages = await MessageScheduler.getMessages();
+            let deletedCount = 0;
             
-            // Проверяем Service Worker
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.ready.then(registration => {
-                    console.log('✅ Service Worker активен');
-                }).catch(error => {
-                    console.error('❌ Service Worker не активен:', error);
-                });
+            for (const msg of messages) {
+                if (msg.eventData?.type === 'birthday' && msg.status === 'scheduled') {
+                    const success = await MessageScheduler.cancelMessage(msg.id);
+                    if (success) deletedCount++;
+                }
             }
+            
+            console.log(`🗑️ Удалено старых сообщений: ${deletedCount}`);
+            this.scheduleBirthdays();
+            console.log('✅ Перепланирование завершено');
+            
+        } catch (error) {
+            console.error('❌ Ошибка перепланирования:', error);
         }
-        
-        // Проверяем запланированные сообщения
-        this.checkScheduledBirthdays();
-    }
+    },
 
+    async testSystem() {
+        console.log('🧪 Тестирование системы...');
+        
+        const testTime = new Date();
+        testTime.setMinutes(testTime.getMinutes() + 2);
+        
+        const testMessage = {
+            id: 999,
+            name: 'ТЕСТОВЫЙ День Рождения',
+            date: testTime.toISOString().split('T')[0],
+            type: 'congratulation', 
+            message: '🎉 ТЕСТ: Поздравляем с тестовым днем рождения! 🎂'
+        };
+        
+        console.log(`🧪 Тестовое сообщение запланировано на: ${testTime.toLocaleString('ru-RU')}`);
+        await this.scheduleBirthdayMessage(testMessage, testTime.getTime());
+    }
 };
 
-// Делаем глобально доступным сразу
 window.CalendarManager = CalendarManager;
 
-// Инициализация
 document.addEventListener('DOMContentLoaded', function() {
     if (typeof CalendarManager !== 'undefined' && CalendarManager.init) {
         CalendarManager.init();
     }
 });
-
-// Добавляем команды для отладки в консоль
-console.log(`
-🎯 Команды для отладки CalendarManager:
-
-🔍 Проверка дней рождения:
-CalendarManager.checkScheduledBirthdays() - показать запланированные ДР
-CalendarManager.debugTimeIssues() - отладка проблем со временем
-CalendarManager.debugAllSystems() - полная проверка систем
-
-🔄 Управление планированием:
-CalendarManager.rescheduleAllBirthdays() - перепланировать все ДР
-CalendarManager.forceCheckBirthdays() - принудительная проверка
-CalendarManager.scheduleBirthdaysWithCheck() - планирование с проверкой
-
-🌐 Фоновая работа:
-CalendarManager.checkBackgroundWork() - проверка фоновой работы
-CalendarManager.ensureSchedulerRunning() - запуск планировщика
-
-📊 Общая отладка:
-CalendarManager.debugAllSystems() - полная диагностика
-`);
