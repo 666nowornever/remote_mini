@@ -907,6 +907,12 @@ const CalendarManager = {
             );
 
             if (messageId) {
+                console.log('📤 Планирование сообщения:', {
+                timestamp: new Date(eventTimestamp).toLocaleString('ru-RU'),
+                message: message.substring(0, 50) + '...',
+                chatId: chatId,
+                userId: this.getUserId() 
+                });
                 console.log(`✅ Сообщение запланировано на сервере: ${message.substring(0, 50)}...`);
                 console.log(`⏰ На: ${new Date(eventTimestamp).toLocaleString('ru-RU')}`);
                 return messageId;
