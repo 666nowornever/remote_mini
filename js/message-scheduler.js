@@ -30,7 +30,7 @@ const MessageScheduler = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     userId: 'telegram_user',
-                    chatId: chatId || '-2380747129',
+                    chatId: chatId || '-5028584145',
                     message: message,
                     scheduledFor: new Date(timestamp).toISOString(),
                     eventData: eventData
