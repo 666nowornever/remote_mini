@@ -1,7 +1,7 @@
 // Менеджер календаря дежурств с серверной синхронизацией
 const CalendarManager = {
     // === КОНФИГУРАЦИЯ ===
-    apiUrl: 'https://remote-api-calendar.onrender.com/api', // Новый сервер календаря
+    apiUrl: 'https://remote-api-calendar.onrender.com/api', // Ваш сервер на Render
     syncInterval: 30000, // 30 секунд
     syncTimer: null,
     maxRetries: 3,
@@ -55,106 +55,94 @@ const CalendarManager = {
         isOnline: false,
         isSyncing: false,
         lastServerCheck: 0,
-        retryCount: 0
+        retryCount: 0,
+        isInitialized: false
     },
 
     // === ИНИЦИАЛИЗАЦИЯ И СИНХРОНИЗАЦИЯ ===
     async init() {
         console.log('🔄 CalendarManager: инициализация...');
         
-        try {
-            // Проверяем доступность сервера
-            await this.checkServerHealth();
-            
-            // Загружаем данные с сервера
-            await this.loadFromServer();
-            
-            // Запускаем синхронизацию
-            this.startSync();
-            
-            console.log('✅ CalendarManager: успешно подключен к серверу');
-        } catch (error) {
-            console.error('❌ Ошибка подключения к серверу:', error.message);
-            
-            // Пробуем загрузить локальные данные
-            if (this.loadLocalFallback()) {
-                console.log('✅ Используем локальные данные');
-                this.state.isOnline = false;
-            } else {
-                console.log('📝 Используем пустые данные');
-                this.data = {
-                    events: {},
-                    vacations: {},
-                    lastModified: Date.now(),
-                    version: 1
-                };
-            }
+        if (this.state.isInitialized) {
+            console.log('✅ CalendarManager уже инициализирован');
+            return;
         }
         
+        try {
+            // Пытаемся загрузить локальные данные сразу для быстрого отображения
+            if (this.loadLocalFallback()) {
+                console.log('✅ Загружены локальные данные для быстрого отображения');
+                this.renderCalendar();
+            }
+            
+            // Проверяем доступность сервера
+            const isServerAvailable = await this.checkServerHealth();
+            
+            if (isServerAvailable) {
+                // Загружаем данные с сервера
+                await this.loadFromServer();
+                
+                // Запускаем синхронизацию
+                this.startSync();
+                
+                console.log('✅ CalendarManager: успешно подключен к серверу');
+            } else {
+                console.warn('⚠️ Сервер недоступен, работаем в оффлайн режиме');
+                this.state.isOnline = false;
+            }
+            
+        } catch (error) {
+            console.error('❌ Ошибка инициализации:', error.message);
+            this.state.isOnline = false;
+        }
+        
+        this.state.isInitialized = true;
         console.log('✅ CalendarManager: инициализация завершена');
     },
 
     // Проверка доступности сервера
     async checkServerHealth() {
         try {
-            const response = await fetch(`${this.apiUrl}/health`);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            console.log('🔍 Проверка доступности сервера...');
+            const response = await fetch(`${this.apiUrl}/health`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                // Добавляем timeout через AbortController
+                signal: AbortSignal.timeout(5000)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
             
             const result = await response.json();
             if (result.success) {
-                console.log('✅ Сервер доступен');
+                console.log('✅ Сервер доступен:', result.status);
                 return true;
             }
-            throw new Error('Сервер не отвечает');
+            throw new Error('Сервер не отвечает корректно');
         } catch (error) {
             console.error('❌ Сервер недоступен:', error.message);
-            throw error;
+            return false;
         }
     },
-    // Проверка доступности сервера с обработкой CORS
-async checkServerHealth() {
-    try {
-        const response = await fetch(`${this.apiUrl}/health`, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
-        
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        
-        const result = await response.json();
-        if (result.success) {
-            console.log('✅ Сервер доступен:', result);
-            return true;
-        }
-        throw new Error('Сервер не отвечает корректно');
-    } catch (error) {
-        console.error('❌ Сервер недоступен:', error.message);
-        
-        // Проверяем, если это CORS ошибка
-        if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
-            console.warn('⚠️ Возможно проблема с CORS на сервере');
-        }
-        
-        throw error;
-    }
-},
 
     // Загрузка данных с сервера
     async loadFromServer(retry = 0) {
         try {
-            try {
-        console.log('📥 Загрузка данных с сервера...');
-        
-        const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`, {
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-                'Accept': 'application/json'
-            }
-        });
+            console.log('📥 Загрузка данных с сервера...');
+            
+            const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                signal: AbortSignal.timeout(10000)
+            });
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -163,21 +151,32 @@ async checkServerHealth() {
             const result = await response.json();
             
             if (result.success && this.validateData(result.data)) {
-                this.data = result.data;
+                // Проверяем, какие данные новее
+                const serverData = result.data;
+                const localData = this.data;
+                
+                if (serverData.lastModified > localData.lastModified) {
+                    console.log('🔄 Данные на сервере новее, загружаем с сервера');
+                    this.data = serverData;
+                } else if (localData.lastModified > serverData.lastModified) {
+                    console.log('💾 Наши данные новее, отправляем на сервер');
+                    await this.saveToServer();
+                } else {
+                    console.log('⚖️ Данные синхронизированы');
+                }
+                
                 this.state.lastServerCheck = Date.now();
                 this.state.isOnline = true;
                 this.state.retryCount = 0;
                 
-                // Сохраняем локальную копию
+                // Всегда сохраняем актуальные данные локально
                 this.saveLocalFallback();
                 
-                console.log('✅ Данные загружены с сервера');
+                console.log('✅ Данные синхронизированы с сервером');
                 
-                // Обновляем интерфейс если он отображается
-                if (document.getElementById('calendarGrid')) {
-                    this.renderCalendar();
-                    this.renderBirthdaysThisMonth();
-                }
+                // Обновляем интерфейс
+                this.renderCalendar();
+                this.renderBirthdaysThisMonth();
                 
                 return true;
             } else {
@@ -195,27 +194,31 @@ async checkServerHealth() {
             
             this.state.isOnline = false;
             this.state.retryCount++;
-            throw error;
+            return false;
         }
     },
 
     // Сохранение данных на сервер
     async saveToServer(retry = 0) {
-    if (this.state.isSyncing) return false;
-    this.state.isSyncing = true;
-    
-    try {
-        console.log('📤 Сохранение данных на сервер...');
+        if (this.state.isSyncing) {
+            console.log('⏳ Уже идет синхронизация, пропускаем...');
+            return false;
+        }
         
-        const response = await fetch(`${this.apiUrl}/calendar`, {
-            method: 'POST',
-            mode: 'cors',
-            headers: { 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify(this.data)
-        });
+        this.state.isSyncing = true;
+        
+        try {
+            console.log('📤 Сохранение данных на сервер...');
+            
+            const response = await fetch(`${this.apiUrl}/calendar`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(this.data),
+                signal: AbortSignal.timeout(15000)
+            });
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -229,7 +232,9 @@ async checkServerHealth() {
                 this.state.isOnline = true;
                 this.state.retryCount = 0;
                 
-                console.log('✅ Данные сохранены на сервер');
+                console.log('✅ Данные успешно сохранены на сервер');
+                console.log('📊 Ответ сервера:', result);
+                
                 return true;
             } else {
                 throw new Error(result.error || 'Ошибка сервера');
@@ -261,19 +266,22 @@ async checkServerHealth() {
             }
         }, this.syncInterval);
 
-        console.log('🔄 Синхронизация запущена');
+        console.log('🔄 Фоновая синхронизация запущена');
     },
 
     async syncWithServer() {
         try {
-            const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`);
+            const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`, {
+                signal: AbortSignal.timeout(5000)
+            });
+            
             if (!response.ok) return;
             
             const result = await response.json();
             
             if (result.success && this.validateData(result.data)) {
                 if (result.data.lastModified > this.data.lastModified) {
-                    console.log('🔄 Обновление данных с сервера');
+                    console.log('🔄 Обнаружены новые данные на сервере');
                     this.data = result.data;
                     this.state.lastServerCheck = Date.now();
                     
@@ -317,12 +325,17 @@ async checkServerHealth() {
     },
 
     validateData(data) {
-        return data &&
-            typeof data === 'object' &&
-            typeof data.events === 'object' &&
-            typeof data.vacations === 'object' &&
-            typeof data.lastModified === 'number' &&
-            typeof data.version === 'number';
+        try {
+            return data &&
+                typeof data === 'object' &&
+                typeof data.events === 'object' &&
+                typeof data.vacations === 'object' &&
+                typeof data.lastModified === 'number' &&
+                typeof data.version === 'number';
+        } catch (error) {
+            console.error('❌ Ошибка валидации данных:', error);
+            return false;
+        }
     },
 
     getUserId() {
@@ -334,27 +347,37 @@ async checkServerHealth() {
 
     // === ДНИ РОЖДЕНИЯ ===
     getBirthdaysForDate(dateKey) {
-        return this.birthdays.filter(birthday => {
-            const birthDate = new Date(birthday.date);
-            const checkDate = this.parseDateKeyCorrect(dateKey);
-            return birthDate.getMonth() === checkDate.getMonth() &&
-                   birthDate.getDate() === checkDate.getDate();
-        });
+        try {
+            return this.birthdays.filter(birthday => {
+                const birthDate = new Date(birthday.date);
+                const checkDate = this.parseDateKeyCorrect(dateKey);
+                return birthDate.getMonth() === checkDate.getMonth() &&
+                       birthDate.getDate() === checkDate.getDate();
+            });
+        } catch (error) {
+            console.error('❌ Ошибка получения дней рождения:', error);
+            return [];
+        }
     },
 
     getBirthdaysForCurrentMonth() {
-        const currentMonth = this.state.currentDate.getMonth();
-        const currentYear = this.state.currentDate.getFullYear();
-        
-        return this.birthdays.filter(birthday => {
-            const birthDate = new Date(birthday.date);
-            const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
-            return birthdayThisYear.getMonth() === currentMonth;
-        }).sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            return (dateA.getMonth() * 100 + dateA.getDate()) - (dateB.getMonth() * 100 + dateB.getDate());
-        });
+        try {
+            const currentMonth = this.state.currentDate.getMonth();
+            const currentYear = this.state.currentDate.getFullYear();
+            
+            return this.birthdays.filter(birthday => {
+                const birthDate = new Date(birthday.date);
+                const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+                return birthdayThisYear.getMonth() === currentMonth;
+            }).sort((a, b) => {
+                const dateA = new Date(a.date);
+                const dateB = new Date(b.date);
+                return (dateA.getMonth() * 100 + dateA.getDate()) - (dateB.getMonth() * 100 + dateB.getDate());
+            });
+        } catch (error) {
+            console.error('❌ Ошибка получения дней рождения месяца:', error);
+            return [];
+        }
     },
 
     // === ОСНОВНЫЕ МЕТОДЫ КАЛЕНДАРЯ ===
@@ -370,7 +393,10 @@ async checkServerHealth() {
 
     renderCalendar() {
         const calendarElement = document.getElementById('calendarGrid');
-        if (!calendarElement) return;
+        if (!calendarElement) {
+            console.error('❌ Не найден элемент calendarGrid');
+            return;
+        }
 
         const year = this.state.currentDate.getFullYear();
         const month = this.state.currentDate.getMonth();
@@ -381,13 +407,8 @@ async checkServerHealth() {
             titleElement.textContent = `${monthNames[month]} ${year}`;
         }
 
-        // Очищаем только если есть loading
-        const loading = calendarElement.querySelector('.calendar-loading');
-        if (loading) {
-            calendarElement.innerHTML = '';
-        } else {
-            calendarElement.innerHTML = '';
-        }
+        // Очищаем grid
+        calendarElement.innerHTML = '';
 
         // Заголовки дней недели
         const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -402,9 +423,6 @@ async checkServerHealth() {
         const lastDay = new Date(year, month + 1, 0);
         const startDate = new Date(firstDay);
         startDate.setDate(startDate.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
-
-        const endDate = new Date(lastDay);
-        endDate.setDate(endDate.getDate() + (7 - lastDay.getDay()) - (lastDay.getDay() === 0 ? 0 : 1));
 
         const today = new Date();
         let currentDate = new Date(startDate);
@@ -450,7 +468,7 @@ async checkServerHealth() {
         eventsContainer.className = 'calendar-day-events-main';
 
         // Дежурства
-        if (this.data.events[correctDateKey]) {
+        if (this.data.events && this.data.events[correctDateKey]) {
             this.data.events[correctDateKey].forEach(event => {
                 const eventElement = document.createElement('div');
                 eventElement.className = 'calendar-event-main';
@@ -461,7 +479,7 @@ async checkServerHealth() {
         }
 
         // Отпуска
-        if (this.data.vacations[correctDateKey]) {
+        if (this.data.vacations && this.data.vacations[correctDateKey]) {
             const vacationContainer = document.createElement('div');
             vacationContainer.className = 'calendar-vacation-container';
             
@@ -672,11 +690,17 @@ async checkServerHealth() {
             });
         });
 
-        const closeModal = () => document.body.removeChild(modal);
+        const closeModal = () => {
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
+        };
         
         modal.querySelector('.calendar-modal-close').addEventListener('click', closeModal);
         modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
-        modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+        modal.addEventListener('click', (e) => { 
+            if (e.target === modal) closeModal(); 
+        });
 
         modal.querySelector('.btn-save').addEventListener('click', async () => {
             const activeTab = modal.querySelector('.tab-btn.active').dataset.tab;
@@ -700,6 +724,8 @@ async checkServerHealth() {
 
     async saveDutyEvent(datesToSave) {
         try {
+            console.log('💾 Начало сохранения дежурств...');
+            
             // Собираем выбранных людей
             const selectedPersons = [];
             document.querySelectorAll('#dutyTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
@@ -709,6 +735,8 @@ async checkServerHealth() {
             });
 
             const comment = document.getElementById('eventComment')?.value.trim() || '';
+
+            console.log(`📝 Сохраняем для ${datesToSave.length} дат, выбрано ${selectedPersons.length} человек`);
 
             // Сохраняем для каждой даты
             datesToSave.forEach(date => {
@@ -721,7 +749,7 @@ async checkServerHealth() {
                         color: person.color,
                         comment: comment
                     }));
-                    console.log(`💾 Сохранено дежурство на ${actualDateKey}:`, selectedPersons.map(p => p.name));
+                    console.log(`📅 Дежурство на ${actualDateKey}:`, selectedPersons.map(p => p.name));
                 } else {
                     delete this.data.events[actualDateKey];
                     console.log(`🗑️ Удалено дежурство на ${actualDateKey}`);
@@ -730,43 +758,65 @@ async checkServerHealth() {
 
             // Обновляем timestamp
             this.data.lastModified = Date.now();
-            this.data.version++;
+            this.data.version = (this.data.version || 0) + 1;
             
-            // Сохраняем локально сразу
+            console.log('💾 Данные обновлены локально');
+            
+            // Сохраняем локально сразу (важно для скорости)
             this.saveLocalFallback();
+            
+            console.log('💾 Локальное сохранение завершено');
             
             // Пытаемся сохранить на сервер
             let serverSaved = false;
+            let serverError = null;
+            
             if (this.state.isOnline) {
-                serverSaved = await this.saveToServer();
+                try {
+                    console.log('🌐 Пытаемся сохранить на сервер...');
+                    serverSaved = await this.saveToServer();
+                    
+                    if (serverSaved) {
+                        console.log('✅ Данные успешно отправлены на сервер');
+                    } else {
+                        console.warn('⚠️ Не удалось сохранить на сервер');
+                        serverError = 'Не удалось подключиться к серверу';
+                    }
+                } catch (serverError) {
+                    console.error('❌ Ошибка при отправке на сервер:', serverError);
+                    serverError = serverError.message;
+                }
+            } else {
+                console.log('📴 Сервер недоступен, сохраняем только локально');
             }
             
             // Обновляем отображение
             this.renderCalendar();
+            console.log('🔄 Интерфейс обновлен');
             
             // Показываем результат
             if (serverSaved) {
                 DialogService.showMessage(
                     '✅ Успех',
-                    'График дежурств сохранен и синхронизирован',
+                    'График дежурств сохранен и синхронизирован с сервером',
                     'success'
                 );
-            } else if (this.state.isOnline) {
+            } else if (serverError) {
                 DialogService.showMessage(
                     '⚠️ Внимание',
-                    'График дежурств сохранен локально, но не синхронизирован с сервером',
+                    `График дежурств сохранен локально, но возникла ошибка при синхронизации с сервером: ${serverError}`,
                     'warning'
                 );
             } else {
                 DialogService.showMessage(
                     '💾 Сохранено',
-                    'График дежурств сохранен локально (оффлайн режим)',
+                    'График дежурств сохранен локально (работа в оффлайн режиме)',
                     'info'
                 );
             }
             
         } catch (error) {
-            console.error('❌ Ошибка сохранения дежурств:', error);
+            console.error('❌ Критическая ошибка сохранения дежурств:', error);
             DialogService.showMessage(
                 '❌ Ошибка',
                 'Не удалось сохранить график дежурств: ' + error.message,
@@ -778,6 +828,8 @@ async checkServerHealth() {
 
     async saveVacationEvent(datesToSave) {
         try {
+            console.log('💾 Начало сохранения отпусков...');
+            
             // Собираем выбранных людей
             const selectedPersons = [];
             document.querySelectorAll('#vacationTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
@@ -787,6 +839,8 @@ async checkServerHealth() {
             });
 
             const comment = document.getElementById('vacationComment')?.value.trim() || '';
+
+            console.log(`📝 Сохраняем отпуска для ${datesToSave.length} дат, выбрано ${selectedPersons.length} человек`);
 
             // Сохраняем для каждой даты
             datesToSave.forEach(date => {
@@ -800,7 +854,7 @@ async checkServerHealth() {
                         comment: comment,
                         type: 'vacation'
                     }));
-                    console.log(`💾 Сохранен отпуск на ${actualDateKey}:`, selectedPersons.map(p => p.name));
+                    console.log(`📅 Отпуск на ${actualDateKey}:`, selectedPersons.map(p => p.name));
                 } else {
                     delete this.data.vacations[actualDateKey];
                     console.log(`🗑️ Удален отпуск на ${actualDateKey}`);
@@ -809,43 +863,65 @@ async checkServerHealth() {
 
             // Обновляем timestamp
             this.data.lastModified = Date.now();
-            this.data.version++;
+            this.data.version = (this.data.version || 0) + 1;
+            
+            console.log('💾 Данные обновлены локально');
             
             // Сохраняем локально сразу
             this.saveLocalFallback();
             
+            console.log('💾 Локальное сохранение завершено');
+            
             // Пытаемся сохранить на сервер
             let serverSaved = false;
+            let serverError = null;
+            
             if (this.state.isOnline) {
-                serverSaved = await this.saveToServer();
+                try {
+                    console.log('🌐 Пытаемся сохранить на сервер...');
+                    serverSaved = await this.saveToServer();
+                    
+                    if (serverSaved) {
+                        console.log('✅ Данные успешно отправлены на сервер');
+                    } else {
+                        console.warn('⚠️ Не удалось сохранить на сервер');
+                        serverError = 'Не удалось подключиться к серверу';
+                    }
+                } catch (serverSaveError) {
+                    console.error('❌ Ошибка при отправке на сервер:', serverSaveError);
+                    serverError = serverSaveError.message;
+                }
+            } else {
+                console.log('📴 Сервер недоступен, сохраняем только локально');
             }
             
             // Обновляем отображение
             this.renderCalendar();
+            console.log('🔄 Интерфейс обновлен');
             
             // Показываем результат
             if (serverSaved) {
                 DialogService.showMessage(
                     '✅ Успех',
-                    'График отпусков сохранен и синхронизирован',
+                    'График отпусков сохранен и синхронизирован с сервером',
                     'success'
                 );
-            } else if (this.state.isOnline) {
+            } else if (serverError) {
                 DialogService.showMessage(
                     '⚠️ Внимание',
-                    'График отпусков сохранен локально, но не синхронизирован с сервером',
+                    `График отпусков сохранен локально, но возникла ошибка при синхронизации с сервером: ${serverError}`,
                     'warning'
                 );
             } else {
                 DialogService.showMessage(
                     '💾 Сохранено',
-                    'График отпусков сохранен локально (оффлайн режим)',
+                    'График отпусков сохранен локально (работа в оффлайн режиме)',
                     'info'
                 );
             }
             
         } catch (error) {
-            console.error('❌ Ошибка сохранения отпусков:', error);
+            console.error('❌ Критическая ошибка сохранения отпусков:', error);
             DialogService.showMessage(
                 '❌ Ошибка',
                 'Не удалось сохранить график отпусков: ' + error.message,
@@ -857,65 +933,105 @@ async checkServerHealth() {
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
     isPersonOnDuty(dateKey, personId) {
-        const events = this.data.events[dateKey];
-        if (!events) return false;
-        return events.some(event => event.id === personId);
+        try {
+            const events = this.data.events[dateKey];
+            if (!events || !Array.isArray(events)) return false;
+            return events.some(event => event.id === personId);
+        } catch (error) {
+            console.error('❌ Ошибка проверки дежурства:', error);
+            return false;
+        }
     },
 
     isPersonOnVacation(dateKey, personId) {
-        const vacations = this.data.vacations[dateKey];
-        if (!vacations) return false;
-        return vacations.some(vacation => vacation.id === personId);
+        try {
+            const vacations = this.data.vacations[dateKey];
+            if (!vacations || !Array.isArray(vacations)) return false;
+            return vacations.some(vacation => vacation.id === personId);
+        } catch (error) {
+            console.error('❌ Ошибка проверки отпуска:', error);
+            return false;
+        }
     },
 
     getEventComment(dateKey) {
-        const events = this.data.events[dateKey];
-        if (!events || events.length === 0) return '';
-        return events[0].comment || '';
+        try {
+            const events = this.data.events[dateKey];
+            if (!events || !Array.isArray(events) || events.length === 0) return '';
+            return events[0].comment || '';
+        } catch (error) {
+            console.error('❌ Ошибка получения комментария:', error);
+            return '';
+        }
     },
 
     getVacationComment(dateKey) {
-        const vacations = this.data.vacations[dateKey];
-        if (!vacations || vacations.length === 0) return '';
-        return vacations[0].comment || '';
+        try {
+            const vacations = this.data.vacations[dateKey];
+            if (!vacations || !Array.isArray(vacations) || vacations.length === 0) return '';
+            return vacations[0].comment || '';
+        } catch (error) {
+            console.error('❌ Ошибка получения комментария отпуска:', error);
+            return '';
+        }
     },
 
     handleWeekSelection(selectedDate) {
-        const weekDates = this.getWeekDates(selectedDate);
-        const dateKeys = weekDates.map(date => this.getDateKey(date));
-        this.openEventModal(dateKeys[0], dateKeys);
+        try {
+            const weekDates = this.getWeekDates(selectedDate);
+            const dateKeys = weekDates.map(date => this.getDateKey(date));
+            this.openEventModal(dateKeys[0], dateKeys);
+        } catch (error) {
+            console.error('❌ Ошибка выбора недели:', error);
+        }
     },
 
     getWeekDates(date) {
-        const dates = [];
-        const dayOfWeek = date.getDay();
-        const startDate = new Date(date);
-        startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+        try {
+            const dates = [];
+            const dayOfWeek = date.getDay();
+            const startDate = new Date(date);
+            startDate.setDate(date.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
 
-        for (let i = 0; i < 7; i++) {
-            const currentDate = new Date(startDate);
-            currentDate.setDate(startDate.getDate() + i);
-            dates.push(currentDate);
+            for (let i = 0; i < 7; i++) {
+                const currentDate = new Date(startDate);
+                currentDate.setDate(startDate.getDate() + i);
+                dates.push(currentDate);
+            }
+
+            return dates;
+        } catch (error) {
+            console.error('❌ Ошибка расчета недели:', error);
+            return [];
         }
-
-        return dates;
     },
 
     parseDateKeyCorrect(dateKey) {
-        const [year, month, day] = dateKey.split('-').map(Number);
-        return new Date(year, month - 1, day);
+        try {
+            const [year, month, day] = dateKey.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        } catch (error) {
+            console.error('❌ Ошибка парсинга даты:', error);
+            return new Date();
+        }
     },
 
     getDateKey(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        try {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            console.error('❌ Ошибка создания ключа даты:', error);
+            return '1970-01-01';
+        }
     },
 
     // === МЕТОДЫ ДЛЯ ОТЛАДКИ ===
     async checkServerStatus() {
         try {
+            console.log('🔍 Проверка статуса сервера...');
             const response = await fetch(`${this.apiUrl}/health`);
             const result = await response.json();
             
@@ -929,10 +1045,11 @@ async checkServerHealth() {
     
     async getStats() {
         try {
+            console.log('📊 Запрос статистики...');
             const response = await fetch(`${this.apiUrl}/stats`);
             const result = await response.json();
             
-            console.log('📊 Статистика:', result);
+            console.log('📈 Статистика:', result);
             return result;
         } catch (error) {
             console.error('❌ Ошибка получения статистики:', error);
@@ -944,17 +1061,18 @@ async checkServerHealth() {
     getDebugInfo() {
         return {
             data: {
-                eventsCount: Object.keys(this.data.events).length,
-                vacationsCount: Object.keys(this.data.vacations).length,
-                lastModified: new Date(this.data.lastModified).toLocaleString(),
-                version: this.data.version
+                eventsCount: Object.keys(this.data.events || {}).length,
+                vacationsCount: Object.keys(this.data.vacations || {}).length,
+                lastModified: this.data.lastModified ? new Date(this.data.lastModified).toLocaleString() : 'Нет данных',
+                version: this.data.version || 0
             },
             state: {
                 isOnline: this.state.isOnline,
                 isSyncing: this.state.isSyncing,
-                lastServerCheck: new Date(this.state.lastServerCheck).toLocaleString(),
+                lastServerCheck: this.state.lastServerCheck ? new Date(this.state.lastServerCheck).toLocaleString() : 'Нет данных',
                 retryCount: this.state.retryCount,
-                selectionMode: this.state.selectionMode
+                selectionMode: this.state.selectionMode,
+                isInitialized: this.state.isInitialized
             },
             config: {
                 apiUrl: this.apiUrl,
@@ -966,57 +1084,81 @@ async checkServerHealth() {
     // Тестирование
     async testSystem() {
         console.log('🧪 Тестирование системы календаря...');
-        console.log('Отладочная информация:', this.getDebugInfo());
         
-        // Проверяем сервер
+        // 1. Проверяем локальные данные
+        console.log('1. Локальные данные:', this.data);
+        
+        // 2. Проверяем состояние
+        console.log('2. Состояние:', this.getDebugInfo());
+        
+        // 3. Проверяем сервер
+        console.log('3. Проверка сервера...');
         const serverStatus = await this.checkServerStatus();
-        console.log('Статус сервера:', serverStatus);
+        console.log('   Статус сервера:', serverStatus);
         
-        // Проверяем данные
-        const stats = await this.getStats();
-        console.log('Статистика:', stats);
+        // 4. Проверяем статистику
+        if (serverStatus.success) {
+            const stats = await this.getStats();
+            console.log('   Статистика:', stats);
+        }
         
-        // Обновляем отображение
+        // 5. Обновляем отображение
         this.renderCalendar();
         
         console.log('✅ Тестирование завершено');
+    },
+    
+    // Синхронизация вручную
+    async manualSync() {
+        try {
+            console.log('🔄 Ручная синхронизация...');
+            
+            DialogService.showLoading('Синхронизация с сервером...');
+            
+            const wasOnline = this.state.isOnline;
+            await this.loadFromServer();
+            
+            if (this.state.isOnline && wasOnline) {
+                DialogService.showMessage(
+                    '✅ Синхронизация',
+                    'Данные успешно синхронизированы с сервером',
+                    'success'
+                );
+            } else if (this.state.isOnline && !wasOnline) {
+                DialogService.showMessage(
+                    '🌐 Подключение',
+                    'Соединение с сервером восстановлено, данные синхронизированы',
+                    'success'
+                );
+            } else {
+                DialogService.showMessage(
+                    '⚠️ Оффлайн',
+                    'Сервер недоступен, используем локальные данные',
+                    'warning'
+                );
+            }
+            
+        } catch (error) {
+            console.error('❌ Ошибка синхронизации:', error);
+            DialogService.showMessage(
+                '❌ Ошибка',
+                'Не удалось синхронизировать данные: ' + error.message,
+                'error'
+            );
+        }
     }
 };
 
+// Добавляем AbortSignal.timeout полифилл для старых браузеров
+if (!AbortSignal.timeout) {
+    AbortSignal.timeout = function(ms) {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(new DOMException('Timeout', 'TimeoutError')), ms);
+        return controller.signal;
+    };
+}
+
 // Экспортируем глобально
 if (typeof window !== 'undefined') {
-    // Принудительная синхронизация с сервером
-async forceSync() {
-    try {
-        console.log('🔄 Принудительная синхронизация с сервером...');
-        
-        // Сохраняем локальные данные на сервер
-        const saved = await this.saveToServer();
-        
-        if (saved) {
-            DialogService.showMessage(
-                '✅ Успех',
-                'Данные успешно синхронизированы с сервером',
-                'success'
-            );
-        } else {
-            DialogService.showMessage(
-                '⚠️ Внимание',
-                'Не удалось синхронизировать с сервером. Проверьте подключение.',
-                'warning'
-            );
-        }
-        
-        return saved;
-    } catch (error) {
-        console.error('❌ Ошибка синхронизации:', error);
-        DialogService.showMessage(
-            '❌ Ошибка',
-            'Ошибка синхронизации: ' + error.message,
-            'error'
-        );
-        return false;
-    }
-},
     window.CalendarManager = CalendarManager;
 }
