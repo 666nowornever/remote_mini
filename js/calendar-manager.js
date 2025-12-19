@@ -102,33 +102,33 @@ const CalendarManager = {
 
     // Проверка доступности сервера
     async checkServerHealth() {
-        try {
-            console.log('🔍 Проверка доступности сервера...');
-            const response = await fetch(`${this.apiUrl}/health`, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                // Добавляем timeout через AbortController
-                signal: AbortSignal.timeout(5000)
-            });
-            
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
-            }
-            
-            const result = await response.json();
-            if (result.success) {
-                console.log('✅ Сервер доступен:', result.status);
-                return true;
-            }
-            throw new Error('Сервер не отвечает корректно');
-        } catch (error) {
-            console.error('❌ Сервер недоступен:', error.message);
-            return false;
+    try {
+        console.log('🔍 Проверка доступности сервера...');
+        const response = await fetch(`${this.apiUrl}/ping`, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            },
+            // Добавляем timeout через AbortController
+            signal: AbortSignal.timeout(3000) // Уменьшен timeout до 3 секунд
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
         }
-    },
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ Сервер доступен:', result.message);
+            return true;
+        }
+        throw new Error('Сервер не отвечает корректно');
+    } catch (error) {
+        console.error('❌ Сервер недоступен:', error.message);
+        return false;
+    }
+}
 
     // Загрузка данных с сервера
     async loadFromServer(retry = 0) {
