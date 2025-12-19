@@ -128,7 +128,7 @@ const CalendarManager = {
         console.error('❌ Сервер недоступен:', error.message);
         return false;
     }
-}
+},
 
     // Загрузка данных с сервера
     async loadFromServer(retry = 0) {
