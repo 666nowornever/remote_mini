@@ -18,18 +18,11 @@
             </button>
         </div>
 
-        <!-- Строка управления под основным заголовком -->
+        <!-- Только кнопка режима -->
         <div class="calendar-controls-under-header">
             <button class="calendar-mode-btn-main" id="selectionModeBtn">
                 <i class="fas fa-calendar-day"></i>
                 Режим: День
-            </button>
-            <button class="calendar-sync-btn-main" id="manualSyncBtn" title="Синхронизировать">
-                <i class="fas fa-sync-alt"></i>
-            </button>
-            <button class="calendar-today-btn-main" id="calendarToday" title="Сегодня">
-                <i class="fas fa-calendar-day"></i>
-                Сегодня
             </button>
         </div>
 
@@ -86,8 +79,8 @@
         </div>
     </div>
 
-    <!-- Статус синхронизации -->
-    <div id="syncStatus" class="sync-status info">
+    <!-- Статус синхронизации (скрытый по умолчанию) -->
+    <div id="syncStatus" class="sync-status hidden">
         <i class="fas fa-cloud"></i> Загрузка...
     </div>
 </div>

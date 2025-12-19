@@ -120,9 +120,7 @@ const ERPHandler = {
             DialogService.showMessage('✅ Включено', 'Регламенты ERP включены', 'success');
         } else if (status === 'disabled') {
             DialogService.showMessage('⏸️ Выключено', 'Регламенты ERP выключены', 'info');
-        } else {
-            DialogService.showMessage('📊 Статус ERP', 'Операция выполнена', 'info');
-        }
+        } 
     },
 
     // Определить статус из ответа
