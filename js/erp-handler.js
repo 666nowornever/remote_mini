@@ -1,23 +1,45 @@
 // Обработчик операций с ERP системами
 const ERPHandler = {
     // Инициализация обработчиков событий для ERP
-    initialize: function() {
-        console.log('🔄 Инициализация ERP обработчика...');
-        this.bindEvents();
+    init: function() {
+        console.log('🔄 ERPHandler: инициализация...');
+        this.initialize();
+        return true;
     },
 
-    // Привязка событий
-    bindEvents: function() {
+    initialize: function() {
+        console.log('🔄 Инициализация ERP обработчика...');
+        
         // Используем делегирование событий на всем документе
         document.addEventListener('click', (e) => {
             const erpButton = e.target.closest('#erp-toggle-btn');
             if (erpButton) {
                 console.log('🎯 Кнопка ERP найдена, обработка клика...');
+                e.preventDefault();
+                e.stopPropagation();
                 this.handleERPToggle();
             }
         });
 
+        // Также привязываемся при загрузке страницы
+        this.bindERPButton();
+        
         console.log('✅ ERP обработчики событий инициализированы');
+        return true;
+    },
+
+    // Явная привязка кнопки ERP
+    bindERPButton: function() {
+        // Прямая привязка (для надежности)
+        const erpButton = document.getElementById('erp-toggle-btn');
+        if (erpButton) {
+            console.log('🔗 Прямая привязка кнопки ERP');
+            erpButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.handleERPToggle();
+            });
+        }
     },
 
     // Обработка переключения ERP сервисов
@@ -74,21 +96,21 @@ const ERPHandler = {
     },
 
     // Блокировка кнопки
-    disableButton(button) {
+    disableButton: function(button) {
         button.style.opacity = '0.6';
         button.style.cursor = 'not-allowed';
         button.style.pointerEvents = 'none';
     },
 
     // Разблокировка кнопки
-    enableButton(button) {
+    enableButton: function(button) {
         button.style.opacity = '1';
         button.style.cursor = 'pointer';
         button.style.pointerEvents = 'auto';
     },
 
     // Показать результат операции ERP
-    showERPResult(result) {
+    showERPResult: function(result) {
         console.log('✅ ERP Response:', result);
         
         // Определяем статус на основе текста ответа
@@ -104,7 +126,7 @@ const ERPHandler = {
     },
 
     // Определить статус из ответа
-    determineStatus(result) {
+    determineStatus: function(result) {
         if (!result || !result.rawResponse) {
             return 'unknown';
         }
@@ -122,63 +144,55 @@ const ERPHandler = {
     },
 
     // Показать детальную ошибку
-    showDetailedError(error) {
+    showDetailedError: function(error) {
         console.error('💥 ERP Operation Error:', error);
         
         let title = '❌ Ошибка';
-        let message = '';
-        let details = '';
-
-        // Основное сообщение
-        if (error.originalError) {
-            message = error.message;
-            details = this.formatErrorDetails(error.originalError, error.response);
+        let message = 'Произошла ошибка при переключении регламентов ERP.\n\n';
+        
+        if (error.message.includes('Failed to fetch')) {
+            message += 'Сервер ERP недоступен. Проверьте:\n';
+            message += '• Интернет соединение\n';
+            message += '• Доступность сервера ERP\n';
+            message += '• Настройки CORS на сервере';
+        } else if (error.message.includes('403')) {
+            message += 'Ошибка доступа (403). Возможно:\n';
+            message += '• Неверный токен авторизации\n';
+            message += '• Истек срок действия токена\n';
+            message += '• Недостаточно прав';
         } else {
-            message = error.message;
-            details = this.formatErrorDetails(error);
-        }
-
-        // Добавляем предложения по решению
-        const suggestions = this.getErrorSuggestions(error);
-
-        const fullMessage = `${message}\n\n${details}\n\n💡 ${suggestions}`;
-
-        DialogService.showMessage(title, fullMessage, 'error');
-    },
-
-    // Форматирование деталей ошибки
-    formatErrorDetails(error, response) {
-        let details = '🔍 Детали ошибки:\n';
-        
-        if (error.name) {
-            details += `Тип: ${error.name}\n`;
+            message += 'Ошибка: ' + error.message;
         }
         
-        if (response) {
-            details += `\n📡 Ответ сервера:\n`;
-            details += `Status: ${response.status} ${response.statusText}\n`;
-            details += `URL: ${response.url}\n`;
-        }
+        message += '\n\nПодробности в консоли браузера (F12 → Console)';
         
-        return details;
-    },
-
-    // Получить предложения по решению ошибки
-    getErrorSuggestions(error) {
-        const errorMessage = error.message.toLowerCase();
-        
-        if (errorMessage.includes('cors')) {
-            return 'Решение: Необходимо настроить CORS на сервере ERP или использовать прокси-сервер.';
-        }
-        
-        if (errorMessage.includes('403')) {
-            return 'Решение: Проверьте токен авторизации и права доступа. Токен может быть неверным или устаревшим.';
-        }
-        
-        if (errorMessage.includes('failed to fetch')) {
-            return 'Решение: Проверьте подключение к интернету, доступность сервера ERP и настройки firewall.';
-        }
-        
-        return 'Проверьте консоль браузера для более детальной информации (F12 → Console).';
+        DialogService.showMessage(title, message, 'error');
     }
 };
+
+// Инициализация при загрузке
+if (typeof window !== 'undefined') {
+    window.ERPHandler = ERPHandler;
+    
+    // Также перехватываем загрузку страницы second-line
+    document.addEventListener('DOMContentLoaded', function() {
+        // Небольшая задержка для гарантии загрузки Navigation
+        setTimeout(() => {
+            if (window.Navigation) {
+                const originalShowPage = Navigation.showPage;
+                Navigation.showPage = function(pageId) {
+                    originalShowPage.call(this, pageId);
+                    
+                    // После загрузки страницы second-line привязываем кнопку ERP
+                    if (pageId === 'second-line') {
+                        setTimeout(() => {
+                            if (window.ERPHandler && ERPHandler.bindERPButton) {
+                                ERPHandler.bindERPButton();
+                            }
+                        }, 300);
+                    }
+                };
+            }
+        }, 1000);
+    });
+}

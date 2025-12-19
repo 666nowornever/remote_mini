@@ -11,7 +11,7 @@
                 <i class="fas fa-chevron-left"></i>
             </button>
             <div class="calendar-title-main">
-                <span id="calendarTitle">Октябрь 2025</span>
+                <span id="calendarTitle">Загрузка...</span>
             </div>
             <button class="calendar-nav-main" id="calendarNext" title="Следующий месяц">
                 <i class="fas fa-chevron-right"></i>
@@ -24,11 +24,22 @@
                 <i class="fas fa-calendar-day"></i>
                 Режим: День
             </button>
+            <button class="calendar-sync-btn-main" id="manualSyncBtn" title="Синхронизировать">
+                <i class="fas fa-sync-alt"></i>
+            </button>
+            <button class="calendar-today-btn-main" id="calendarToday" title="Сегодня">
+                <i class="fas fa-calendar-day"></i>
+                Сегодня
+            </button>
         </div>
 
         <!-- Сетка календаря -->
         <div class="calendar-grid-main" id="calendarGrid">
             <!-- Календарь будет сгенерирован JavaScript -->
+            <div class="calendar-loading">
+                <div class="spinner"></div>
+                <span>Загрузка календаря...</span>
+            </div>
         </div>
 
         <!-- Контейнер для легенды и дней рождения -->
@@ -48,6 +59,14 @@
                         <div class="legend-color-main" style="background-color: #FF9800"></div>
                         <span>Преображенский Дмитрий</span>
                     </div>
+                    <div class="legend-item-main">
+                        <div class="legend-color-main vacation-color-main"></div>
+                        <span>Отпуск</span>
+                    </div>
+                    <div class="legend-item-main">
+                        <div class="legend-color-main" style="background-color: #E91E63"></div>
+                        <span>День рождения</span>
+                    </div>
                 </div>
             </div>
 
@@ -58,11 +77,17 @@
                     Дни рождения в этом месяце
                 </div>
                 <div id="birthdaysThisMonth">
-                    <!-- Дни рождения будут загружены здесь -->
+                    <div class="no-birthdays">
+                        <i class="fas fa-birthday-cake"></i>
+                        <p>Загрузка...</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-
+    <!-- Статус синхронизации -->
+    <div id="syncStatus" class="sync-status info">
+        <i class="fas fa-cloud"></i> Загрузка...
+    </div>
 </div>

@@ -652,3 +652,141 @@
 }
 
 
+/* Preloader для календаря */
+.calendar-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+    color: rgba(255, 255, 255, 0.6);
+    grid-column: 1 / -1;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.calendar-loading .spinner {
+    border: 3px solid rgba(255, 255, 255, 0.1);
+    border-top: 3px solid #667eea;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+/* Кнопка "Сегодня" */
+.calendar-today-btn-main {
+    background: rgba(76, 175, 80, 0.3);
+    border: 1px solid rgba(76, 175, 80, 0.5);
+    border-radius: 10px;
+    color: white;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;
+}
+
+.calendar-today-btn-main:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+    background: rgba(76, 175, 80, 0.4);
+}
+
+/* Статус синхронизации */
+.sync-status {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.sync-status.success {
+    background: rgba(76, 175, 80, 0.9);
+    border-color: rgba(76, 175, 80, 0.7);
+}
+
+.sync-status.error {
+    background: rgba(244, 67, 54, 0.9);
+    border-color: rgba(244, 67, 54, 0.7);
+}
+
+.sync-status.warning {
+    background: rgba(255, 193, 7, 0.9);
+    border-color: rgba(255, 193, 7, 0.7);
+}
+
+.sync-status.info {
+    background: rgba(33, 150, 243, 0.9);
+    border-color: rgba(33, 150, 243, 0.7);
+}
+
+/* Стили для календаря дней рождения */
+.calendar-birthday-emoji {
+    text-align: center;
+    font-size: 14px;
+    margin-top: 2px;
+}
+
+/* Стиль для цвета отпуска в легенде */
+.vacation-color-main {
+    background: #ff6b6b !important;
+    border-radius: 3px;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 480px) {
+    .calendar-controls-under-header {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .calendar-mode-btn-main,
+    .calendar-sync-btn-main,
+    .calendar-today-btn-main {
+        width: 100%;
+        min-height: 40px;
+    }
+    
+    .calendar-main-header {
+        padding: 8px;
+        gap: 8px;
+    }
+    
+    .calendar-nav-main {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .calendar-title-main span {
+        font-size: 16px;
+    }
+    
+    .legend-items-main {
+        grid-template-columns: 1fr;
+        gap: 6px;
+    }
+    
+    .sync-status {
+        top: 5px;
+        right: 5px;
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+}

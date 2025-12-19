@@ -149,24 +149,42 @@ const CalendarManager = {
         this.startSync();
         this.scheduleBirthdays();
         console.log('✅ CalendarManager: инициализация завершена');
-        window.CalendarManager = this;
     },
 
     async loadFromServer() {
         try {
             console.log('📥 Загрузка данных с сервера...');
-            const response = await fetch(`${this.apiUrl}/calendar`);
             
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            // Добавляем таймаут для запроса
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
+            const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`, {
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
             if (result.success && this.validateData(result.data)) {
-                this.data = result.data;
+                // Слияние данных (сохраняем локальные изменения если они новее)
+                if (result.data.lastModified > this.data.lastModified) {
+                    this.data = result.data;
+                    console.log('🔄 Данные обновлены с сервера');
+                } else {
+                    console.log('📊 Локальные данные актуальнее серверных');
+                }
+                
                 this.state.lastServerCheck = Date.now();
                 this.state.isOnline = true;
-                console.log('✅ Данные загружены с сервера');
+                console.log('✅ Данные загружены');
                 
+                // Обновляем интерфейс если он отображается
                 if (document.getElementById('calendarGrid')) {
                     this.renderCalendar();
                     this.renderBirthdaysThisMonth();
@@ -175,9 +193,21 @@ const CalendarManager = {
                 throw new Error('Invalid server response');
             }
         } catch (error) {
-            console.error('❌ Ошибка загрузки с сервера:', error);
+            console.error('❌ Ошибка загрузки с сервера:', error.message);
             this.state.isOnline = false;
-            this.loadLocalFallback();
+            
+            // Пытаемся загрузить из локального backup
+            if (this.loadLocalFallback()) {
+                console.log('✅ Используем локальные данные');
+            } else {
+                console.log('📝 Используем пустые данные');
+                this.data = {
+                    events: {},
+                    vacations: {},
+                    lastModified: Date.now(),
+                    version: 1
+                };
+            }
         }
     },
 
@@ -189,6 +219,10 @@ const CalendarManager = {
             console.log('📤 Сохранение данных на сервер...');
             const userId = this.getUserId();
             
+            // Добавляем таймаут
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
             const response = await fetch(`${this.apiUrl}/calendar`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -196,8 +230,11 @@ const CalendarManager = {
                     ...this.data,
                     lastModified: Date.now(),
                     updatedBy: userId || 'unknown'
-                })
+                }),
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
 
             if (!response.ok) throw new Error(`HTTP ${response.status}`);
             
@@ -208,13 +245,14 @@ const CalendarManager = {
                 this.data.version = result.version;
                 this.state.isOnline = true;
                 console.log('✅ Данные сохранены на сервер');
+                return true;
             } else {
                 throw new Error(result.error);
             }
         } catch (error) {
             console.error('❌ Ошибка сохранения на сервер:', error);
             this.state.isOnline = false;
-            this.saveLocalFallback();
+            return false;
         } finally {
             this.state.isSyncing = false;
         }
@@ -479,7 +517,7 @@ const CalendarManager = {
                 const eventElement = document.createElement('div');
                 eventElement.className = 'calendar-event-main';
                 eventElement.style.backgroundColor = event.color;
-                eventElement.title = `${event.person}\n${event.comment || 'Без комментария'}`;
+                eventElement.title = `${event.name}\n${event.comment || 'Без комментария'}`;
                 eventsContainer.appendChild(eventElement);
             });
         }
@@ -493,7 +531,7 @@ const CalendarManager = {
                 const vacationElement = document.createElement('div');
                 vacationElement.className = 'calendar-vacation-main';
                 vacationElement.style.backgroundColor = vacation.color;
-                vacationElement.title = `Отпуск: ${vacation.person}`;
+                vacationElement.title = `Отпуск: ${vacation.name}\n${vacation.comment || ''}`;
                 vacationContainer.appendChild(vacationElement);
             });
             
@@ -570,6 +608,7 @@ const CalendarManager = {
     },
 
     async manualSync() {
+        this.showSaveStatus('<i class="fas fa-sync fa-spin"></i> Синхронизация...', 'info');
         await this.loadFromServer();
         this.updateSyncStatus();
     },
@@ -639,7 +678,6 @@ const CalendarManager = {
                     <div class="modal-tabs">
                         <button class="tab-btn active" data-tab="duty">Дежурство</button>
                         <button class="tab-btn" data-tab="vacation">Отпуск</button>
-                        <button class="tab-btn" data-tab="event">Событие</button>
                     </div>
                     
                     <div class="tab-content" id="dutyTab">
@@ -679,21 +717,6 @@ const CalendarManager = {
                             <textarea id="vacationComment" placeholder="Добавьте комментарий...">${this.getVacationComment(dateKey) || ''}</textarea>
                         </div>
                     </div>
-                    
-                    <div class="tab-content hidden" id="eventTab">
-                        <div class="event-time-section">
-                            <label for="eventTime">Время отправки уведомления:</label>
-                            <input type="time" id="eventTime" value="09:00">
-                        </div>
-                        <div class="comment-section">
-                            <label for="eventMessage">Сообщение для чата:</label>
-                            <textarea id="eventMessage" placeholder="Введите сообщение для отправки в рабочий чат..."></textarea>
-                        </div>
-                        <div class="notification-info">
-                            <i class="fas fa-info-circle"></i>
-                            Сообщение будет отправлено в рабочий чат Telegram в указанное время
-                        </div>
-                    </div>
                 </div>
                 <div class="calendar-modal-actions">
                     <button class="btn btn-cancel">Отмена</button>
@@ -725,207 +748,176 @@ const CalendarManager = {
         modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
 
-        modal.querySelector('.btn-save').addEventListener('click', () => {
+        modal.querySelector('.btn-save').addEventListener('click', async () => {
             const activeTab = modal.querySelector('.tab-btn.active').dataset.tab;
             const datesToSave = weekDates || [dateKey];
 
-            if (activeTab === 'duty') {
-                this.saveDutyEvent(datesToSave);
-            } else if (activeTab === 'vacation') {
-                this.saveVacationEvent(datesToSave);
-            } else if (activeTab === 'event') {
-                this.saveChatEvent(datesToSave);
+            try {
+                if (activeTab === 'duty') {
+                    await this.saveDutyEvent(datesToSave);
+                } else if (activeTab === 'vacation') {
+                    await this.saveVacationEvent(datesToSave);
+                }
+                
+                closeModal();
+                
+            } catch (error) {
+                console.error('❌ Ошибка при сохранении:', error);
+                // Не закрываем модальное окно при ошибке
             }
+        });
+    },
 
-            closeModal();
+    async saveDutyEvent(datesToSave) {
+        try {
+            const selectedPersons = [];
+            document.querySelectorAll('#dutyTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
+                const personId = parseInt(checkbox.id.replace('person-', ''));
+                const person = this.dutyPersons.find(p => p.id === personId);
+                if (person) selectedPersons.push(person);
+            });
+
+            const comment = document.getElementById('eventComment')?.value.trim() || '';
+
+            datesToSave.forEach(date => {
+                const actualDateKey = this.getDateKey(this.parseDateKeyCorrect(date));
+                
+                if (selectedPersons.length > 0) {
+                    this.data.events[actualDateKey] = selectedPersons.map(person => ({
+                        id: person.id,
+                        name: person.name,
+                        color: person.color,
+                        comment: comment
+                    }));
+                    console.log(`💾 Сохранено дежурство на ${actualDateKey}:`, selectedPersons.map(p => p.name));
+                } else {
+                    delete this.data.events[actualDateKey];
+                    console.log(`🗑️ Удалено дежурство на ${actualDateKey}`);
+                }
+            });
+
+            await this.saveData();
+            
+            // Обновляем отображение
             this.renderCalendar();
-        });
-    },
-
-    saveDutyEvent(datesToSave) {
-        const selectedPersons = [];
-        document.querySelectorAll('.duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
-            const personId = parseInt(checkbox.id.replace('person-', ''));
-            const person = this.dutyPersons.find(p => p.id === personId);
-            if (person) selectedPersons.push(person);
-        });
-
-        const comment = document.getElementById('eventComment')?.value.trim() || '';
-
-        datesToSave.forEach(date => {
-            if (selectedPersons.length > 0) {
-                this.data.events[date] = selectedPersons.map(person => ({
-                    ...person,
-                    comment: comment
-                }));
-            } else {
-                delete this.data.events[date];
-            }
-        });
-
-        this.saveData();
-    },
-
-    saveVacationEvent(datesToSave) {
-        const selectedPersons = [];
-        document.querySelectorAll('#vacationTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
-            const personId = parseInt(checkbox.id.replace('vacation-person-', ''));
-            const person = this.dutyPersons.find(p => p.id === personId);
-            if (person) selectedPersons.push(person);
-        });
-
-        const comment = document.getElementById('vacationComment')?.value.trim() || '';
-
-        datesToSave.forEach(date => {
-            if (selectedPersons.length > 0) {
-                this.data.vacations[date] = selectedPersons.map(person => ({
-                    ...person,
-                    comment: comment,
-                    type: 'vacation'
-                }));
-            } else {
-                delete this.data.vacations[date];
-            }
-        });
-
-        this.saveData();
-    },
-
-    saveChatEvent(datesToSave) {
-        const eventTime = document.getElementById('eventTime')?.value;
-        const eventMessage = document.getElementById('eventMessage')?.value.trim();
-
-        if (!eventMessage) {
-            DialogService.showMessage('❌ Ошибка', 'Пожалуйста, введите сообщение для отправки', 'error');
-            return;
+            
+            this.showSaveStatus('✅ График дежурств сохранен', 'success');
+            
+        } catch (error) {
+            console.error('❌ Ошибка сохранения дежурств:', error);
+            this.showSaveStatus('❌ Ошибка сохранения', 'error');
+            throw error;
         }
+    },
 
-        if (!eventTime) {
-            DialogService.showMessage('❌ Ошибка', 'Пожалуйста, укажите время отправки', 'error');
-            return;
-        }
+    async saveVacationEvent(datesToSave) {
+        try {
+            const selectedPersons = [];
+            document.querySelectorAll('#vacationTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
+                const personId = parseInt(checkbox.id.replace('vacation-person-', ''));
+                const person = this.dutyPersons.find(p => p.id === personId);
+                if (person) selectedPersons.push(person);
+            });
 
-        let successCount = 0;
-        let errorCount = 0;
+            const comment = document.getElementById('vacationComment')?.value.trim() || '';
 
-        datesToSave.forEach(date => {
-            const eventDateTime = this.createDateTime(date, eventTime);
-            if (!eventDateTime) {
-                errorCount++;
-                return;
-            }
+            datesToSave.forEach(date => {
+                const actualDateKey = this.getDateKey(this.parseDateKeyCorrect(date));
+                
+                if (selectedPersons.length > 0) {
+                    this.data.vacations[actualDateKey] = selectedPersons.map(person => ({
+                        id: person.id,
+                        name: person.name,
+                        color: person.color,
+                        comment: comment,
+                        type: 'vacation'
+                    }));
+                    console.log(`💾 Сохранен отпуск на ${actualDateKey}:`, selectedPersons.map(p => p.name));
+                } else {
+                    delete this.data.vacations[actualDateKey];
+                    console.log(`🗑️ Удален отпуск на ${actualDateKey}`);
+                }
+            });
 
-            const messageId = this.scheduleTelegramMessage(eventDateTime, eventMessage);
-            if (messageId) {
-                successCount++;
-            } else {
-                errorCount++;
-            }
-        });
-
-        if (successCount > 0) {
-            DialogService.showMessage('✅ Успех', `События запланированы: ${successCount} успешно, ${errorCount} с ошибками`, 'success');
-        } else {
-            DialogService.showMessage('❌ Ошибка', 'Не удалось запланировать ни одного события', 'error');
+            await this.saveData();
+            
+            // Обновляем отображение
+            this.renderCalendar();
+            
+            this.showSaveStatus('✅ График отпусков сохранен', 'success');
+            
+        } catch (error) {
+            console.error('❌ Ошибка сохранения отпусков:', error);
+            this.showSaveStatus('❌ Ошибка сохранения', 'error');
+            throw error;
         }
     },
 
     async saveData() {
-        this.data.lastModified = Date.now();
-        await this.saveToServer();
-        this.saveLocalFallback();
+        try {
+            this.data.lastModified = Date.now();
+            this.data.version++;
+            
+            console.log('💾 Сохранение данных:', {
+                events: Object.keys(this.data.events).length,
+                vacations: Object.keys(this.data.vacations).length,
+                lastModified: this.data.lastModified
+            });
+            
+            // Пытаемся сохранить на сервер
+            let serverSaved = false;
+            if (this.state.isOnline) {
+                serverSaved = await this.saveToServer();
+            } else {
+                console.warn('⚠️ Сохранение только локально (оффлайн режим)');
+            }
+            
+            // Всегда сохраняем локально как backup
+            this.saveLocalFallback();
+            
+            this.showSaveStatus(
+                serverSaved ? '✅ Данные синхронизированы' : '💾 Данные сохранены локально',
+                serverSaved ? 'success' : 'warning'
+            );
+            
+            return true;
+        } catch (error) {
+            console.error('❌ Ошибка сохранения данных:', error);
+            // Пытаемся сохранить хотя бы локально
+            this.saveLocalFallback();
+            this.showSaveStatus('⚠️ Данные сохранены только локально', 'warning');
+            throw error;
+        }
     },
 
-   createDateTime(dateString, timeString) {
-    try {
-        const [year, month, day] = dateString.split('-').map(Number);
-        const [hours, minutes] = timeString.split(':').map(Number);
+    showSaveStatus(message, type = 'success') {
+        const statusElement = document.getElementById('syncStatus');
+        if (!statusElement) return;
         
-        // Создаем дату СЕГОДНЯ с указанным временем
-        const today = new Date();
-        const eventDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), hours, minutes, 0, 0);
+        const icons = {
+            success: 'fa-check-circle',
+            error: 'fa-times-circle',
+            warning: 'fa-exclamation-circle',
+            info: 'fa-info-circle'
+        };
         
-        const timestamp = eventDate.getTime();
+        const colors = {
+            success: '#4CAF50',
+            error: '#f44336',
+            warning: '#FF9800',
+            info: '#2196F3'
+        };
         
-        console.log(`📅 Создание события: ${dateString} ${timeString}`);
-        console.log(`🕒 Локальное время: ${eventDate.toLocaleString('ru-RU')}`);
-        console.log(`⏰ Timestamp: ${timestamp}`);
+        statusElement.innerHTML = `
+            <i class="fas ${icons[type]}" style="color: ${colors[type]}"></i>
+            ${message}
+        `;
+        statusElement.className = `sync-status ${type}`;
         
-        const now = Date.now();
-        console.log(`⏱️ Сейчас timestamp: ${now}`);
-        console.log(`⏱️ Разница: ${timestamp - now} мс`);
-        
-        if (isNaN(timestamp)) {
-            console.error('❌ Неверная дата или время');
-            return null;
-        }
-
-        if (timestamp <= now) {
-            DialogService.showMessage(
-                '❌ Ошибка',
-                `Указанное время уже прошло.\n` +
-                `Локальное время: ${eventDate.toLocaleString('ru-RU')}\n` +
-                `Текущее время: ${new Date().toLocaleString('ru-RU')}`,
-                'error'
-            );
-            return null;
-        }
-
-        return timestamp;
-        
-    } catch (error) {
-        console.error('❌ Ошибка создания даты:', error);
-        return null;
-    }
-
-},
-
-    async scheduleTelegramMessage(eventTimestamp, message, chatId = null) {
-        if (!message || message.trim().length === 0) {
-            DialogService.showMessage(
-                '❌ Ошибка',
-                'Введите текст сообщения для отправки.',
-                'error'
-            );
-            return null;
-        }
-
-        try {
-            const messageId = await MessageScheduler.scheduleMessage(
-                eventTimestamp,
-                message.trim(),
-                chatId,
-                {
-                    type: 'calendar_event',
-                    dateTime: new Date(eventTimestamp).toISOString(),
-                    source: 'calendar',
-                    scheduledFor: new Date(eventTimestamp).toLocaleString('ru-RU')
-                }
-            );
-
-            if (messageId) {
-                console.log('📤 Планирование сообщения:', {
-                timestamp: new Date(eventTimestamp).toLocaleString('ru-RU'),
-                message: message.substring(0, 50) + '...',
-                chatId: chatId,
-                userId: this.getUserId() 
-                });
-                console.log(`✅ Сообщение запланировано на сервере: ${message.substring(0, 50)}...`);
-                console.log(`⏰ На: ${new Date(eventTimestamp).toLocaleString('ru-RU')}`);
-                return messageId;
-            } else {
-                console.error('❌ Не удалось запланировать сообщение');
-                return null;
-            }
-        } catch (error) {
-            console.error('❌ Ошибка планирования сообщения:', error);
-            DialogService.showMessage(
-                '❌ Ошибка',
-                'Не удалось запланировать сообщение. Попробуйте снова.',
-                'error'
-            );
-            return null;
-        }
+        // Автоматически скрываем через 3 секунды
+        setTimeout(() => {
+            this.updateSyncStatus();
+        }, 3000);
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
@@ -1050,28 +1042,13 @@ const CalendarManager = {
     },
 
     async testSystem() {
-        console.log('🧪 Тестирование системы...');
-        
-        const testTime = new Date();
-        testTime.setMinutes(testTime.getMinutes() + 2);
-        
-        const testMessage = {
-            id: 999,
-            name: 'ТЕСТОВЫЙ День Рождения',
-            date: testTime.toISOString().split('T')[0],
-            type: 'congratulation', 
-            message: '🎉 ТЕСТ: Поздравляем с тестовым днем рождения! 🎂'
-        };
-        
-        console.log(`🧪 Тестовое сообщение запланировано на: ${testTime.toLocaleString('ru-RU')}`);
-        await this.scheduleBirthdayMessage(testMessage, testTime.getTime());
+        console.log('🧪 Тестирование системы календаря...');
+        this.renderCalendar();
+        console.log('✅ Календарь отображен');
     }
 };
 
-window.CalendarManager = CalendarManager;
-
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof CalendarManager !== 'undefined' && CalendarManager.init) {
-        CalendarManager.init();
-    }
-});
+// Экспортируем глобально
+if (typeof window !== 'undefined') {
+    window.CalendarManager = CalendarManager;
+}

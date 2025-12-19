@@ -93,6 +93,15 @@ initializePage: function(pageId) {
                 CashManager.initializeCashList();
             }
             break;
+            case 'second-line':
+            console.log('🔄 Инициализация страницы second-line...');
+            // Привязываем кнопку ERP после загрузки страницы
+            setTimeout(() => {
+                if (typeof ERPHandler !== 'undefined' && ERPHandler.bindERPButton) {
+                    ERPHandler.bindERPButton();
+                }
+            }, 100);
+            break;
         case 'cash-details':
             console.log('🔄 Инициализация страницы деталей кассы...');
             if (typeof CashManager !== 'undefined') {

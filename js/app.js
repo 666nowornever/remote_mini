@@ -3,39 +3,38 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('🚀 Приложение запускается...');
     
     try {
-        // Показываем индикатор загрузки
+        // Показываем только основной индикатор
         showLoadingIndicator();
         
-        // Инициализируем авторизацию
+        // 1. Сначала авторизация (самое важное)
         const accessGranted = await Auth.initialize();
         
-        console.log('🔐 Результат авторизации:', accessGranted);
-        
-        // Скрываем индикатор загрузки
-        hideLoadingIndicator();
-        
-        if (accessGranted) {
-            // Инициализируем все менеджеры с обработкой ошибок
-            await initializeManagers();
-            
-            // Загружаем главную страницу
-            Navigation.showPage('main');
-            
-            // Инициализируем обработчики событий
-            initializeEventHandlers();
-            
-            console.log('✅ Приложение успешно инициализировано');
-            
-        } else {
+        if (!accessGranted) {
             console.log('❌ Доступ запрещен');
+            hideLoadingIndicator();
+            return;
         }
-    } catch (error) {
-        // Скрываем индикатор загрузки в случае ошибки
+        
+        // 2. Загружаем главную страницу сразу после авторизации
+        Navigation.showPage('main');
+        
+        // 3. Скрываем индикатор загрузки (пользователь уже видит интерфейс)
         hideLoadingIndicator();
         
+        // 4. Фоновая загрузка менеджеров
+        setTimeout(() => {
+            initializeManagersLazy();
+        }, 100);
+        
+        // 5. Инициализируем обработчики событий
+        initializeEventHandlers();
+        
+        console.log('✅ Приложение успешно инициализировано');
+        
+    } catch (error) {
+        hideLoadingIndicator();
         console.error('💥 Критическая ошибка при инициализации:', error);
         
-        // Показываем сообщение об ошибке
         DialogService.showMessage(
             '❌ Ошибка запуска',
             'Не удалось запустить приложение. Пожалуйста, попробуйте позже.\n\n' +
@@ -45,90 +44,74 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
 });
 
-// Инициализация всех менеджеров
-async function initializeManagers() {
-    console.log('🔄 Инициализация менеджеров...');
+// Ленивая инициализация менеджеров
+async function initializeManagersLazy() {
+    console.log('🔄 Фоновая инициализация менеджеров...');
     
-    // Список менеджеров для инициализации в правильном порядке
-    const managers = [
-         {
-            name: 'MessageScheduler', 
-            instance: MessageScheduler,
-            init: () => MessageScheduler.init(),
-            optional: true
-        },
-
-        {
-            name: 'PCManager',
-            instance: PCManager,
-            init: () => PCManager.init(),
-            optional: false
-        },
-        {
-            name: 'PrinterManager',
-            instance: PrinterManager,
-            init: () => PrinterManager.init(),
-            optional: false
-        },
-        {
-            name: 'CashServerManager',
-            instance: CashServerManager,
-            init: () => CashServerManager.init(),
-            optional: false
-        },
-        {
-            name: 'ServicesManager',
-            instance: ServicesManager,
-            init: () => ServicesManager.init(),
-            optional: false
-        },
-        {
-            name: 'TelegramService',
-            instance: TelegramService,
-            init: () => TelegramService.init(),
-            optional: true
-        },
-        {
-            name: 'CalendarManager',
-            instance: CalendarManager,
-            init: () => CalendarManager.init(),
-            optional: true
-        }
+    // Разделяем на критичные и некритичные менеджеры
+    const criticalManagers = [
+        { name: 'CashServerManager', instance: window.CashServerManager, optional: false },
+        { name: 'ServicesManager', instance: window.ServicesManager, optional: false },
+        { name: 'ERPHandler', instance: window.ERPHandler, optional: false },
+        { name: 'CashManager', instance: window.CashManager, optional: false }
     ];
-
-    // Инициализируем менеджеры последовательно
-    for (const manager of managers) {
-        try {
-            await initializeManager(manager);
-        } catch (error) {
-            console.error(`❌ Ошибка инициализации ${manager.name}:`, error);
-            if (!manager.optional) {
-                throw error;
-            }
-        }
-    }
     
-    console.log('✅ Все менеджеры инициализированы');
+    const nonCriticalManagers = [
+        { name: 'MessageScheduler', instance: window.MessageScheduler, optional: true },
+        { name: 'TelegramService', instance: window.TelegramService, optional: true },
+        { name: 'CalendarManager', instance: window.CalendarManager, optional: true },
+        { name: 'PCManager', instance: window.PCManager, optional: true },
+        { name: 'PrinterManager', instance: window.PrinterManager, optional: true }
+    ];
+    
+    // Критичные менеджеры загружаем параллельно
+    await Promise.allSettled(
+        criticalManagers.map(manager => 
+            initializeManagerSafe(manager)
+        )
+    );
+    
+    // Некритичные загружаем в фоне с задержкой
+    setTimeout(() => {
+        nonCriticalManagers.forEach(manager => {
+            initializeManagerSafe(manager);
+        });
+    }, 500);
+    
+    console.log('✅ Менеджеры инициализированы в фоне');
 }
 
-// Инициализация отдельного менеджера
-async function initializeManager(manager) {
-    const { name, instance, init, optional } = manager;
+// Безопасная инициализация с обработкой ошибок
+async function initializeManagerSafe(manager) {
+    const { name, instance, optional } = manager;
     
     if (typeof instance === 'undefined') {
         if (optional) {
             console.warn(`⚠️ ${name}: пропущен (опциональный компонент)`);
-            return;
         } else {
-            throw new Error(`Обязательный компонент ${name} не загружен`);
+            console.error(`❌ Обязательный компонент ${name} не загружен`);
         }
+        return;
     }
     
-    if (typeof init === 'function') {
-        await init();
-        console.log(`✅ ${name} инициализирован`);
-    } else {
-        console.warn(`⚠️ ${name}: метод init не найден`);
+    try {
+        if (instance.init && typeof instance.init === 'function') {
+            await instance.init();
+            console.log(`✅ ${name} инициализирован`);
+        } else if (instance.initialize && typeof instance.initialize === 'function') {
+            await instance.initialize();
+            console.log(`✅ ${name} инициализирован через initialize()`);
+        }
+    } catch (error) {
+        console.error(`❌ Ошибка инициализации ${name}:`, error);
+        if (!optional) {
+            // Для некритичных ошибок только логируем
+            if (optional) {
+                console.warn(`⚠️ ${name}: ошибка, но компонент опциональный`);
+            } else {
+                throw error;
+            }
+        }
     }
 }
 
@@ -156,8 +139,10 @@ function initializeEventHandlers() {
     document.addEventListener('click', function(e) {
         const serverItem = e.target.closest('.server-item');
         if (serverItem) {
-            const serverName = serverItem.querySelector('.server-name').textContent.trim();
-            console.log(`Выбран сервер: ${serverName}`);
+            const serverName = serverItem.querySelector('.server-name')?.textContent?.trim();
+            if (serverName) {
+                console.log(`Выбран сервер: ${serverName}`);
+            }
         }
         
         // Обработка кнопки календаря
