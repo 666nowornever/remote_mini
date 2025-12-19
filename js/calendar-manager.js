@@ -2,7 +2,7 @@
 const CalendarManager = {
     // === КОНФИГУРАЦИЯ ===
     apiUrl: 'https://remote-api-calendar.onrender.com/api',
-    syncInterval: 30000,
+    syncInterval: 30000, // 30 секунд
     syncTimer: null,
     maxRetries: 3,
     requestTimeout: 5000,
@@ -57,7 +57,8 @@ const CalendarManager = {
         isSyncing: false,
         lastServerCheck: 0,
         retryCount: 0,
-        isInitialized: false
+        isInitialized: false,
+        isLoading: false
     },
 
     // === ИНИЦИАЛИЗАЦИЯ ===
@@ -69,41 +70,56 @@ const CalendarManager = {
             return;
         }
         
-        // Загружаем локальные данные для быстрого старта
-        this.loadLocalFallback();
+        // Устанавливаем состояние загрузки
+        this.state.isLoading = true;
         
         try {
+            // Сначала загружаем локальные данные для быстрого отображения
+            const hasLocalData = this.loadLocalFallback();
+            console.log('📱 Локальные данные загружены:', hasLocalData);
+            
             // Проверяем сервер
             const isServerAvailable = await this.checkServerHealth();
+            console.log('🌐 Сервер доступен:', isServerAvailable);
             
             if (isServerAvailable) {
-                // Загружаем с сервера
+                this.state.isOnline = true;
+                // Загружаем данные с сервера
                 await this.loadFromServer();
+                // Запускаем фоновую синхронизацию
                 this.startSync();
-                console.log('✅ Подключено к серверу');
             } else {
-                console.log('📴 Работаем в оффлайн режиме');
                 this.state.isOnline = false;
+                console.warn('⚠️ Сервер недоступен, работаем в оффлайн режиме');
             }
+            
         } catch (error) {
-            console.error('⚠️ Ошибка при инициализации:', error);
+            console.error('❌ Ошибка при инициализации:', error);
             this.state.isOnline = false;
+        } finally {
+            this.state.isLoading = false;
+            this.state.isInitialized = true;
+            
+            // В любом случае рендерим календарь
+            this.renderCalendar();
+            this.renderBirthdaysThisMonth();
+            this.initializeCalendarHandlers();
+            
+            console.log('✅ CalendarManager инициализирован');
+            console.log('📊 Состояние:', {
+                eventsCount: Object.keys(this.data.events).length,
+                vacationsCount: Object.keys(this.data.vacations).length,
+                isOnline: this.state.isOnline,
+                lastModified: new Date(this.data.lastModified).toLocaleString()
+            });
         }
-        
-        // Рендерим календарь в любом случае
-        this.renderCalendar();
-        this.renderBirthdaysThisMonth();
-        
-        this.state.isInitialized = true;
-        console.log('✅ CalendarManager инициализирован');
     },
 
-    // Проверка сервера (упрощенная версия)
+    // Проверка сервера
     async checkServerHealth() {
         try {
             console.log('🔍 Проверка сервера...');
             
-            // Используем более простой подход
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 3000);
             
@@ -119,22 +135,26 @@ const CalendarManager = {
             }
             
             const result = await response.json();
-            console.log('✅ Сервер доступен:', result.message);
+            console.log('✅ Сервер отвечает:', result.message);
             return true;
             
         } catch (error) {
-            console.log('❌ Сервер недоступен:', error.name === 'AbortError' ? 'Timeout' : error.message);
+            console.log('❌ Сервер недоступен:', error.name === 'AbortError' ? 'Таймаут' : error.message);
             return false;
         }
     },
 
-    // Загрузка с сервера
+    // Загрузка данных с сервера
     async loadFromServer(retry = 0) {
+        if (retry > 0) {
+            console.log(`🔄 Повторная попытка ${retry}/${this.maxRetries}...`);
+        }
+        
         try {
             console.log('📥 Загрузка данных с сервера...');
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
             
             const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`, {
                 method: 'GET',
@@ -149,27 +169,40 @@ const CalendarManager = {
             
             const result = await response.json();
             
-            if (result.success && this.validateData(result.data)) {
-                this.data = result.data;
-                this.state.isOnline = true;
-                this.state.retryCount = 0;
-                
-                this.saveLocalFallback();
-                console.log('✅ Данные загружены с сервера');
-                
-                return true;
-            } else {
-                throw new Error('Неверный формат данных');
+            if (!result.success) {
+                throw new Error('Неуспешный ответ сервера');
             }
+            
+            if (!this.validateData(result.data)) {
+                throw new Error('Неверный формат данных от сервера');
+            }
+            
+            // Сравниваем с локальными данными
+            if (result.data.lastModified > this.data.lastModified) {
+                console.log('📥 Данные на сервере новее, обновляем');
+                this.data = result.data;
+            } else if (this.data.lastModified > result.data.lastModified) {
+                console.log('📤 Наши данные новее, отправляем на сервер');
+                await this.saveToServer();
+            } else {
+                console.log('⚖️ Данные синхронизированы');
+            }
+            
+            this.saveLocalFallback();
+            this.state.retryCount = 0;
+            console.log('✅ Данные успешно загружены');
+            
+            return true;
+            
         } catch (error) {
-            console.error('❌ Ошибка загрузки:', error.message);
+            console.error('❌ Ошибка загрузки данных:', error.message);
             
             if (retry < this.maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 2000 * (retry + 1)));
                 return this.loadFromServer(retry + 1);
             }
             
-            this.state.isOnline = false;
+            this.state.retryCount++;
             return false;
         }
     },
@@ -177,17 +210,17 @@ const CalendarManager = {
     // Сохранение на сервер
     async saveToServer(retry = 0) {
         if (this.state.isSyncing) {
-            console.log('⏳ Уже идет синхронизация...');
+            console.log('⏳ Уже идет синхронизация, пропускаем...');
             return false;
         }
         
         this.state.isSyncing = true;
         
         try {
-            console.log('📤 Сохранение на сервер...');
+            console.log('📤 Сохранение данных на сервер...');
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const timeoutId = setTimeout(() => controller.abort(), this.requestTimeout);
             
             const response = await fetch(`${this.apiUrl}/calendar`, {
                 method: 'POST',
@@ -201,30 +234,32 @@ const CalendarManager = {
             clearTimeout(timeoutId);
             
             if (!response.ok) {
-                throw new Error(`HTTP ${response.status}`);
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
             const result = await response.json();
             
-            if (result.success) {
-                this.data.lastModified = result.lastModified;
-                this.data.version = result.version;
-                this.state.isOnline = true;
-                
-                console.log('✅ Данные сохранены на сервере');
-                return true;
-            } else {
-                throw new Error('Ошибка сервера');
+            if (!result.success) {
+                throw new Error(result.error || 'Ошибка сервера');
             }
+            
+            // Обновляем метаданные
+            this.data.lastModified = result.lastModified;
+            this.data.version = result.version;
+            
+            console.log('✅ Данные успешно сохранены на сервер');
+            console.log('📊 Ответ сервера:', result);
+            
+            return true;
+            
         } catch (error) {
-            console.error('❌ Ошибка сохранения:', error.message);
+            console.error('❌ Ошибка сохранения данных:', error.message);
             
             if (retry < this.maxRetries) {
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                await new Promise(resolve => setTimeout(resolve, 2000 * (retry + 1)));
                 return this.saveToServer(retry + 1);
             }
             
-            this.state.isOnline = false;
             return false;
         } finally {
             this.state.isSyncing = false;
@@ -233,11 +268,17 @@ const CalendarManager = {
 
     // Фоновая синхронизация
     startSync() {
-        if (this.syncTimer) clearInterval(this.syncTimer);
+        if (this.syncTimer) {
+            clearInterval(this.syncTimer);
+        }
         
         this.syncTimer = setInterval(async () => {
-            if (this.state.isOnline && !this.state.isSyncing) {
-                await this.syncWithServer();
+            if (this.state.isOnline && !this.state.isSyncing && !this.state.isLoading) {
+                try {
+                    await this.syncWithServer();
+                } catch (error) {
+                    // Тихая ошибка в фоне
+                }
             }
         }, this.syncInterval);
         
@@ -255,13 +296,13 @@ const CalendarManager = {
             const result = await response.json();
             
             if (result.success && result.data.lastModified > this.data.lastModified) {
-                console.log('🔄 Получены новые данные с сервера');
+                console.log('🔄 Обнаружены новые данные на сервере');
                 this.data = result.data;
                 this.saveLocalFallback();
                 this.renderCalendar();
             }
         } catch (error) {
-            // Тихая ошибка при синхронизации
+            // Тихая ошибка
         }
     },
 
@@ -273,7 +314,7 @@ const CalendarManager = {
                 const localData = JSON.parse(saved);
                 if (this.validateData(localData)) {
                     this.data = localData;
-                    console.log('✅ Загружены локальные данные');
+                    console.log('✅ Локальные данные загружены из backup');
                     return true;
                 }
             }
@@ -292,31 +333,41 @@ const CalendarManager = {
     },
 
     validateData(data) {
-        return data &&
-               typeof data === 'object' &&
-               typeof data.events === 'object' &&
-               typeof data.vacations === 'object';
+        try {
+            return data &&
+                typeof data === 'object' &&
+                typeof data.events === 'object' &&
+                typeof data.vacations === 'object' &&
+                typeof data.lastModified === 'number' &&
+                typeof data.version === 'number';
+        } catch (error) {
+            console.error('❌ Ошибка валидации данных:', error);
+            return false;
+        }
     },
 
     // === РЕНДЕРИНГ КАЛЕНДАРЯ ===
     renderCalendar() {
         const calendarElement = document.getElementById('calendarGrid');
-        if (!calendarElement) return;
-        
+        if (!calendarElement) {
+            console.error('❌ Не найден элемент calendarGrid');
+            return;
+        }
+
         const year = this.state.currentDate.getFullYear();
         const month = this.state.currentDate.getMonth();
         const monthNames = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 
                            'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь'];
-        
+
         // Обновляем заголовок
         const titleElement = document.getElementById('calendarTitle');
         if (titleElement) {
             titleElement.textContent = `${monthNames[month]} ${year}`;
         }
-        
+
         // Очищаем grid
         calendarElement.innerHTML = '';
-        
+
         // Заголовки дней недели
         const daysOfWeek = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         daysOfWeek.forEach(day => {
@@ -325,21 +376,29 @@ const CalendarManager = {
             dayHeader.textContent = day;
             calendarElement.appendChild(dayHeader);
         });
+
+        // Рассчитываем первый день календаря
+        const firstDayOfMonth = new Date(year, month, 1);
+        const lastDayOfMonth = new Date(year, month + 1, 0);
         
-        // Генерируем дни месяца
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const startDate = new Date(firstDay);
-        startDate.setDate(startDate.getDate() - firstDay.getDay() + (firstDay.getDay() === 0 ? -6 : 1));
+        // День недели первого дня месяца (0 - воскресенье, 1 - понедельник, ...)
+        const firstDayWeekday = firstDayOfMonth.getDay();
         
+        // Корректируем для нашего календаря (понедельник - первый день недели)
+        let startOffset = firstDayWeekday === 0 ? 6 : firstDayWeekday - 1;
+        
+        const startDate = new Date(firstDayOfMonth);
+        startDate.setDate(startDate.getDate() - startOffset);
+
         const today = new Date();
         let currentDate = new Date(startDate);
-        
-        for (let i = 0; i < 35; i++) {
+
+        // Создаем 42 ячейки (6 недель) для стабильного отображения
+        for (let i = 0; i < 42; i++) {
             const dateKey = this.getDateKey(currentDate);
             const isCurrentMonth = currentDate.getMonth() === month;
-            const isToday = currentDate.toDateString() === today.toDateString();
-            
+            const isToday = this.isSameDate(currentDate, today);
+
             const dayElement = this.createDayElement(
                 currentDate,
                 dateKey,
@@ -347,7 +406,7 @@ const CalendarManager = {
                 isToday,
                 !isCurrentMonth
             );
-            
+
             calendarElement.appendChild(dayElement);
             currentDate.setDate(currentDate.getDate() + 1);
         }
@@ -356,46 +415,67 @@ const CalendarManager = {
     createDayElement(date, dateKey, dayNumber, isToday, isOtherMonth) {
         const dayElement = document.createElement('div');
         dayElement.className = 'calendar-day-main';
-        if (isToday) dayElement.classList.add('today');
-        if (isOtherMonth) dayElement.classList.add('other-month');
         
+        if (isToday) {
+            dayElement.classList.add('today');
+        }
+        if (isOtherMonth) {
+            dayElement.classList.add('other-month');
+        }
+
         const correctDateKey = this.getDateKey(date);
         dayElement.dataset.date = correctDateKey;
-        
-        // Проверка выходного/праздничного дня
+
+        // Проверяем выходной или праздничный день
         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
         const isHoliday = this.holidays.includes(correctDateKey);
-        if (isWeekend || isHoliday) dayElement.classList.add('holiday');
-        
+        if (isWeekend || isHoliday) {
+            dayElement.classList.add('holiday');
+        }
+
         // Номер дня
         const dayNumberElement = document.createElement('div');
         dayNumberElement.className = 'calendar-day-number-main';
         dayNumberElement.textContent = dayNumber;
         dayElement.appendChild(dayNumberElement);
-        
-        // События
+
+        // Контейнер для событий
         const eventsContainer = document.createElement('div');
         eventsContainer.className = 'calendar-day-events-main';
-        
+
         // Дежурства
         if (this.data.events && this.data.events[correctDateKey]) {
             this.data.events[correctDateKey].forEach(event => {
-                const eventElement = document.createElement('div');
-                eventElement.className = 'calendar-event-main';
-                eventElement.style.backgroundColor = event.color || '#667eea';
-                eventElement.title = `${event.name}\n${event.comment || ''}`;
-                eventsContainer.appendChild(eventElement);
+                if (event && event.name) {
+                    const eventElement = document.createElement('div');
+                    eventElement.className = 'calendar-event-main';
+                    eventElement.style.backgroundColor = event.color || '#667eea';
+                    eventElement.title = `${event.name}\n${event.comment || 'Без комментария'}`;
+                    eventsContainer.appendChild(eventElement);
+                }
             });
         }
-        
+
         // Отпуска
         if (this.data.vacations && this.data.vacations[correctDateKey]) {
-            const vacationElement = document.createElement('div');
-            vacationElement.className = 'calendar-vacation-main';
-            vacationElement.title = 'В отпуске';
-            eventsContainer.appendChild(vacationElement);
+            const vacationContainer = document.createElement('div');
+            vacationContainer.className = 'calendar-vacation-container';
+            
+            this.data.vacations[correctDateKey].forEach(vacation => {
+                if (vacation && vacation.name) {
+                    const vacationElement = document.createElement('div');
+                    vacationElement.className = 'calendar-vacation-main';
+                    vacationElement.style.backgroundColor = vacation.color || '#ff6b6b';
+                    vacationElement.title = `Отпуск: ${vacation.name}\n${vacation.comment || ''}`;
+                    vacationContainer.appendChild(vacationElement);
+                }
+            });
+            
+            if (vacationContainer.children.length > 0) {
+                eventsContainer.appendChild(vacationContainer);
+            }
         }
-        
+
         // Дни рождения
         const birthdays = this.getBirthdaysForDate(correctDateKey);
         if (birthdays.length > 0) {
@@ -405,84 +485,136 @@ const CalendarManager = {
             birthdayElement.title = `Дни рождения: ${birthdays.map(b => b.name).join(', ')}`;
             eventsContainer.appendChild(birthdayElement);
         }
-        
-        dayElement.appendChild(eventsContainer);
-        
+
+        // Добавляем контейнер событий в день
+        if (eventsContainer.children.length > 0) {
+            dayElement.appendChild(eventsContainer);
+        }
+
         // Обработчик клика
-        dayElement.addEventListener('click', () => {
-            this.openEventModal(correctDateKey);
+        dayElement.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.handleDayClick(correctDateKey);
         });
-        
+
         return dayElement;
     },
 
-    // Дни рождения
+    // === ДНИ РОЖДЕНИЯ ===
     getBirthdaysForDate(dateKey) {
-        return this.birthdays.filter(birthday => {
-            const birthDate = new Date(birthday.date);
+        try {
             const checkDate = this.parseDateKey(dateKey);
-            return birthDate.getMonth() === checkDate.getMonth() &&
-                   birthDate.getDate() === checkDate.getDate();
-        });
+            return this.birthdays.filter(birthday => {
+                try {
+                    const birthDate = new Date(birthday.date);
+                    return birthDate.getMonth() === checkDate.getMonth() &&
+                           birthDate.getDate() === checkDate.getDate();
+                } catch (error) {
+                    console.error('❌ Ошибка обработки дня рождения:', birthday, error);
+                    return false;
+                }
+            });
+        } catch (error) {
+            console.error('❌ Ошибка получения дней рождения:', error);
+            return [];
+        }
     },
 
     getBirthdaysForCurrentMonth() {
-        const currentMonth = this.state.currentDate.getMonth();
-        const currentYear = this.state.currentDate.getFullYear();
-        
-        return this.birthdays.filter(birthday => {
-            const birthDate = new Date(birthday.date);
-            const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
-            return birthdayThisYear.getMonth() === currentMonth;
-        }).sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            return (dateA.getMonth() * 100 + dateA.getDate()) - (dateB.getMonth() * 100 + dateB.getDate());
-        });
+        try {
+            const currentMonth = this.state.currentDate.getMonth();
+            const currentYear = this.state.currentDate.getFullYear();
+            
+            return this.birthdays.filter(birthday => {
+                try {
+                    const birthDate = new Date(birthday.date);
+                    const birthdayThisYear = new Date(currentYear, birthDate.getMonth(), birthDate.getDate());
+                    return birthdayThisYear.getMonth() === currentMonth;
+                } catch (error) {
+                    console.error('❌ Ошибка обработки дня рождения:', birthday, error);
+                    return false;
+                }
+            }).sort((a, b) => {
+                try {
+                    const dateA = new Date(a.date);
+                    const dateB = new Date(b.date);
+                    return (dateA.getMonth() * 100 + dateA.getDate()) - 
+                           (dateB.getMonth() * 100 + dateB.getDate());
+                } catch (error) {
+                    return 0;
+                }
+            });
+        } catch (error) {
+            console.error('❌ Ошибка получения дней рождения месяца:', error);
+            return [];
+        }
     },
 
     renderBirthdaysThisMonth() {
         const birthdaysContainer = document.getElementById('birthdaysThisMonth');
-        if (!birthdaysContainer) return;
+        if (!birthdaysContainer) {
+            console.log('❌ Не найден элемент birthdaysThisMonth');
+            return;
+        }
         
         const birthdays = this.getBirthdaysForCurrentMonth();
         
         if (birthdays.length === 0) {
             birthdaysContainer.innerHTML = `
                 <div class="no-birthdays">
-                    <i class="fas fa-birthday-cake"></i>
+                    <div class="birthday-icon">🎂</div>
                     <p>В этом месяце дней рождения нет</p>
                 </div>
             `;
             return;
         }
-        
+
         let birthdaysHTML = '<div class="birthdays-list">';
         
         birthdays.forEach(birthday => {
-            const birthDate = new Date(birthday.date);
-            const formattedDate = birthDate.toLocaleDateString('ru-RU', { 
-                day: 'numeric', 
-                month: 'long' 
-            });
-            
-            birthdaysHTML += `
-                <div class="birthday-item">
-                    <div class="birthday-date">${formattedDate}</div>
-                    <div class="birthday-name">${birthday.name}</div>
-                </div>
-            `;
+            try {
+                const birthDate = new Date(birthday.date);
+                const formattedDate = birthDate.toLocaleDateString('ru-RU', { 
+                    day: 'numeric', 
+                    month: 'long' 
+                });
+                
+                birthdaysHTML += `
+                    <div class="birthday-item">
+                        <div class="birthday-date">${formattedDate}</div>
+                        <div class="birthday-name">${birthday.name}</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('❌ Ошибка рендеринга дня рождения:', birthday, error);
+            }
         });
         
         birthdaysHTML += '</div>';
         birthdaysContainer.innerHTML = birthdaysHTML;
     },
 
-    // Навигация по месяцам
+    // === НАВИГАЦИЯ ===
     initializeCalendarHandlers() {
-        document.getElementById('calendarPrev')?.addEventListener('click', () => this.previousMonth());
-        document.getElementById('calendarNext')?.addEventListener('click', () => this.nextMonth());
-        document.getElementById('calendarToday')?.addEventListener('click', () => this.goToToday());
+        console.log('🔄 Инициализация обработчиков календаря...');
+        
+        const prevBtn = document.getElementById('calendarPrev');
+        const nextBtn = document.getElementById('calendarNext');
+        const todayBtn = document.getElementById('calendarToday');
+        
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => this.previousMonth());
+        }
+        
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => this.nextMonth());
+        }
+        
+        if (todayBtn) {
+            todayBtn.addEventListener('click', () => this.goToToday());
+        }
+        
+        console.log('✅ Обработчики календаря инициализированы');
     },
 
     previousMonth() {
@@ -504,34 +636,75 @@ const CalendarManager = {
     },
 
     // === МОДАЛЬНОЕ ОКНО ===
+    handleDayClick(dateKey) {
+        console.log('📅 Клик по дню:', dateKey);
+        this.openEventModal(dateKey);
+    },
+
     openEventModal(dateKey) {
         const date = this.parseDateKey(dateKey);
-        const dateString = date.toLocaleDateString('ru-RU');
+        const dateString = date.toLocaleDateString('ru-RU', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
         
-        // Создаем модальное окно
+        // Проверяем, не открыто ли уже модальное окно
+        if (document.querySelector('.calendar-modal-overlay')) {
+            return;
+        }
+        
+        // Создаем HTML модального окна
         const modalHTML = `
             <div class="calendar-modal-overlay">
                 <div class="calendar-modal">
                     <div class="calendar-modal-header">
-                        <h3>Дежурство на ${dateString}</h3>
+                        <h3>${dateString}</h3>
                         <button class="calendar-modal-close">&times;</button>
                     </div>
                     <div class="calendar-modal-content">
-                        <div class="duty-persons-list">
-                            ${this.dutyPersons.map(person => `
-                                <div class="duty-person-item" data-person-id="${person.id}">
-                                    <div class="person-color" style="background-color: ${person.color}"></div>
-                                    <div class="person-name">${person.name}</div>
-                                    <div class="person-checkbox">
-                                        <input type="checkbox" id="person-${person.id}" 
-                                            ${this.isPersonOnDuty(dateKey, person.id) ? 'checked' : ''}>
-                                    </div>
-                                </div>
-                            `).join('')}
+                        <div class="modal-tabs">
+                            <button class="tab-btn active" data-tab="duty">Дежурство</button>
+                            <button class="tab-btn" data-tab="vacation">Отпуск</button>
                         </div>
-                        <div class="comment-section">
-                            <label for="eventComment">Комментарий:</label>
-                            <textarea id="eventComment" placeholder="Добавьте комментарий...">${this.getEventComment(dateKey) || ''}</textarea>
+                        
+                        <div class="tab-content active" id="dutyTab">
+                            <div class="duty-persons-list">
+                                ${this.dutyPersons.map(person => `
+                                    <div class="duty-person-item" data-person-id="${person.id}">
+                                        <div class="person-color" style="background-color: ${person.color}"></div>
+                                        <div class="person-name">${person.name}</div>
+                                        <div class="person-checkbox">
+                                            <input type="checkbox" id="person-${person.id}" 
+                                                ${this.isPersonOnDuty(dateKey, person.id) ? 'checked' : ''}>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="comment-section">
+                                <label for="eventComment">Комментарий:</label>
+                                <textarea id="eventComment" placeholder="Добавьте комментарий...">${this.getEventComment(dateKey) || ''}</textarea>
+                            </div>
+                        </div>
+                        
+                        <div class="tab-content" id="vacationTab" style="display: none;">
+                            <div class="duty-persons-list">
+                                ${this.dutyPersons.map(person => `
+                                    <div class="duty-person-item" data-person-id="${person.id}">
+                                        <div class="person-color" style="background-color: ${person.color}"></div>
+                                        <div class="person-name">${person.name}</div>
+                                        <div class="person-checkbox">
+                                            <input type="checkbox" id="vacation-person-${person.id}" 
+                                                ${this.isPersonOnVacation(dateKey, person.id) ? 'checked' : ''}>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="comment-section">
+                                <label for="vacationComment">Комментарий:</label>
+                                <textarea id="vacationComment" placeholder="Добавьте комментарий...">${this.getVacationComment(dateKey) || ''}</textarea>
+                            </div>
                         </div>
                     </div>
                     <div class="calendar-modal-actions">
@@ -542,54 +715,105 @@ const CalendarManager = {
             </div>
         `;
         
-        // Добавляем в DOM
+        // Добавляем модальное окно в DOM
         const modalContainer = document.createElement('div');
         modalContainer.innerHTML = modalHTML;
-        document.body.appendChild(modalContainer);
+        document.body.appendChild(modalContainer.firstElementChild);
+        
+        const modal = document.querySelector('.calendar-modal-overlay');
         
         // Обработчики событий
-        const modal = modalContainer.firstChild;
-        
         const closeModal = () => {
-            modal.remove();
+            if (modal && modal.parentNode) {
+                modal.parentNode.removeChild(modal);
+            }
         };
         
+        // Закрытие по клику на крестик
         modal.querySelector('.calendar-modal-close').addEventListener('click', closeModal);
+        
+        // Закрытие по клику на отмену
         modal.querySelector('.btn-cancel').addEventListener('click', closeModal);
+        
+        // Закрытие по клику вне модального окна
         modal.addEventListener('click', (e) => {
-            if (e.target === modal) closeModal();
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Переключение табов
+        modal.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Скрываем все табы
+                modal.querySelectorAll('.tab-content').forEach(content => {
+                    content.style.display = 'none';
+                });
+                
+                // Убираем активный класс у всех кнопок
+                modal.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                
+                // Показываем выбранный таб
+                const tabId = btn.dataset.tab + 'Tab';
+                document.getElementById(tabId).style.display = 'block';
+                btn.classList.add('active');
+            });
         });
         
         // Сохранение
         modal.querySelector('.btn-save').addEventListener('click', async () => {
-            await this.saveDutyEvent(dateKey);
-            closeModal();
+            const activeTab = modal.querySelector('.tab-btn.active').dataset.tab;
+            
+            try {
+                if (activeTab === 'duty') {
+                    await this.saveDutyEvent([dateKey]);
+                } else {
+                    await this.saveVacationEvent([dateKey]);
+                }
+                
+                closeModal();
+                this.showNotification('✅ Изменения сохранены');
+                
+            } catch (error) {
+                console.error('❌ Ошибка сохранения:', error);
+                this.showNotification('❌ Ошибка сохранения', 'error');
+            }
         });
     },
 
-    async saveDutyEvent(dateKey) {
+    async saveDutyEvent(datesToSave) {
         try {
+            // Получаем активное модальное окно
+            const modal = document.querySelector('.calendar-modal-overlay');
+            if (!modal) return;
+            
             // Собираем выбранных людей
             const selectedPersons = [];
-            document.querySelectorAll('.duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
+            modal.querySelectorAll('#dutyTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
                 const personId = parseInt(checkbox.id.replace('person-', ''));
                 const person = this.dutyPersons.find(p => p.id === personId);
                 if (person) selectedPersons.push(person);
             });
             
-            const comment = document.getElementById('eventComment')?.value.trim() || '';
+            const comment = modal.querySelector('#eventComment')?.value.trim() || '';
             
             // Обновляем данные
-            if (selectedPersons.length > 0) {
-                this.data.events[dateKey] = selectedPersons.map(person => ({
-                    id: person.id,
-                    name: person.name,
-                    color: person.color,
-                    comment: comment
-                }));
-            } else {
-                delete this.data.events[dateKey];
-            }
+            datesToSave.forEach(date => {
+                const actualDateKey = this.getDateKey(this.parseDateKey(date));
+                
+                if (selectedPersons.length > 0) {
+                    this.data.events[actualDateKey] = selectedPersons.map(person => ({
+                        id: person.id,
+                        name: person.name,
+                        color: person.color,
+                        comment: comment
+                    }));
+                } else {
+                    delete this.data.events[actualDateKey];
+                }
+            });
             
             // Обновляем метаданные
             this.data.lastModified = Date.now();
@@ -606,65 +830,242 @@ const CalendarManager = {
             // Обновляем отображение
             this.renderCalendar();
             
-            // Показываем сообщение
-            alert(selectedPersons.length > 0 ? 'Дежурство сохранено' : 'Дежурство удалено');
+        } catch (error) {
+            console.error('❌ Ошибка сохранения дежурства:', error);
+            throw error;
+        }
+    },
+
+    async saveVacationEvent(datesToSave) {
+        try {
+            // Получаем активное модальное окно
+            const modal = document.querySelector('.calendar-modal-overlay');
+            if (!modal) return;
+            
+            // Собираем выбранных людей
+            const selectedPersons = [];
+            modal.querySelectorAll('#vacationTab .duty-person-item input[type="checkbox"]:checked').forEach(checkbox => {
+                const personId = parseInt(checkbox.id.replace('vacation-person-', ''));
+                const person = this.dutyPersons.find(p => p.id === personId);
+                if (person) selectedPersons.push(person);
+            });
+            
+            const comment = modal.querySelector('#vacationComment')?.value.trim() || '';
+            
+            // Обновляем данные
+            datesToSave.forEach(date => {
+                const actualDateKey = this.getDateKey(this.parseDateKey(date));
+                
+                if (selectedPersons.length > 0) {
+                    this.data.vacations[actualDateKey] = selectedPersons.map(person => ({
+                        id: person.id,
+                        name: person.name,
+                        color: person.color,
+                        comment: comment,
+                        type: 'vacation'
+                    }));
+                } else {
+                    delete this.data.vacations[actualDateKey];
+                }
+            });
+            
+            // Обновляем метаданные
+            this.data.lastModified = Date.now();
+            this.data.version = (this.data.version || 0) + 1;
+            
+            // Сохраняем локально
+            this.saveLocalFallback();
+            
+            // Пытаемся сохранить на сервер
+            if (this.state.isOnline) {
+                await this.saveToServer();
+            }
+            
+            // Обновляем отображение
+            this.renderCalendar();
             
         } catch (error) {
-            console.error('❌ Ошибка сохранения:', error);
-            alert('Ошибка сохранения: ' + error.message);
+            console.error('❌ Ошибка сохранения отпуска:', error);
+            throw error;
         }
     },
 
     // === ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ ===
     isPersonOnDuty(dateKey, personId) {
-        const events = this.data.events[dateKey];
-        if (!events || !Array.isArray(events)) return false;
-        return events.some(event => event.id === personId);
+        try {
+            const events = this.data.events[dateKey];
+            if (!events || !Array.isArray(events)) return false;
+            return events.some(event => event.id === personId);
+        } catch (error) {
+            console.error('❌ Ошибка проверки дежурства:', error);
+            return false;
+        }
+    },
+
+    isPersonOnVacation(dateKey, personId) {
+        try {
+            const vacations = this.data.vacations[dateKey];
+            if (!vacations || !Array.isArray(vacations)) return false;
+            return vacations.some(vacation => vacation.id === personId);
+        } catch (error) {
+            console.error('❌ Ошибка проверки отпуска:', error);
+            return false;
+        }
     },
 
     getEventComment(dateKey) {
-        const events = this.data.events[dateKey];
-        if (!events || !Array.isArray(events) || events.length === 0) return '';
-        return events[0].comment || '';
+        try {
+            const events = this.data.events[dateKey];
+            if (!events || !Array.isArray(events) || events.length === 0) return '';
+            return events[0].comment || '';
+        } catch (error) {
+            console.error('❌ Ошибка получения комментария:', error);
+            return '';
+        }
+    },
+
+    getVacationComment(dateKey) {
+        try {
+            const vacations = this.data.vacations[dateKey];
+            if (!vacations || !Array.isArray(vacations) || vacations.length === 0) return '';
+            return vacations[0].comment || '';
+        } catch (error) {
+            console.error('❌ Ошибка получения комментария отпуска:', error);
+            return '';
+        }
     },
 
     parseDateKey(dateKey) {
-        const [year, month, day] = dateKey.split('-').map(Number);
-        return new Date(year, month - 1, day);
+        try {
+            const [year, month, day] = dateKey.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        } catch (error) {
+            console.error('❌ Ошибка парсинга даты:', dateKey, error);
+            return new Date();
+        }
     },
 
     getDateKey(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        try {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        } catch (error) {
+            console.error('❌ Ошибка создания ключа даты:', date, error);
+            return '1970-01-01';
+        }
+    },
+
+    isSameDate(date1, date2) {
+        return date1.getFullYear() === date2.getFullYear() &&
+               date1.getMonth() === date2.getMonth() &&
+               date1.getDate() === date2.getDate();
+    },
+
+    showNotification(message, type = 'success') {
+        // Создаем уведомление
+        const notification = document.createElement('div');
+        notification.className = `calendar-notification ${type}`;
+        notification.textContent = message;
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            background: ${type === 'error' ? '#ff6b6b' : '#4CAF50'};
+            color: white;
+            z-index: 10000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            animation: slideIn 0.3s ease-out;
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Удаляем через 3 секунды
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
     },
 
     // === ПУБЛИЧНЫЕ МЕТОДЫ ===
     showCalendar() {
-        Navigation.showPage('calendar');
-        this.renderCalendar();
-        this.renderBirthdaysThisMonth();
-        this.initializeCalendarHandlers();
+        // Проверяем, инициализирован ли менеджер
+        if (!this.state.isInitialized) {
+            console.log('⚠️ Менеджер не инициализирован, инициализируем...');
+            this.init().then(() => {
+                this.renderCalendar();
+                this.renderBirthdaysThisMonth();
+                this.initializeCalendarHandlers();
+            });
+        } else {
+            this.renderCalendar();
+            this.renderBirthdaysThisMonth();
+            this.initializeCalendarHandlers();
+        }
     },
 
     // Ручная синхронизация
     async manualSync() {
         try {
+            console.log('🔄 Ручная синхронизация...');
+            
+            // Показываем индикатор загрузки
+            this.showNotification('🔄 Синхронизация...');
+            
             const isServerAvailable = await this.checkServerHealth();
+            
             if (isServerAvailable) {
                 await this.loadFromServer();
-                alert('✅ Данные синхронизированы');
+                this.showNotification('✅ Данные синхронизированы');
             } else {
-                alert('⚠️ Сервер недоступен');
+                this.showNotification('⚠️ Сервер недоступен', 'error');
             }
         } catch (error) {
-            alert('❌ Ошибка синхронизации: ' + error.message);
+            console.error('❌ Ошибка синхронизации:', error);
+            this.showNotification('❌ Ошибка синхронизации', 'error');
         }
+    },
+
+    // Получить информацию для отладки
+    getDebugInfo() {
+        return {
+            data: {
+                eventsCount: Object.keys(this.data.events).length,
+                vacationsCount: Object.keys(this.data.vacations).length,
+                lastModified: new Date(this.data.lastModified).toLocaleString(),
+                version: this.data.version
+            },
+            state: {
+                isOnline: this.state.isOnline,
+                isSyncing: this.state.isSyncing,
+                isInitialized: this.state.isInitialized,
+                isLoading: this.state.isLoading,
+                currentDate: this.state.currentDate.toLocaleDateString()
+            },
+            config: {
+                apiUrl: this.apiUrl,
+                syncInterval: this.syncInterval
+            }
+        };
     }
 };
 
-// Экспорт
+// Добавляем полифилл для AbortSignal.timeout если его нет
+if (!AbortSignal.timeout) {
+    AbortSignal.timeout = function(ms) {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(new DOMException('Timeout', 'TimeoutError')), ms);
+        return controller.signal;
+    };
+}
+
+// Экспортируем глобально
 if (typeof window !== 'undefined') {
     window.CalendarManager = CalendarManager;
 }
+
+console.log('📅 CalendarManager загружен');
