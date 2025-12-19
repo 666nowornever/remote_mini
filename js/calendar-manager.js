@@ -1,7 +1,7 @@
 // Менеджер календаря дежурств с серверной синхронизацией
 const CalendarManager = {
     // === КОНФИГУРАЦИЯ ===
-    apiUrl: 'http://localhost:3000/api', // Новый сервер календаря
+    apiUrl: 'https://remote-api-calendar.onrender.com/api', // Новый сервер календаря
     syncInterval: 30000, // 30 секунд
     syncTimer: null,
     maxRetries: 3,
@@ -111,13 +111,50 @@ const CalendarManager = {
             throw error;
         }
     },
+    // Проверка доступности сервера с обработкой CORS
+async checkServerHealth() {
+    try {
+        const response = await fetch(`${this.apiUrl}/health`, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+        
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        const result = await response.json();
+        if (result.success) {
+            console.log('✅ Сервер доступен:', result);
+            return true;
+        }
+        throw new Error('Сервер не отвечает корректно');
+    } catch (error) {
+        console.error('❌ Сервер недоступен:', error.message);
+        
+        // Проверяем, если это CORS ошибка
+        if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+            console.warn('⚠️ Возможно проблема с CORS на сервере');
+        }
+        
+        throw error;
+    }
+},
 
     // Загрузка данных с сервера
     async loadFromServer(retry = 0) {
         try {
-            console.log('📥 Загрузка данных с сервера...');
-            
-            const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`);
+            try {
+        console.log('📥 Загрузка данных с сервера...');
+        
+        const response = await fetch(`${this.apiUrl}/calendar?t=${Date.now()}`, {
+            method: 'GET',
+            mode: 'cors',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
             
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -164,20 +201,21 @@ const CalendarManager = {
 
     // Сохранение данных на сервер
     async saveToServer(retry = 0) {
-        if (this.state.isSyncing) return false;
-        this.state.isSyncing = true;
+    if (this.state.isSyncing) return false;
+    this.state.isSyncing = true;
+    
+    try {
+        console.log('📤 Сохранение данных на сервер...');
         
-        try {
-            console.log('📤 Сохранение данных на сервер...');
-            
-            const response = await fetch(`${this.apiUrl}/calendar`, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify(this.data)
-            });
+        const response = await fetch(`${this.apiUrl}/calendar`, {
+            method: 'POST',
+            mode: 'cors',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(this.data)
+        });
 
             if (!response.ok) {
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -947,5 +985,38 @@ const CalendarManager = {
 
 // Экспортируем глобально
 if (typeof window !== 'undefined') {
+    // Принудительная синхронизация с сервером
+async forceSync() {
+    try {
+        console.log('🔄 Принудительная синхронизация с сервером...');
+        
+        // Сохраняем локальные данные на сервер
+        const saved = await this.saveToServer();
+        
+        if (saved) {
+            DialogService.showMessage(
+                '✅ Успех',
+                'Данные успешно синхронизированы с сервером',
+                'success'
+            );
+        } else {
+            DialogService.showMessage(
+                '⚠️ Внимание',
+                'Не удалось синхронизировать с сервером. Проверьте подключение.',
+                'warning'
+            );
+        }
+        
+        return saved;
+    } catch (error) {
+        console.error('❌ Ошибка синхронизации:', error);
+        DialogService.showMessage(
+            '❌ Ошибка',
+            'Ошибка синхронизации: ' + error.message,
+            'error'
+        );
+        return false;
+    }
+},
     window.CalendarManager = CalendarManager;
 }
