@@ -1,9 +1,10 @@
 // Менеджер календаря дежурств с серверной синхронизацией
 const CalendarManager = {
     // === КОНФИГУРАЦИЯ ===
-    apiUrl: 'https://message-scheduler-server.onrender.com/api',
-    syncInterval: 30000,
+    apiUrl: 'http://localhost:3000/api', // Новый сервер календаря
+    syncInterval: 30000, // 30 секунд
     syncTimer: null,
+    maxRetries: 3,
 
     // Данные (синхронизируются с сервером)
     data: {
@@ -20,7 +21,7 @@ const CalendarManager = {
         { id: 3, name: 'Преображенский Дмитрий', color: '#FF9800' }
     ],
 
-    // Дни рождения (упрощенная версия без типа)
+    // Дни рождения (только для отображения)
     birthdays: [
         { name: 'Васильев Иван', date: '2025-01-09' },
         { name: 'Преображенский Дмитрий', date: '2025-02-13' },
@@ -33,8 +34,7 @@ const CalendarManager = {
         { name: 'Кунаев Николай', date: '2025-05-24' },
         { name: 'Нуриахметов Вадим', date: '2025-07-09' },
         { name: 'Волков Дмитрий', date: '2025-09-05' },
-        { name: 'Чупеткин Иван', date: '2025-10-28' },
-        { name: 'test', date: '2025-11-26' }
+        { name: 'Чупеткин Иван', date: '2025-10-28' }
     ],
 
     // Праздничные дни
@@ -45,14 +45,7 @@ const CalendarManager = {
         '2025-04-29', '2025-04-30', '2025-05-01', '2025-05-02',
         '2025-05-09', '2025-05-10', '2025-05-11',
         '2025-06-11', '2025-06-12', '2025-06-13',
-        '2025-11-01', '2025-11-02', '2025-11-03',
-        '2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04', '2026-01-05', '2026-01-06', '2026-01-07', '2026-01-08',
-        '2026-02-23', '2026-02-24', '2026-02-25',
-        '2026-03-08', '2026-03-09', '2026-03-10',
-        '2026-04-30', '2026-05-01', '2026-05-02', '2026-05-03',
-        '2026-05-09', '2026-05-10', '2026-05-11',
-        '2026-06-12', '2026-06-13', '2026-06-14',
-        '2026-11-01', '2026-11-02', '2026-11-03'
+        '2025-11-01', '2025-11-02', '2025-11-03'
     ],
 
     // Состояние
@@ -61,26 +54,66 @@ const CalendarManager = {
         selectionMode: 'day',
         isOnline: false,
         isSyncing: false,
-        lastServerCheck: 0
+        lastServerCheck: 0,
+        retryCount: 0
     },
 
     // === ИНИЦИАЛИЗАЦИЯ И СИНХРОНИЗАЦИЯ ===
     async init() {
         console.log('🔄 CalendarManager: инициализация...');
         
-        // Сначала загружаем локальные данные для быстрого отображения
-        this.loadLocalFallback();
-        
-        // Потом синхронизируем с сервером в фоне
-        setTimeout(() => {
-            this.loadFromServer();
+        try {
+            // Проверяем доступность сервера
+            await this.checkServerHealth();
+            
+            // Загружаем данные с сервера
+            await this.loadFromServer();
+            
+            // Запускаем синхронизацию
             this.startSync();
-        }, 500);
+            
+            console.log('✅ CalendarManager: успешно подключен к серверу');
+        } catch (error) {
+            console.error('❌ Ошибка подключения к серверу:', error.message);
+            
+            // Пробуем загрузить локальные данные
+            if (this.loadLocalFallback()) {
+                console.log('✅ Используем локальные данные');
+                this.state.isOnline = false;
+            } else {
+                console.log('📝 Используем пустые данные');
+                this.data = {
+                    events: {},
+                    vacations: {},
+                    lastModified: Date.now(),
+                    version: 1
+                };
+            }
+        }
         
         console.log('✅ CalendarManager: инициализация завершена');
     },
 
-    async loadFromServer() {
+    // Проверка доступности сервера
+    async checkServerHealth() {
+        try {
+            const response = await fetch(`${this.apiUrl}/health`);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Сервер доступен');
+                return true;
+            }
+            throw new Error('Сервер не отвечает');
+        } catch (error) {
+            console.error('❌ Сервер недоступен:', error.message);
+            throw error;
+        }
+    },
+
+    // Загрузка данных с сервера
+    async loadFromServer(retry = 0) {
         try {
             console.log('📥 Загрузка данных с сервера...');
             
@@ -93,47 +126,45 @@ const CalendarManager = {
             const result = await response.json();
             
             if (result.success && this.validateData(result.data)) {
-                // Слияние данных - всегда берем серверные данные если они новее
-                if (result.data.lastModified > this.data.lastModified) {
-                    console.log('🔄 Данные обновлены с сервера');
-                    this.data = result.data;
-                } else if (this.data.lastModified > result.data.lastModified) {
-                    // Наши данные новее - отправляем на сервер
-                    console.log('📤 Наши данные новее, отправляем на сервер');
-                    await this.saveToServer();
-                }
-                
+                this.data = result.data;
                 this.state.lastServerCheck = Date.now();
                 this.state.isOnline = true;
+                this.state.retryCount = 0;
+                
+                // Сохраняем локальную копию
+                this.saveLocalFallback();
+                
                 console.log('✅ Данные загружены с сервера');
                 
-                // Обновляем интерфейс
-                this.renderCalendar();
-                this.renderBirthdaysThisMonth();
+                // Обновляем интерфейс если он отображается
+                if (document.getElementById('calendarGrid')) {
+                    this.renderCalendar();
+                    this.renderBirthdaysThisMonth();
+                }
                 
+                return true;
             } else {
-                throw new Error('Invalid server response');
+                throw new Error('Неверный ответ сервера');
             }
         } catch (error) {
             console.error('❌ Ошибка загрузки с сервера:', error.message);
-            this.state.isOnline = false;
             
-            // Если локальных данных нет, создаем пустые
-            if (Object.keys(this.data.events).length === 0 && 
-                Object.keys(this.data.vacations).length === 0) {
-                this.data = {
-                    events: {},
-                    vacations: {},
-                    lastModified: Date.now(),
-                    version: 1
-                };
-                console.log('📝 Используем пустые данные');
+            // Пробуем повторить
+            if (retry < this.maxRetries) {
+                console.log(`🔄 Повторная попытка ${retry + 1}/${this.maxRetries}...`);
+                await new Promise(resolve => setTimeout(resolve, 2000 * (retry + 1)));
+                return this.loadFromServer(retry + 1);
             }
+            
+            this.state.isOnline = false;
+            this.state.retryCount++;
+            throw error;
         }
     },
 
-    async saveToServer() {
-        if (this.state.isSyncing) return;
+    // Сохранение данных на сервер
+    async saveToServer(retry = 0) {
+        if (this.state.isSyncing) return false;
         this.state.isSyncing = true;
         
         try {
@@ -141,14 +172,16 @@ const CalendarManager = {
             
             const response = await fetch(`${this.apiUrl}/calendar`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    ...this.data,
-                    lastModified: Date.now()
-                })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify(this.data)
             });
 
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
             
             const result = await response.json();
             
@@ -156,14 +189,25 @@ const CalendarManager = {
                 this.data.lastModified = result.lastModified;
                 this.data.version = result.version;
                 this.state.isOnline = true;
+                this.state.retryCount = 0;
+                
                 console.log('✅ Данные сохранены на сервер');
                 return true;
             } else {
-                throw new Error(result.error);
+                throw new Error(result.error || 'Ошибка сервера');
             }
         } catch (error) {
-            console.error('❌ Ошибка сохранения на сервер:', error);
+            console.error('❌ Ошибка сохранения на сервер:', error.message);
+            
+            // Пробуем повторить
+            if (retry < this.maxRetries) {
+                console.log(`🔄 Повторная попытка ${retry + 1}/${this.maxRetries}...`);
+                await new Promise(resolve => setTimeout(resolve, 2000 * (retry + 1)));
+                return this.saveToServer(retry + 1);
+            }
+            
             this.state.isOnline = false;
+            this.state.retryCount++;
             return false;
         } finally {
             this.state.isSyncing = false;
@@ -174,7 +218,9 @@ const CalendarManager = {
         if (this.syncTimer) clearInterval(this.syncTimer);
 
         this.syncTimer = setInterval(async () => {
-            await this.syncWithServer();
+            if (this.state.isOnline && !this.state.isSyncing) {
+                await this.syncWithServer();
+            }
         }, this.syncInterval);
 
         console.log('🔄 Синхронизация запущена');
@@ -192,17 +238,20 @@ const CalendarManager = {
                     console.log('🔄 Обновление данных с сервера');
                     this.data = result.data;
                     this.state.lastServerCheck = Date.now();
-                    this.state.isOnline = true;
                     
+                    // Сохраняем локально
+                    this.saveLocalFallback();
+                    
+                    // Обновляем интерфейс
                     this.renderCalendar();
                 }
             }
         } catch (error) {
-            console.error('❌ Ошибка синхронизации:', error);
-            this.state.isOnline = false;
+            console.error('❌ Ошибка синхронизации:', error.message);
         }
     },
 
+    // Локальное хранение (fallback)
     loadLocalFallback() {
         try {
             const saved = localStorage.getItem('calendarData_backup');
@@ -229,13 +278,6 @@ const CalendarManager = {
         }
     },
 
-    getUserId() {
-        if (window.Telegram && Telegram.WebApp) {
-            return Telegram.WebApp.initDataUnsafe.user?.id?.toString();
-        }
-        return 'unknown';
-    },
-
     validateData(data) {
         return data &&
             typeof data === 'object' &&
@@ -243,6 +285,13 @@ const CalendarManager = {
             typeof data.vacations === 'object' &&
             typeof data.lastModified === 'number' &&
             typeof data.version === 'number';
+    },
+
+    getUserId() {
+        if (window.Telegram && Telegram.WebApp) {
+            return Telegram.WebApp.initDataUnsafe.user?.id?.toString();
+        }
+        return 'unknown';
     },
 
     // === ДНИ РОЖДЕНИЯ ===
@@ -299,7 +348,6 @@ const CalendarManager = {
         if (loading) {
             calendarElement.innerHTML = '';
         } else {
-            // Иначе обновляем существующие элементы
             calendarElement.innerHTML = '';
         }
 
@@ -607,7 +655,6 @@ const CalendarManager = {
                 
             } catch (error) {
                 console.error('❌ Ошибка при сохранении:', error);
-                // Показываем ошибку пользователю
                 DialogService.showMessage('❌ Ошибка', 'Не удалось сохранить данные. Попробуйте снова.', 'error');
             }
         });
@@ -645,23 +692,40 @@ const CalendarManager = {
 
             // Обновляем timestamp
             this.data.lastModified = Date.now();
+            this.data.version++;
             
             // Сохраняем локально сразу
             this.saveLocalFallback();
             
             // Пытаемся сохранить на сервер
+            let serverSaved = false;
             if (this.state.isOnline) {
-                await this.saveToServer();
+                serverSaved = await this.saveToServer();
             }
             
             // Обновляем отображение
             this.renderCalendar();
             
-            DialogService.showMessage(
-                '✅ Успех',
-                'График дежурств сохранен',
-                'success'
-            );
+            // Показываем результат
+            if (serverSaved) {
+                DialogService.showMessage(
+                    '✅ Успех',
+                    'График дежурств сохранен и синхронизирован',
+                    'success'
+                );
+            } else if (this.state.isOnline) {
+                DialogService.showMessage(
+                    '⚠️ Внимание',
+                    'График дежурств сохранен локально, но не синхронизирован с сервером',
+                    'warning'
+                );
+            } else {
+                DialogService.showMessage(
+                    '💾 Сохранено',
+                    'График дежурств сохранен локально (оффлайн режим)',
+                    'info'
+                );
+            }
             
         } catch (error) {
             console.error('❌ Ошибка сохранения дежурств:', error);
@@ -707,23 +771,40 @@ const CalendarManager = {
 
             // Обновляем timestamp
             this.data.lastModified = Date.now();
+            this.data.version++;
             
             // Сохраняем локально сразу
             this.saveLocalFallback();
             
             // Пытаемся сохранить на сервер
+            let serverSaved = false;
             if (this.state.isOnline) {
-                await this.saveToServer();
+                serverSaved = await this.saveToServer();
             }
             
             // Обновляем отображение
             this.renderCalendar();
             
-            DialogService.showMessage(
-                '✅ Успех',
-                'График отпусков сохранен',
-                'success'
-            );
+            // Показываем результат
+            if (serverSaved) {
+                DialogService.showMessage(
+                    '✅ Успех',
+                    'График отпусков сохранен и синхронизирован',
+                    'success'
+                );
+            } else if (this.state.isOnline) {
+                DialogService.showMessage(
+                    '⚠️ Внимание',
+                    'График отпусков сохранен локально, но не синхронизирован с сервером',
+                    'warning'
+                );
+            } else {
+                DialogService.showMessage(
+                    '💾 Сохранено',
+                    'График отпусков сохранен локально (оффлайн режим)',
+                    'info'
+                );
+            }
             
         } catch (error) {
             console.error('❌ Ошибка сохранения отпусков:', error);
@@ -794,17 +875,73 @@ const CalendarManager = {
         return `${year}-${month}-${day}`;
     },
 
-    // === МЕТОД ДЛЯ ОТЛАДКИ ===
+    // === МЕТОДЫ ДЛЯ ОТЛАДКИ ===
+    async checkServerStatus() {
+        try {
+            const response = await fetch(`${this.apiUrl}/health`);
+            const result = await response.json();
+            
+            console.log('📊 Статус сервера:', result);
+            return result;
+        } catch (error) {
+            console.error('❌ Сервер недоступен:', error);
+            return { success: false, error: error.message };
+        }
+    },
+    
+    async getStats() {
+        try {
+            const response = await fetch(`${this.apiUrl}/stats`);
+            const result = await response.json();
+            
+            console.log('📊 Статистика:', result);
+            return result;
+        } catch (error) {
+            console.error('❌ Ошибка получения статистики:', error);
+            return { success: false, error: error.message };
+        }
+    },
+    
+    // Полная информация о состоянии
+    getDebugInfo() {
+        return {
+            data: {
+                eventsCount: Object.keys(this.data.events).length,
+                vacationsCount: Object.keys(this.data.vacations).length,
+                lastModified: new Date(this.data.lastModified).toLocaleString(),
+                version: this.data.version
+            },
+            state: {
+                isOnline: this.state.isOnline,
+                isSyncing: this.state.isSyncing,
+                lastServerCheck: new Date(this.state.lastServerCheck).toLocaleString(),
+                retryCount: this.state.retryCount,
+                selectionMode: this.state.selectionMode
+            },
+            config: {
+                apiUrl: this.apiUrl,
+                syncInterval: this.syncInterval
+            }
+        };
+    },
+    
+    // Тестирование
     async testSystem() {
         console.log('🧪 Тестирование системы календаря...');
-        console.log('Данные:', {
-            eventsCount: Object.keys(this.data.events).length,
-            vacationsCount: Object.keys(this.data.vacations).length,
-            lastModified: new Date(this.data.lastModified).toLocaleString(),
-            isOnline: this.state.isOnline
-        });
+        console.log('Отладочная информация:', this.getDebugInfo());
+        
+        // Проверяем сервер
+        const serverStatus = await this.checkServerStatus();
+        console.log('Статус сервера:', serverStatus);
+        
+        // Проверяем данные
+        const stats = await this.getStats();
+        console.log('Статистика:', stats);
+        
+        // Обновляем отображение
         this.renderCalendar();
-        console.log('✅ Календарь отображен');
+        
+        console.log('✅ Тестирование завершено');
     }
 };
 
