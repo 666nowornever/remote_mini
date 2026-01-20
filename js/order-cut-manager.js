@@ -83,14 +83,6 @@ const OrderCutManager = {
 
         // Группируем по 10 ресторанов для лучшей читаемости
         this.restaurants.forEach((restaurant, index) => {
-            // Добавляем разделитель каждые 10 ресторанов
-            if (index > 0 && index % 10 === 0) {
-                const separator = document.createElement('div');
-                separator.className = 'restaurant-separator';
-                separator.innerHTML = '<div class="separator-line"></div>';
-                listContainer.appendChild(separator);
-            }
-
             // Создаем элемент ресторана
             const restaurantItem = document.createElement('div');
             restaurantItem.className = 'server-item restaurant-item';
