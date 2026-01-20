@@ -53,7 +53,8 @@ async function initializeManagersLazy() {
         { name: 'CashServerManager', instance: window.CashServerManager, optional: false },
         { name: 'ServicesManager', instance: window.ServicesManager, optional: false },
         { name: 'ERPHandler', instance: window.ERPHandler, optional: false },
-        { name: 'CashManager', instance: window.CashManager, optional: false }
+        { name: 'CashManager', instance: window.CashManager, optional: false },
+        { name: 'OrderCutManager', instance: window.OrderCutManager, optional: false }
     ];
     
     const nonCriticalManagers = [

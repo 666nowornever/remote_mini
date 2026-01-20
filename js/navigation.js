@@ -23,7 +23,8 @@ const Navigation = {
         'services': 'pages/services.html',
         'service-management-global': 'pages/service-management-global.html',
         'crm-services': 'pages/crm-services.html',
-        'calendar': 'pages/calendar.html'
+        'calendar': 'pages/calendar.html',
+        'orderCut': 'pages/orderCut.html'
     },
 
     // Заголовки страниц (ДОБАВЛЯЕМ НОВЫЕ ЗАГОЛОВКИ)
@@ -49,7 +50,8 @@ const Navigation = {
         'services': 'Службы',
         'service-management-global': 'Управление службой',
         'crm-services': 'Службы CRM',
-        'calendar': 'Календарь дежурств'
+        'calendar': 'Календарь дежурств',
+        'orderCut': 'Срез последних заказов'
     },
 
     // Показать страницу
@@ -199,6 +201,12 @@ initializePage: function(pageId) {
                     CalendarManager.loadCalendarPage();
                 }
                 break;
+            case 'orderCut':
+                console.log('🔄 Инициализация страницы среза заказов...');
+                if (typeof OrderCutManager !== 'undefined' && OrderCutManager.initialize) {
+                 OrderCutManager.initialize();
+                }
+                break;    
             
             }
 },
