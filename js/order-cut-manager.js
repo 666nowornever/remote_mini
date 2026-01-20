@@ -81,8 +81,11 @@ const OrderCutManager = {
 
         listContainer.innerHTML = '';
 
-        // Группируем по 10 ресторанов для лучшей читаемости
+        
         this.restaurants.forEach((restaurant, index) => {
+            
+            
+
             // Создаем элемент ресторана
             const restaurantItem = document.createElement('div');
             restaurantItem.className = 'server-item restaurant-item';
